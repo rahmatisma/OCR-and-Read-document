@@ -1,0 +1,1 @@
+# pemberian atribut pada gambar
