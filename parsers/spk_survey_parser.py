@@ -220,6 +220,42 @@ def parse_spk_survey(all_text: str, page_texts: list[str]) -> dict:
 
     return data
 
+def parse_tanda_tangan(all_text, ttd_results):
+    """
+    Menangkap peran dan nama tanda tangan dari teks hasil OCR,
+    lalu mencocokkan dengan gambar hasil ekstraksi ttd.
+    """
+    # Normalisasi teks untuk memudahkan parsing
+    lines = [ln.strip() for ln in all_text.splitlines() if ln.strip()]
+    
+    # Cari baris yang mengandung peran (ada koma di belakang atau huruf kapital semua)
+    role_blocks = []
+    for i, line in enumerate(lines):
+        if re.match(r"^[A-Z].*,?$", line) or line.endswith(","):
+            role_blocks.append((line.rstrip(","), i))
+
+    hasil = []
+    for idx, (role, line_index) in enumerate(role_blocks):
+        # Nama biasanya ada di 1–2 baris berikutnya
+        nama = None
+        for j in range(line_index + 1, min(line_index + 3, len(lines))):
+            if re.search(r"[A-Za-z]", lines[j]) and not lines[j].endswith(","):
+                nama = lines[j]
+                break
+        
+        # Ambil gambar sesuai urutan (jika ada)
+        path_ttd = None
+        if idx < len(ttd_results.get("ttd", [])):
+            path_ttd = ttd_results["ttd"][idx]["file"]
+        
+        hasil.append({
+            "peran": role,
+            "nama": nama,
+            "path_ttd": path_ttd
+        })
+    
+    return hasil
+
 
 def search_regex(pattern, text, allow_multiline=False):
     """

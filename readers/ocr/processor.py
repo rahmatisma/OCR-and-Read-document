@@ -1,15 +1,27 @@
 # pipeline utama ocr/penggabungan gambar dan atribut
-from .image_extractor import extract_images_from_pdf
-from .text_reader import read_image
-from .annotator import annotate_result
+# ocr/processor.py
 
-def process_pdf_images(pdf_path):
-    results = []
-    image_paths = extract_images_from_pdf(pdf_path)
+import numpy as np
+from PIL import Image
+from readers.ocr.text_reader import run_ocr
 
-    for img_path in image_paths:
-        text = read_image(img_path)
-        annotated = annotate_result({"image_path": img_path, "text": text})
-        results.append(annotated)
+def process_page_ocr(page) -> str:
+    """
+    Proses OCR pada satu halaman PDF:
+    - Render halaman ke gambar (numpy array)
+    - Kirim ke OCR
+    - Kembalikan teks hasilnya
+    """
+    try:
+        pix = page.get_pixmap()
+        mode = "RGBA" if pix.alpha else "RGB"
+        img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+        img_np = np.array(img)
 
-    return results
+        # Panggil fungsi OCR dari utils
+        text = run_ocr(img_np)
+        return text.strip()
+
+    except Exception as e:
+        print(f"[ERROR] Gagal OCR halaman: {e}")
+        return ""
