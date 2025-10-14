@@ -13,16 +13,20 @@ def normalize_text(raw_text: str) -> str:
     return "\n".join(lines)
 
 
-def parse_spk_survey(all_text: str, page_texts: list[str]) -> dict:
+def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = None, doc_results: dict = None) -> dict:
     all_text = normalize_text(all_text)
+    ttd_results = ttd_results or {}
+    doc_results = doc_results or {}
+
     # print(all_text)
     # exit()
+    
     data = {
         "spk": {},
         "pelanggan": {},
         "jaringan": {},
         "pelaksanaan": {},
-        "tanda_tangan": [],
+        "tanda_tangan": [],  # list of {peran, nama, path_ttd}
         "vendor": {},
         "informasi_gedung": {},
         "sarpen_ruang_server": {},
@@ -34,9 +38,10 @@ def parse_spk_survey(all_text: str, page_texts: list[str]) -> dict:
         "data_splitter": {},
         "data_hh": [],
         "plan_jalur_dalam_gedung": None,
-        "dokumentasi": [],
+        "dokumentasi": [],   # list of {jenis, path_foto, keterangan}
         "time_frame_pekerja": {},
         "berita_acara": {},
+
     }
 
     # === PARSING TEKS ===
@@ -72,21 +77,37 @@ def parse_spk_survey(all_text: str, page_texts: list[str]) -> dict:
     data["vendor"]["teknisi"] = search_regex(r"Pelaksana\s+Survey\s+dari\s+Tim\s+Vendor\s*:?\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:|\nVendor|\Z)", all_text)
     data["vendor"]["nama_vendor"] = search_regex(r"^[ \t]*Vendor\s*:?\s*(?:\n\s*)?([^\n]+)", all_text)
 
-    data["informasi_gedung"]["status_gedung"] = search_regex(r"Status\s*Gedung\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["kondisi_gedung"] = search_regex(r"Kondisi\s*Gedung\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["pemilik_bangunan"] = search_regex(r"^[ \t]*Pemilik\s*Bangunan\s*:?[ \t]*(?P<val>[^\r\n]*)", all_text)
-    
-    data["informasi_gedung"]["kontak_person"] = search_regex(r"Kontak\s*Person\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["bagian_jabatan"] = search_regex(r"Bagian\s*/\s*Jabatan\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["telpon_fax"] = search_regex(r"Telpon\s*/\s*Fax\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["email"] = search_regex(r"Email\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["jumlah_lantai_gedung"] = search_regex(r"Jumlah\s*Lantai\s*Gedung\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["pelanggan_fo"] = search_regex(r"Pelanggan\s*bersedia\s*dipasang\s*perangkat\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["penempatan_antena"] = search_regex(r"Penempatan\s*Antena\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["sewa_space_antena"] = search_regex(r"Sewa\s*space\s*antena\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["sewa_shaft_kabel"] = search_regex(r"Sewa\s*shaft\s*kabel\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["biaya_ikg"] = search_regex(r"Biaya\s*IKG\s*([^\n]*)", all_text)
-    data["informasi_gedung"]["penanggungjawab_sewa"] = search_regex(r"Penanggungjawab\s*pengurusan\s*dan\s*pembayaran\s*sewa\s*([^\n]*)", all_text)
+    labels = [
+        "Status Gedung",
+        "Kondisi Gedung",
+        "Pemilik Bangunan",
+        "Alamat",
+        "Kontak Person",
+        "Bagian / Jabatan",
+        "Telpon / Fax",
+        "Email",
+        "Jumlah Lantai Gedung",
+        "Pelanggan bersedia dipasang perangkat",
+        "Penempatan Antena",
+        "Sewa space antena",
+        "Sewa shaft kabel",
+        "Biaya IKG",
+        "Penanggungjawab pengurusan dan pembayaran sewa"
+    ]
+
+    result = parse_informasi_gedung(all_text, labels)
+
+    # Format hasil ke bentuk snake_case untuk key JSON
+    for k, v in result.items():
+        key = (
+            k.lower()
+            .replace(" ", "_")
+            .replace("/", "_")
+            .replace("bersedia_dipasang_perangkat", "fo")
+            .replace("penanggungjawab_pengurusan_dan_pembayaran_sewa", "penanggungjawab_sewa")
+        )
+        data["informasi_gedung"][key] = v
+
 
     data["sarpen_ruang_server"]["grounding_listrik"] = "Ada" in all_text
     data["sarpen_ruang_server"]["ups"] = "UPS Tersedia" in all_text or "Tersedia/Ada" in all_text
@@ -211,89 +232,117 @@ def parse_spk_survey(all_text: str, page_texts: list[str]) -> dict:
     data["berita_acara"]["waktu_pelaksanaan_datang"] = search_regex(r"Datang\s*([^\n]*)", all_text)
     data["berita_acara"]["waktu_pelaksanaan_selesai"] = search_regex(r"Selesai\s*([^\n]*)", all_text)
 
+    data["dokumentasi"] = parse_dokumentasi(doc_results)
 
-    data["tanda_tangan"].append({
-        "peran": "Yang Memerintahkan",
-        "nama": search_regex(r"Yang Memerintahkan.*?([A-Za-z ]+)", all_text),
-        "path_ttd": None
-    })
 
     return data
 
-def parse_tanda_tangan(all_text, ttd_results):
-    """
-    Menangkap peran dan nama tanda tangan dari teks hasil OCR,
-    lalu mencocokkan dengan gambar hasil ekstraksi ttd.
-    """
-    # Normalisasi teks untuk memudahkan parsing
-    lines = [ln.strip() for ln in all_text.splitlines() if ln.strip()]
-    
-    # Cari baris yang mengandung peran (ada koma di belakang atau huruf kapital semua)
-    role_blocks = []
-    for i, line in enumerate(lines):
-        if re.match(r"^[A-Z].*,?$", line) or line.endswith(","):
-            role_blocks.append((line.rstrip(","), i))
 
+def parse_dokumentasi(doc_results):
+    """
+    Mengubah hasil deteksi dokumentasi menjadi format seragam.
+    Input doc_results: list hasil processor, misal [{'jenis': 'foto lokasi', 'path_foto': '...', 'keterangan': '...'}]
+    """
     hasil = []
-    for idx, (role, line_index) in enumerate(role_blocks):
-        # Nama biasanya ada di 1–2 baris berikutnya
-        nama = None
-        for j in range(line_index + 1, min(line_index + 3, len(lines))):
-            if re.search(r"[A-Za-z]", lines[j]) and not lines[j].endswith(","):
-                nama = lines[j]
-                break
-        
-        # Ambil gambar sesuai urutan (jika ada)
-        path_ttd = None
-        if idx < len(ttd_results.get("ttd", [])):
-            path_ttd = ttd_results["ttd"][idx]["file"]
-        
+    for doc in doc_results.get("dokumentasi", []):
         hasil.append({
-            "peran": role,
-            "nama": nama,
-            "path_ttd": path_ttd
+            "jenis": doc.get("jenis"),
+            "path_foto": doc.get("path_foto"),
+            "keterangan": doc.get("keterangan")
         })
-    
     return hasil
-
 
 def search_regex(pattern, text, allow_multiline=False):
     """
-    Fungsi pencarian regex yang aman dan sederhana.
-    - Jika allow_multiline=True, newline diizinkan dan akan dirapikan jadi spasi
-    - Jika value ternyata berisi label lain (ada ':'), dianggap kosong
+    Fungsi pencarian regex yang lebih tangguh untuk hasil OCR PDF.
+    
+    Fitur:
+    - Jika allow_multiline=True, maka newline dianggap spasi (untuk teks panjang seperti alamat).
+    - Jika hasil regex kosong, otomatis mencari nilai di baris berikutnya.
+    - Jika value berisi label lain (mengandung ':' di awal), hasil dianggap tidak valid.
     """
+
     match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE | re.DOTALL)
-    if match:
-        value = match.group(1).strip()
+    if not match:
+        return None
 
-        if not value:
-            return None
+    value = match.group(1).strip()
 
-        if not allow_multiline:
-            if '\n' in value:
-                return None
-        else:
-            # rapikan newline → spasi
-            value = re.sub(r"\s*\n\s*", " ", value).strip()
+    # Jika hasil kosong → coba ambil dari baris berikutnya
+    if not value:
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
+            if re.search(pattern, line, re.IGNORECASE):
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    # Jangan ambil label baru (biasanya diakhiri ':')
+                    if next_line and not re.match(r"^[A-Za-z ]+:?$", next_line):
+                        return next_line
+        return None
 
-        if ':' in value and not allow_multiline:
-            return None
+    # Kalau multiline tidak diizinkan → hasil dengan newline dianggap tidak valid
+    if not allow_multiline and "\n" in value:
+        return None
 
-        return value
-    return None
+    # Jika multiline diizinkan → ubah newline jadi spasi
+    if allow_multiline:
+        value = re.sub(r"\s*\n\s*", " ", value).strip()
+
+    # Hindari hasil yang sebenarnya label baru
+    if ":" in value and not allow_multiline:
+        return None
+
+    return value
+
 
 def parse_multiple_hh(text: str):
+    """
+    Parsing data HH (handhole) yang bisa muncul berulang di dokumen.
+    Contoh pola teks yang didukung:
+    Data HH 1
+    Lokasi HH-1 Jl. Contoh No. 123
+    Longitude 106.12345
+    Latitude -6.12345
+    """
     hh_list = []
-    matches = re.finditer(
-        r"Data HH\s*(\d+).*?Lokasi HH-\1\s*(.+?)\s*Longitude.*?([0-9\.\-]+).*?Latitude.*?([0-9\.\-]+)",
-        text, re.S
+    # Pola diperbaiki agar lebih toleran terhadap spasi, newline, dan urutan teks
+    pattern = (
+        r"Data\s*HH\s*(\d+).*?"           # Tangkap nomor HH
+        r"Lokasi\s*HH-?\1\s*([^\n\r]*)"   # Tangkap lokasi
+        r".*?Longitude[^0-9\-]*([0-9\.\-]+)"  # Tangkap longitude
+        r".*?Latitude[^0-9\-]*([0-9\.\-]+)"   # Tangkap latitude
     )
-    for match in matches:
+
+    for match in re.finditer(pattern, text, re.IGNORECASE | re.DOTALL):
         hh_list.append({
             "nama_hh": f"HH-{match.group(1)}",
-            "lokasi_hh": match.group(2),
+            "lokasi_hh": match.group(2).strip(),
             "longitude": match.group(3),
             "latitude": match.group(4)
         })
+
     return hh_list
+
+def parse_informasi_gedung(text: str, labels: list[str]) -> dict:
+    """
+    Parsing bagian INFORMASI GEDUNG berdasarkan label yang ada di daftar `labels`.
+    Cocok untuk format vertikal seperti contoh kamu.
+    """
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    data = {}
+
+    current_label = None
+    for line in lines:
+        # Kalau baris ini cocok dengan label
+        for lbl in labels:
+            if re.fullmatch(lbl, line, re.IGNORECASE):
+                current_label = lbl
+                data[current_label] = None  # Siapkan tempatnya
+                break
+        else:
+            # Kalau ini isi dari label sebelumnya
+            if current_label:
+                data[current_label] = line
+                current_label = None  # Reset, supaya isi tidak nempel ke label lain
+
+    return data

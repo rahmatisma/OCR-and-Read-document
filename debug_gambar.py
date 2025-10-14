@@ -5,7 +5,6 @@ import os
 # Daftar label teks yang akan dicari
 TARGET_LABELS = [
     "Dokumentasi foto",
-    "Dokumentasi foto provisioning",
     "Foto penempatan perangkat di lokasi pelanggan",
     "Foto jalur kabel dalam gedung",
     "Plan jalur dalam gedung",
@@ -14,6 +13,11 @@ TARGET_LABELS = [
     "Foto hh eksisting yang dipakai",
     "Foto lokasi hh baru"
 ]
+
+PDF_PATH = "input/pdf/Survey 1.pdf"
+OUTPUT_DIR = "output/images"
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def normalize_name(label: str) -> str:
     """Ubah label menjadi nama file yang aman."""
@@ -35,9 +39,9 @@ def crop_after_label(page, label_text):
     pix = page.get_pixmap(clip=crop_box)
     return pix
 
-def extract_and_classify_images(pdf_path, output_dir):
-    doc = fitz.open(pdf_path)
-    print(f"[INFO] Membuka {pdf_path} dengan {len(doc)} halaman...")
+def main():
+    doc = fitz.open(PDF_PATH)
+    print(f"[INFO] Membuka {PDF_PATH} dengan {len(doc)} halaman...")
 
     for page_num, page in enumerate(doc, start=1):
         text_page = page.get_text("text").lower()
@@ -46,10 +50,13 @@ def extract_and_classify_images(pdf_path, output_dir):
                 pix = crop_after_label(page, label)
                 if pix:
                     filename = f"{normalize_name(label)}_hal{page_num}.jpg"
-                    out_path = os.path.join(output_dir, filename)
+                    out_path = os.path.join(OUTPUT_DIR, filename)
                     pix.save(out_path)
                     print(f"{label} → disimpan: {out_path}")
                 else:
                     print(f"Tidak bisa crop {label} di halaman {page_num}")
     doc.close()
     print("[Selesai]")
+
+if __name__ == "__main__":
+    main()
