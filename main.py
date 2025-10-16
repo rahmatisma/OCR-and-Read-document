@@ -1,7 +1,7 @@
 import os
 import json
 from readers.pdf_reader import read_pdf
-from readers.ocr.text_reader import run_ocr
+# from readers.ocr.text_reader import run_ocr
 
 OUTPUT_DIR = "output/json"
 
@@ -26,10 +26,10 @@ def pengecekan_file(file_path: str):
         # Jalankan pipeline utama PDF (OCR + parsing + ekstraksi gambar)
         result = read_pdf(file_path)
 
-    elif file_path.lower().endswith((".jpg", ".jpeg", ".png")):
-        print("[INFO] Proses gambar tunggal dimulai...")
-        text = run_ocr(file_path)
-        result = {"ocr_text": text}
+    # elif file_path.lower().endswith((".jpg", ".jpeg", ".png")):
+    #     print("[INFO] Proses gambar tunggal dimulai...")
+    #     text = run_ocr(file_path)
+    #     result = {"ocr_text": text}
 
     else:
         raise ValueError("Format file tidak didukung.")

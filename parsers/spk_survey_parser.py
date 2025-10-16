@@ -99,135 +99,142 @@ def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = N
 
     # Format hasil ke bentuk snake_case untuk key JSON
     for k, v in result.items():
-        key = (
-            k.lower()
-            .replace(" ", "_")
-            .replace("/", "_")
-            .replace("bersedia_dipasang_perangkat", "fo")
-            .replace("penanggungjawab_pengurusan_dan_pembayaran_sewa", "penanggungjawab_sewa")
-        )
+        key = (normalize_key(k))
+            
         data["informasi_gedung"][key] = v
 
+    # laber sarpen
+    labels_sarpen = [
+        "Power Line / Listrik",
+        "Ketersediaan Power Outlet untuk OTB, Modem, dan Router",
+        "Info Kelistrikan (PLN P-N)",
+        "Info Kelistrikan (PLN P-G)",
+        "Info Kelistrikan (PLN N-G)",
+        "Grounding Listrik",
+        "UPS",
+        "Ruangan Ber AC",
+        "Suhu Ruangan",
+        "1. Lantai",
+        "2. Ruang",
+        "Perangkat Pelanggan"
+    ]
+    match_sarpen = re.search(
+        r"INFORMASI SARPEN DAN RUANG SERVER PELANGGAN([\s\S]*?Perangkat Pelanggan[\s\S]*?)(?=$)",
+        all_text, re.IGNORECASE
+    )
 
-    data["sarpen_ruang_server"]["grounding_listrik"] = "Ada" in all_text
-    data["sarpen_ruang_server"]["ups"] = "UPS Tersedia" in all_text or "Tersedia/Ada" in all_text
-    data["sarpen_ruang_server"]["ruangan_ber_ac"] = "Ruangan Ber AC Ada" in all_text or "Ruangan Ber AC" in all_text
-    data["sarpen_ruang_server"]["power_line"] = search_regex(r"Power\s*Line\s*/\s*Listrik\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["power_outlet"] = search_regex(r"Ketersediaan\s*Power\s*Outlet.*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["info_kelistrikan_pln_pn"] = search_regex(r"Info\s*Kelistrikan\s*\(PLN\s*P-N\)\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["info_kelistrikan_pln_pg"] = search_regex(r"Info\s*Kelistrikan\s*\(PLN\s*P-G\)\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["info_kelistrikan_pln_ng"] = search_regex(r"Info\s*Kelistrikan\s*\(PLN\s*N-G\)\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["suhu_ruangan"] = search_regex(r"Suhu\s*Ruangan\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["penempatan_modem"] = search_regex(r"Penempatan\s*Modem\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["penempatan_modem_lantai"] = search_regex(r"1\.\s*Lantai\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["penempatan_modem_ruang"] = search_regex(r"2\.\s*Ruang\s*([^\n]*)", all_text)
-    data["sarpen_ruang_server"]["perangkat_pelanggan"] = search_regex(r"Perangkat\s*Pelanggan\s*([^\n]*)", all_text)
+    for lbl in labels_sarpen:
+        key = normalize_key(lbl)
+        val = parse_sarpen(all_text, labels_sarpen, lbl, match_sarpen)
+        data["sarpen_ruang_server"][key] = val
 
     # Lokasi Antena
-    data["lokasi_antena"]["lokasi_antena"] = search_regex(r"Lokasi\s*Antena\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["detail_lokasi_antena"] = search_regex(r"Detail\s*Lokasi\s*Antena\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["space_tersedia"] = search_regex(r"Space\s*Tersedia\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["akses_perlu_alat_bantu"] = search_regex(r"Akses\s*di\s*lokasi\s*perlu\s*alat\s*bantu\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["penangkal_petir"] = search_regex(r"Penangkal\s*Petir\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["tinggi_penangkal_petir"] = search_regex(r"Tinggi\s*Penangkal\s*Petir\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["jarak_lokasi_antena"] = search_regex(r"Jarak\s*ke\s*lokasi\s*antena\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["tindak_lanjut"] = search_regex(r"Tindak\s*Lanjut\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["tower_pole"] = search_regex(r"Tower\s*/\s*Pole\s*([^\n]*)", all_text)
-    data["lokasi_antena"]["pemilik_tower_pole"] = search_regex(r"Pemilik\s*Tower\s*/\s*Pole\s*([^\n]*)", all_text)
+    labels_lokasi = [
+        "Lokasi Antena",
+        "Detail Lokasi Antena",
+        "Space Tersedia",
+        "Akses di lokasi perlu alat bantu",
+        "Penangkal Petir",
+        "Tinggi Penangkal Petir",
+        "Jarak ke lokasi antena",
+        "Tindak Lanjut",
+        "Tower / Pole",
+        "Pemilik Tower / Pole"
+    ]
+    data["lokasi_antena"] = parse_lokasi_antena(all_text, labels_lokasi)
 
     # Perizinan & Biaya Gedung
-    data["perizinan_biaya_gedung"]["pic_bm"] = search_regex(r"PIC\s*BM\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["kontak_pic_bm"] = search_regex(r"Kontak\s*PIC\s*BM\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["material_infrastruktur"] = search_regex(r"Material\s*dan\s*Infrastruktur\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["panjang_kabel"] = search_regex(r"Panjang\s*Kabel\s*dalam\s*Gedung\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["pelaksana_penarikan_kabel"] = search_regex(r"Pelaksana\s*Penarikan\s*Kabel\s*dalam\s*Gedung\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["waktu_pelaksanaan_penarikan"] = search_regex(r"Waktu\s*Pelaksanaan\s*Penarikan\s*Kabel\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["supervisi"] = search_regex(r"Supervisi\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["deposit_kerja"] = search_regex(r"Deposit\s*Kerja\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["ikg"] = search_regex(r"IKG\s*\(Instalasi\s*Kabel\s*Gedung\)\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["biaya_sewa"] = search_regex(r"Biaya\s*Sewa\s*([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["biaya_lain"] = search_regex(r"Biaya\s*lain.*?([^\n]*)", all_text)
-    data["perizinan_biaya_gedung"]["info_lain"] = search_regex(r"Info\s*Lain\s*-\s*Lain.*?([^\n]*)", all_text)
-
-    # Perizinan Biaya Kawasan
-    data["perizinan_biaya_kawasan"]["melewati_kawasan_private"] = search_regex(r"Melewati\s*kawasan\s*private\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["nama_kawasan"] = search_regex(r"Nama\s*Kawasan\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["pic_kawasan"] = search_regex(r"PIC\s*Kawasan\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["kontak_pic_kawasan"] = search_regex(r"Kontak\s*PIC\s*Kawasan\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["panjang_kabel"] = search_regex(r"Panjang\s*Kabel\s*dalam\s*Kawasan\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["pelaksana_penarikan_kabel"] = search_regex(r"Pelaksana\s*Penarikan\s*Kabel.*?([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["deposit_kerja"] = search_regex(r"Deposit\s*Kerja\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["supervisi"] = search_regex(r"Supervisi\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["biaya_penarikan_kabel"] = search_regex(r"Biaya\s*Penarikan\s*Kabel.*?([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["biaya_sewa"] = search_regex(r"Biaya\s*Sewa\s*([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["biaya_lain"] = search_regex(r"Biaya\s*lain.*?([^\n]*)", all_text)
-    data["perizinan_biaya_kawasan"]["info_lain"] = search_regex(r"Info\s*Lain.*?([^\n]*)", all_text)
-
-    # Perizinan Biaya Kawasan - tambahan
-    data["kawasan_umum"]["nama_kawasan_umum"] = search_regex(r"Nama\s*Kawasan\s*Umum.*?([^\n]*)", all_text)
-    data["kawasan_umum"]["panjang_jalur_outdoor"] = search_regex(r"Panjang\s*Jalur\s*Outdoor.*?([^\n]*)", all_text)
-
-    # Data Splitter
-    data["data_splitter"]["lokasi_splitter"] = search_regex(r"Lokasi\s*Splitter\s*([^\n]*)", all_text)
-    data["data_splitter"]["splitter_id"] = search_regex(r"ID\s*Splitter\s*([^\n]*)", all_text)
-    data["data_splitter"]["kapasitas_splitter"] = search_regex(r"Kapasitas\s*Splitter\s*([^\n]*)", all_text)
-    data["data_splitter"]["jumlah_port_kosong"] = search_regex(r"Jumlah\s*Port\s*Kosong\s*([^\n]*)", all_text)
-    data["data_splitter"]["list_port_kosong_redaman"] = search_regex(r"List\s*Port\s*K(osong)?\s*dan\s*Redaman\s*([^\n]*)", all_text)
-    data["data_splitter"]["nama_node"] = search_regex(r"Nama\s*Node.*?([^\n]*)", all_text)
-    data["data_splitter"]["list_port_kosong"] = search_regex(r"List\s*port\s*kosong\s*([^\n]*)", all_text)
-    data["data_splitter"]["arah_akses"] = search_regex(r"Arah\s*Akses\s*([^\n]*)", all_text)
-
-    data["data_hh"] = parse_multiple_hh(all_text)
+    labels_perizinan_biaya = [
+        "PIC BM",
+        "Kontak PIC BM",
+        "Material dan Infrastruktur",
+        "Panjang Kabel dalam Gedung",
+        "Pelaksana Penarikan Kabel dalam Gedung",
+        "Waktu Pelaksanaan Penarikan Kabel",
+        "Supervisi",
+        "Deposit Kerja",
+        "IKG (Instalasi Kabel Gedung)",
+        "Biaya Sewa",
+        "Biaya lain…",
+        "Info Lain - Lain (Jika Ada)"
+    ]
+    data["perizinan_biaya_gedung"] = parse_perizinan_biaya_gedung(all_text, labels_perizinan_biaya)
 
     # Penempatan Perangkat
-    data["penempatan_perangkat"]["lokasi_penempatan"] = search_regex(r"Lokasi\s*Penempatan\s*Modem.*?([^\n]*)", all_text)
-    data["penempatan_perangkat"]["kesiapan_ruang_server"] = search_regex(r"Kesiapan\s*Ruang\s*Server\s*([^\n]*)", all_text)
-    data["penempatan_perangkat"]["ketersediaan_rak_server"] = search_regex(r"Ketersedia[n|an]\s*Rak\s*Server\s*([^\n]*)", all_text)
-    data["penempatan_perangkat"]["space_modem_router"] = search_regex(r"Space\s*Modem\s*dan\s*Router\s*([^\n]*)", all_text)
-    data["penempatan_perangkat"]["izin_foto_ruang_server"] = search_regex(r"Diizinkan\s*Foto\s*Ruang\s*Server\s*Pelanggan\s*([^\n]*)", all_text)
+    labels_penempatan_perangkat = [
+        "Lokasi Penempatan Modem dan Router",
+        "Kesiapan Ruang Server",
+        "Ketersedian Rak Server",
+        "Space Modem dan Router",
+        "Diizinkan Foto Ruang Server Pelanggan"
+    ]
+    
+    data["penempatan_perangkat"] = parse_penempatan_perangkat(all_text, labels_penempatan_perangkat)
+
+    # Perizinan Biaya Kawasan
+    labels_perizinan_biaya_kawasan = [
+        "Melewati kawasan private",
+        "Nama Kawasan",
+        "PIC Kawasan",
+        "Kontak PIC Kawasan",
+        "Panjang Kabel dalam Kawasan",
+        "Pelaksana Penarikan Kabel dalam Kawasan",
+        "Deposit Kerja",
+        "Supervisi",
+        "Biaya Penarikan Kabel dalam Kawasan",
+        "Biaya Sewa",
+        "Biaya lain…",
+        "Info Lain - Lain (Jika Ada)",
+    ]
+    data["perizinan_biaya_kawasan"] = parse_perizinan_biaya_kawasan(all_text, labels_perizinan_biaya_kawasan)
+
+    # Perizinan Biaya Kawasan - tambahan
+    labels_kawasan_umum = [
+        "Nama Kawasan Umum / PU yang dilewati",
+        "Panjang Jalur Outdoor di Kawasan Umum",
+    ]
+
+    data["kawasan_umum"] = parse_kawasan_umum(all_text, labels_kawasan_umum)
+
+    # Data Splitter
+    labels_splitter = [
+        "Lokasi Splitter",
+        "ID Splitter",
+        "Kapasitas Splitter",
+        "Jumlah Port Kosong",
+        "List Port Kosong dan Redaman",
+        "Nama Node (Jika tidak ada Splitter)",
+        "List port kosong",
+        "Arah Akses",
+    ]
+
+    data["data_splitter"] = parse_data_splitter(all_text, labels_splitter)
+
+    data["data_hh"] = parse_multiple_hh(all_text)
 
     if "PLAN JALUR DALAM GEDUNG" in all_text:
         data["plan_jalur_dalam_gedung"] = "Tersedia (lihat halaman terkait)"
 
-    # Judul SPK
     data["berita_acara"]["judul_spk"] = "BERITA ACARA"
     data["berita_acara"]["tipe_spk"] = "survey"
-
-    # Informasi SPK
     data["berita_acara"]["nomor_spk"] = search_regex(r"Nomor\s*SPK\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["tanggal"] = search_regex(r"Tanggal\s*:\s*([^\n]*)", all_text)
-
-    # Informasi Pelanggan
     data["berita_acara"]["nama_pelanggan"] = search_regex(r"Nama\s*Pelanggan\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["no_jaringan"] = search_regex(r"No\.?\s*Jaringan\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["no_fps"] = search_regex(r"No\.?\s*FPS\s*:\s*([^\n]*)", all_text)
-
-    # Informasi Jasa
     data["berita_acara"]["jasa"] = search_regex(r"Jasa\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["manage_router"] = search_regex(r"Manage\s*Router\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["opsi_router"] = search_regex(r"Opsi\s*Router\s*1/2/3\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["ip_lan"] = search_regex(r"IP\s*LAN\s*:\s*([^\n]*)", all_text)
-
-    # Tanggal RFS
     data["berita_acara"]["tgl_rfs_la"] = search_regex(r"Tgl\.?RFS\s*LA\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["tgl_rfs_pelanggan"] = search_regex(r"Tgl\.?RFS\s*PLG\s*:\s*([^\n]*)", all_text)
-
-    # Lokasi
     data["berita_acara"]["lokasi_pelanggan"] = search_regex(r"Lokasi\s*Pelanggan\s*:\s*([^\n]*)", all_text)
-
-    # Jenis Survey
     data["berita_acara"]["jenis_survey"] = search_regex(r"Jenis\s*Survey\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["media_akses"] = search_regex(r"Media\s*Akses\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["pop"] = search_regex(r"POP\s*:\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:)", all_text, allow_multiline=True)
-
-    # Kecepatan
     data["berita_acara"]["kecepatan"] = search_regex(r"Kecepatan\s*:\s*([^\n]*)", all_text)
-
-    # Kontak Person
     data["berita_acara"]["kontak_person"] = search_regex(r"Kontak\s*Person\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["telepon"] = search_regex(r"Telepon\s*:\s*([^\n]*)", all_text)
-
-    # Waktu Pelaksanaan
     data["berita_acara"]["waktu_pelaksanaan_perm_pelanggan"] = search_regex(r"Permintaan\s*Pelanggan\s*([^\n]*)", all_text)
     data["berita_acara"]["waktu_pelaksanaan_datang"] = search_regex(r"Datang\s*([^\n]*)", all_text)
     data["berita_acara"]["waktu_pelaksanaan_selesai"] = search_regex(r"Selesai\s*([^\n]*)", all_text)
@@ -323,11 +330,20 @@ def parse_multiple_hh(text: str):
 
     return hh_list
 
+def normalize_key(label: str) -> str:
+    return (
+        label.lower()
+        .replace(" ", "_")
+        .replace("/", "_")
+        .replace(".", "")
+        .replace("(", "")
+        .replace(")", "")
+        .replace("-", "_")
+        .replace("bersedia_dipasang_perangkat", "fo")
+        .replace("penanggungjawab_pengurusan_dan_pembayaran_sewa", "penanggungjawab_sewa")
+    )
+
 def parse_informasi_gedung(text: str, labels: list[str]) -> dict:
-    """
-    Parsing bagian INFORMASI GEDUNG berdasarkan label yang ada di daftar `labels`.
-    Cocok untuk format vertikal seperti contoh kamu.
-    """
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     data = {}
 
@@ -346,3 +362,357 @@ def parse_informasi_gedung(text: str, labels: list[str]) -> dict:
                 current_label = None  # Reset, supaya isi tidak nempel ke label lain
 
     return data
+
+def parse_sarpen(all_text: str, labels_sarpen: list[str], current_label: str, match_sarpen) -> str | None:
+    # Ambil teks bagian sarpen saja
+    sarpen_text = match_sarpen.group(1) if match_sarpen else all_text
+
+    # Normalisasi teks
+    sarpen_text = re.sub(r"[\r\t]+", " ", sarpen_text)
+    sarpen_text = re.sub(r" {2,}", " ", sarpen_text)
+    sarpen_text = re.sub(r"\n+", "\n", sarpen_text)
+
+    # Gabungkan baris label yang terpotong
+    sarpen_text = re.sub(r"\(PLN P-\s*\n\s*N\)", "(PLN P-N)", sarpen_text)
+    sarpen_text = re.sub(r"\(PLN P-\s*\n\s*G\)", "(PLN P-G)", sarpen_text)
+    sarpen_text = re.sub(r"\(PLN N-\s*\n\s*G\)", "(PLN N-G)", sarpen_text)
+
+    # Split ke baris
+    lines = [line.strip() for line in sarpen_text.splitlines() if line.strip()]
+    val = None
+
+    for i, line in enumerate(lines):
+        # Pola 1 → Label dan isi di satu baris (dengan : atau -)
+        pattern_inline = rf"^{re.escape(current_label)}\s*[:\-–=]\s*(.+)$"
+        match = re.match(pattern_inline, line, re.IGNORECASE)
+        if match:
+            val = match.group(1).strip()
+            break
+
+        # Pola 2 → Label di baris ini, isi di baris berikutnya
+        if re.fullmatch(re.escape(current_label), line, re.IGNORECASE):
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                # Cegah supaya tidak salah baca label lain
+                if not any(re.fullmatch(re.escape(l), next_line, re.IGNORECASE) for l in labels_sarpen):
+                    val = next_line
+            break
+
+    return val
+        
+def parse_lokasi_antena(text: str, labels: list[str]) -> dict:
+    """
+    Ekstrak informasi dari bagian 'INFORMASI LOKASI ANTENA'.
+    Mengembalikan dict {key: value} tanpa nesting.
+    """
+    match_lokasi = re.search(
+        r"INFORMASI LOKASI ANTENA([\s\S]*?)(?=SURVEY REPORT|INFORMASI PERIZINAN|\Z)",
+        text, re.IGNORECASE
+    )
+
+    section_text = match_lokasi.group(1) if match_lokasi else text
+    section_text = pembersihan_data(section_text)
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+
+    # Hilangkan header jika ada
+    if lines and "INFORMASI LOKASI ANTENA" in lines[0].upper():
+        lines = lines[1:]
+
+    data = {}
+
+    # Parsing vertikal
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        matched_label = next((lbl for lbl in labels if re.fullmatch(re.escape(lbl), line, re.IGNORECASE)), None)
+
+        if matched_label:
+            key = normalize_key(matched_label)
+            val = None
+
+            # Ambil nilai berikutnya jika bukan label baru
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                is_next_label = any(re.fullmatch(re.escape(l), next_line, re.IGNORECASE) for l in labels)
+
+                if not is_next_label and next_line:
+                    val = next_line
+                    i += 1
+
+            data[key] = val
+
+        i += 1
+
+    return data
+
+def parse_perizinan_biaya_gedung(text: str, labels: list[str]) -> dict:
+    """
+    Ekstrak informasi dari bagian 'DATA PERIZINAN DAN BIAYA YANG TIMBUL DALAM GEDUNG'.
+    Mengembalikan dict {key: value} tanpa nesting.
+    """
+    # Ambil bagian teks yang sesuai
+    match_section = re.search(
+        r"DATA\s*PERIZINAN\s*DAN\s*BIAYA\s*YANG\s*TIMBUL\s*DALAM\s*GEDUNG([\s\S]*?)(?=INFORMASI SARPEN|DOKUMENTASI FOTO|\Z)",
+        text,
+        re.IGNORECASE
+    )
+
+    section_text = match_section.group(1) if match_section else text
+    section_text = pembersihan_data(section_text)
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+
+    # Hilangkan header jika ada
+    if lines and "DATA PERIZINAN" in lines[0].upper():
+        lines = lines[1:]
+
+    data = {}
+    i = 0
+
+    # Parsing vertikal per baris
+    while i < len(lines):
+        line = lines[i]
+        matched_label = next(
+            (lbl for lbl in labels if re.fullmatch(re.escape(lbl), line, re.IGNORECASE)), None
+        )
+
+        if matched_label:
+            key = normalize_key(matched_label)
+
+            # Jika label sudah pernah muncul, skip (contohnya Supervisi kedua)
+            if key in data:
+                i += 1
+                continue
+
+            val = None
+
+            # Ambil baris berikutnya jika bukan label baru
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                is_next_label = any(
+                    re.fullmatch(re.escape(l), next_line, re.IGNORECASE) for l in labels
+                )
+
+                if not is_next_label and next_line:
+                    val = next_line
+                    i += 1
+
+            data[key] = val
+
+        i += 1
+
+    return data
+
+def parse_penempatan_perangkat(text: str, labels: list[str]) -> dict:
+    """
+    Ekstrak informasi dari bagian 'DATA PENEMPATAN PERANGKAT DI LOKASI PELANGGAN'.
+    Mengembalikan dict {key: value} tanpa nesting.
+    """
+    # Ambil bagian teks yang sesuai
+    match_section = re.search(
+        r"DATA\s*PENEMPATAN\s*PERANGKAT\s*DI\s*LOKASI\s*PELANGGAN([\s\S]*?)(?=FOTO\s*PENEMPATAN|DOKUMENTASI|\Z)",
+        text,
+        re.IGNORECASE
+    )
+
+    section_text = match_section.group(1) if match_section else text
+    section_text = pembersihan_data(section_text)
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+
+    # Hilangkan header jika ada
+    if lines and "DATA PENEMPATAN" in lines[0].upper():
+        lines = lines[1:]
+
+    data = {}
+    i = 0
+
+    # Parsing vertikal per baris
+    while i < len(lines):
+        line = lines[i]
+        matched_label = next(
+            (lbl for lbl in labels if re.fullmatch(re.escape(lbl), line, re.IGNORECASE)), None
+        )
+
+        if matched_label:
+            key = normalize_key(matched_label)
+
+            # Jika label sudah pernah muncul, skip (hindari duplikat)
+            if key in data:
+                i += 1
+                continue
+
+            val = None
+
+            # Ambil baris berikutnya jika bukan label baru
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                is_next_label = any(
+                    re.fullmatch(re.escape(l), next_line, re.IGNORECASE) for l in labels
+                )
+
+                if not is_next_label and next_line:
+                    val = next_line
+                    i += 1
+
+            data[key] = val
+
+        i += 1
+
+    return data
+
+def parse_perizinan_biaya_kawasan(text: str, labels: list[str]) -> dict:
+    """Ekstrak bagian 'DATA PERIZINAN DAN BIAYA YANG TIMBUL DALAM KAWASAN'"""
+    match_section = re.search(
+        r"DATA\s*PERIZINAN\s*DAN\s*BIAYA\s*YANG\s*TIMBUL\s*DALAM\s*KAWASAN([\s\S]*?)(?=DATA\s*KAWASAN\s*UMUM|\Z)",
+        text,
+        re.IGNORECASE,
+    )
+
+    section_text = match_section.group(1) if match_section else text
+    section_text = pembersihan_data(section_text)
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+
+    data = {}
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        matched_label = next(
+            (lbl for lbl in labels if re.match(re.escape(lbl), line, re.IGNORECASE)),
+            None,
+        )
+
+        if matched_label:
+            key = normalize_key(matched_label)
+            val = None
+
+            # Cek horizontal
+            horizontal_match = re.match(
+                rf"{re.escape(matched_label)}\s*[:\-]?\s*(.+)", line, re.IGNORECASE
+            )
+            if horizontal_match and horizontal_match.group(1).strip():
+                val = horizontal_match.group(1).strip()
+            else:
+                # Jika tidak, ambil baris berikutnya
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    is_next_label = any(
+                        re.match(re.escape(l), next_line, re.IGNORECASE)
+                        for l in labels
+                    )
+                    if not is_next_label and next_line:
+                        val = next_line
+                        i += 1
+
+            data[key] = val
+        i += 1
+
+    return data
+
+
+def parse_kawasan_umum(text: str, labels: list[str]) -> dict:
+    """Ekstrak bagian 'DATA KAWASAN UMUM'"""
+    match_section = re.search(
+        r"DATA\s*KAWASAN\s*UMUM([\s\S]*?)(?=DATA\s*JALUR\s*KABEL|\Z)",
+        text,
+        re.IGNORECASE,
+    )
+
+    section_text = match_section.group(1) if match_section else text
+    section_text = pembersihan_data(section_text)
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+
+    data = {}
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        matched_label = next(
+            (lbl for lbl in labels if re.match(re.escape(lbl), line, re.IGNORECASE)),
+            None,
+        )
+
+        if matched_label:
+            key = normalize_key(matched_label)
+            val = None
+
+            horizontal_match = re.match(
+                rf"{re.escape(matched_label)}\s*[:\-]?\s*(.+)", line, re.IGNORECASE
+            )
+            if horizontal_match and horizontal_match.group(1).strip():
+                val = horizontal_match.group(1).strip()
+            else:
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    is_next_label = any(
+                        re.match(re.escape(l), next_line, re.IGNORECASE)
+                        for l in labels
+                    )
+                    if not is_next_label and next_line:
+                        val = next_line
+                        i += 1
+            data[key] = val
+        i += 1
+
+    return data
+
+def parse_data_splitter(text: str, labels: list[str]) -> dict:
+    """
+    Ekstrak informasi dari bagian 'DATA SPLITTER'.
+    Mengembalikan dict {key: value}.
+    """
+    match_section = re.search(
+        r"DATA\s*SPLITTER([\s\S]*?)(?=FOTO\s*SPLITTER|DATA\s*|DOKUMENTASI|\Z)",
+        text,
+        re.IGNORECASE,
+    )
+
+    section_text = match_section.group(1) if match_section else text
+    section_text = pembersihan_data(section_text)
+
+    # Pisahkan per baris
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+
+    data = {}
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        matched_label = next(
+            (lbl for lbl in labels if re.match(re.escape(lbl), line, re.IGNORECASE)),
+            None,
+        )
+
+        if matched_label:
+            key = normalize_key(matched_label)
+            val = None
+
+            # Coba ambil value di baris yang sama (horizontal)
+            horizontal_match = re.match(
+                rf"{re.escape(matched_label)}\s*[:\-]?\s*(.+)", line, re.IGNORECASE
+            )
+            if horizontal_match and horizontal_match.group(1).strip():
+                val = horizontal_match.group(1).strip()
+            else:
+                # Jika tidak ada, ambil dari baris berikutnya (vertikal)
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    is_next_label = any(
+                        re.match(re.escape(l), next_line, re.IGNORECASE)
+                        for l in labels
+                    )
+                    if not is_next_label and next_line:
+                        val = next_line
+                        i += 1
+
+            data[key] = val
+
+        i += 1
+
+    return data
+
+def pembersihan_data(text: str) -> str:
+    """Membersihkan teks agar lebih mudah diproses"""
+    text = re.sub(r"[\r\t]+", " ", text)
+    text = re.sub(r" {2,}", " ", text)
+    text = re.sub(r"\n+", "\n", text)
+    return text
+
+

@@ -1,7 +1,7 @@
 import fitz
-from readers.ocr.processor import process_pdf_with_images, process_page_ocr
+# from readers.ocr.processor import process_pdf_with_images, process_page_ocr
 from parsers.dispatcher import dispatch_parser
-
+# from debug import debuging
 
 def read_pdf(pdf_path: str, debug: bool = True) -> dict:
     """
@@ -20,23 +20,26 @@ def read_pdf(pdf_path: str, debug: bool = True) -> dict:
     for page_number, page in enumerate(doc, start=1):
         text = page.get_text("text").strip()
 
-        if not text:
-            print(f"[INFO] Halaman {page_number} kosong → OCR dijalankan...")
-            text = process_page_ocr(page)
+        # if not text:
+        #     print(f"[INFO] Halaman {page_number} kosong → OCR dijalankan...")
+        #     text = process_page_ocr(page)
 
         all_text += text + "\n"
         per_page_text.append({"halaman": page_number, "text": text})
 
+    # print (all_text)
+    # exit()
+
     # 🔹 Langkah 2: Jalankan processor untuk ekstraksi tanda tangan & dokumentasi
     print(f"[INFO] Menjalankan ekstraksi gambar (tanda tangan & dokumentasi)...")
-    processed_images = process_pdf_with_images(pdf_path)
+    # processed_images = process_pdf_with_images(pdf_path)
 
     # 🔹 Langkah 3: Gabungkan hasil teks + gambar
-    parsed_result = dispatch_parser(all_text, per_page_text)
+    parsed_result = dispatch_parser(all_text, page_number)
 
     result = {
-        "tanda_tangan": processed_images.get("tanda_tangan", []),
-        "dokumentasi": processed_images.get("dokumentasi", []),
+        # "tanda_tangan": processed_images.get("tanda_tangan", []),
+        # "dokumentasi": processed_images.get("dokumentasi", []),
         "parsed": parsed_result
     }
 
