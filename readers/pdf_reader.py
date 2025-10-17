@@ -1,9 +1,9 @@
 import fitz
 # from readers.ocr.processor import process_pdf_with_images, process_page_ocr
 from parsers.dispatcher import dispatch_parser
-# from debug import debuging
+from debug import debuging
 
-def read_pdf(pdf_path: str, debug: bool = True) -> dict:
+def read_pdf(pdf_path: str, debug: bool = False) -> dict:
     """
     Membaca dokumen PDF:
     - Mengambil teks (langsung atau OCR jika tidak ada)

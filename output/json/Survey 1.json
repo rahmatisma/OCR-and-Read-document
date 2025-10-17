@@ -30,10 +30,15 @@
             "datang": "11/Nov/2023   17:13",
             "selesai": "13/Nov/2023   10:02"
         },
-        "tanda_tangan": [],
         "vendor": {
-            "teknisi": "Firman Gustomi DS3",
-            "nama_vendor": "DS3"
+            "vendor": {
+                "latitude": "-6.39541",
+                "longitude": "106.88371",
+                "pic_pelanggan": ".",
+                "kontak_pic_pelanggan": "0",
+                "teknisi": "Firman Gustomi",
+                "nama_vendor": "DS3"
+            }
         },
         "informasi_gedung": {
             "alamat": "JL. GRIYA ALAM SENTOSA,",
@@ -127,17 +132,38 @@
             "list_port_kosong": null,
             "arah_akses": "Diarahkan ke splitter / handhole splitter"
         },
-        "data_hh": [
-            {
-                "nama_hh": "HH-1",
-                "lokasi_hh": "Longitude dan Latitude HH-1",
-                "longitude": "-2",
-                "latitude": "-1"
+        "data_hh_eksisting": {
+            "hh_1": {
+                "kondisi_hh_1": null,
+                "lokasi_hh_1": null,
+                "longitude_dan_latitude_hh_1": null,
+                "ketersediaan_closure_1": null,
+                "kapasitas_closure_1": null,
+                "kondisi_closure_1": null
+            },
+            "hh_2": {
+                "kondisi_hh_2": null,
+                "lokasi_hh_2": null,
+                "longitude_dan_latitude_hh_2": null,
+                "ketersediaan_closure_2": null,
+                "kapasitas_closure_2": null,
+                "kondisi_closure_2": null
             }
-        ],
-        "plan_jalur_dalam_gedung": "Tersedia (lihat halaman terkait)",
-        "dokumentasi": [],
-        "time_frame_pekerja": {},
+        },
+        "data_hh_baru": {
+            "hh_1": {
+                "lokasi_hh_1": null,
+                "longitude_dan_latitude_hh_1": null,
+                "kebutuhan_penambahan_closure_1": null,
+                "kapasitas_closure_1": null
+            },
+            "hh_2": {
+                "lokasi_hh_2": null,
+                "longitude_dan_latitude_hh_2": null,
+                "kebutuhan_penambahan_closure_2": null,
+                "kapasitas_closure_2": null
+            }
+        },
         "berita_acara": {
             "judul_spk": "BERITA ACARA",
             "tipe_spk": "survey",
@@ -153,18 +179,16 @@
             "tgl_rfs_la": "-",
             "tgl_rfs_pelanggan": "01-Dec-2023",
             "lokasi_pelanggan": "JL. GRIYA ALAM SENTOSA",
-            "jenis_survey": null,
             "media_akses": "FO",
             "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01)",
             "kecepatan": "Downstream / Upstream 1000 Mbps",
             "kontak_person": "ARIS",
-            "telepon": "085219876108",
-            "waktu_pelaksanaan_perm_pelanggan": "Datang",
-            "waktu_pelaksanaan_datang": "Selesai",
-            "waktu_pelaksanaan_selesai": "Waktu"
+            "telepon": "085219876108"
+        },
+        "pelaksanan_berita_acara": {
+            "permintaan_pelanggan": "09/Nov/2023   11:00",
+            "datang": "11/Nov/2023   17:13",
+            "selesai": "13/Nov/2023   10:02"
         }
-    },
-    "_debug": {
-        "raw_all_text": "PT. Aplikanusa Lintasarta\nMenara Thamrin 12th Floor\nT +6221 230 2345\n \n \nJl.MH Thamrin Kav. 3\nT +6221 230 3883\n \n \nJakarta 10250\nE info@lintasarta.co.id  \n \nIndonessia\nwww.lintasarta.net\n    \n       \n  \n  \n   \n \nSURAT PERINTAH KERJA\n PENTING \nSPK SURVEY\nNomor\n : 215164/WO-LA/2023\nTanggal  : 09/Nov/2023\nNama Pelanggan\n: MULTIMEDIA LINK TECHNOLOGY\n \n  \n \nNo.Jaringan\n: 2023390898\nNo. FPS\n:\n \nJasa\n: LA_METRO_ETHERNET\n \n  \n \nManage Router\n:\n \n  \n \nOpsi Router 1/2/3\n:\n \n  \n \nIP LAN\n:\n \n  \n \n \nTgl.RFS LA\n: -\nTgl.RFS PLG\n: 01-Dec-2023\nLokasi Pelanggan\n: JL. GRIYA ALAM SENTOSA\nMULTIMEDIA LINK TECHNOLOGY\n \nJenis Survey\n:  \n \n  Media Akses\n: FO\n POP\n: 1. JKTRMCSR01 - 446285\n  \n  (ADPKRMC01)\n \n  \n \nKecepatan\n: Downstream / Upstream 1000 Mbps\nKontak Person\n: ARIS\nTelepon\n: 085219876108\n \n \nWaktu Pelaksanaan :\n \n  \n \nPermintaan Pelanggan\nDatang\nSelesai\n         Waktu            \n09/Nov/2023   11:00\n11/Nov/2023   17:13\n13/Nov/2023   10:02\nLokasi Pelanggan\nY     /  T                        Sarpan Terpenuhi                    Bila Tidak, Sebutkan : ........................\nKeterangan :      \nYang Memerintahkan,\nAssistant Manager,\nPelaksana,\nPelanggan / Provider\nAGAM EDY ELVANSYAH (ENG)\nDENI RAMDIANSYAH\nFirman Gustomi DS3\n.\n96222576\n76970654_JM\nDS3\nSURVEY REPORT\n \nJARINGAN : 2023390898\n \n \n \n \n \n \nDATA UMUM PELANGGAN\n \n \nNo Jaringan\n \n2023390898\n \nNama Pelanggan\n \nMULTIMEDIA LINK TECHNOLOGY\n \nAlamat\n \nJL. GRIYA ALAM SENTOSA\n \nKoordinat\n \n-6.39541,106.88371\n \nJenis Layanan\n \nLA_METRO_ETHERNET\n \nBandwidth\n \nDownstream / Upstream 1000 Mbps\n \nPIC Pelanggan (yang menemani survey)\n \n.\n \nKontak PIC Pelanggan\n \n0\n \nPelaksana Survey dari Tim Vendor\n \nFirman Gustomi DS3\n \nVendor\n \nDS3\n \n \n \nINFORMASI GEDUNG PELANGGAN\n \n \nStatus Gedung\n \nMilik Sendiri\n \nKondisi Gedung\n \nSudah Siap\n \nPemilik Bangunan\n \n \nAlamat\n \nJL. GRIYA ALAM SENTOSA,\n \nKontak Person\n \n \nBagian / Jabatan\n \n \nTelpon / Fax\n \n \nEmail\n \n \nJumlah Lantai Gedung\n \n \nPelanggan bersedia dipasang perangkat\n \nFO\n \nPenempatan Antena\n \nTidak Perlu Izin\n \nSewa space antena\n \nAda\n \nSewa shaft kabel\n \nAda\n \nBiaya IKG\n \nAda\n \nPenanggungjawab pengurusan dan pembayaran sewa  \nLintasarta\nSURVEY REPORT\n \nJARINGAN : 2023390898\n \n \n \n \n \n \nINFORMASI SARPEN DAN RUANG SERVER PELANGGAN\n \n \nPower Line / Listrik\n \n \nKetersediaan Power Outlet untuk OTB, Modem, dan Router  \nAda\n \nInfo Kelistrikan (PLN P-N)\n \n \nInfo Kelistrikan (PLN P-G)\n \n \nInfo Kelistrikan (PLN N-G)\n \n \nGrounding Listrik\n \nAda\n \nUPS\n \nTersedia/Ada\n \nRuangan Ber AC\n \nAda\n \nSuhu Ruangan\n \nlebih kecil 20°C\n \nPenempatan Modem\n \n \n  1. Lantai\n \n \n  2. Ruang\n \nAda rak khusus\n \nPerangkat Pelanggan\n \nSudah Ada\n \n \n \nINFORMASI LOKASI ANTENA\n \n \nLokasi Antena\n \nAtap dak betok\n \nDetail Lokasi Antena\n \n \nSpace Tersedia\n \nx meter\n \nAkses di lokasi perlu alat bantu\n \nTidak,\n \nPenangkal Petir\n \nTidak\n \nTinggi Penangkal Petir\n \n \nJarak ke lokasi antena\n \n \nTindak Lanjut\n \n \nTower / Pole\n \nTidak\n \nPemilik Tower / Pole\nSURVEY REPORT\n \nJARINGAN : 2023390898\n \n \n \n \n \n \nDATA PERIZINAN DAN BIAYA YANG TIMBUL DALAM GEDUNG\n \n \nPIC BM\n \n \nKontak PIC BM\n \n \nMaterial dan Infrastruktur\n \nLintas Arta\n \nPanjang Kabel dalam Gedung\n \n \nPelaksana Penarikan Kabel dalam Gedung  \n \nWaktu Pelaksanaan Penarikan Kabel\n \n \nSupervisi\n \n \nDeposit Kerja\n \n \nSupervisi\n \n \nIKG (Instalasi Kabel Gedung)\n \n \nBiaya Sewa\n \n \nBiaya lain…\n \n \nInfo Lain - Lain (Jika Ada)\nDOKUMENTASI FOTO\n \nJARINGAN : 2023390898\n \n   \nLokasi pelanggan ( tampak depan )\n   Teknisi yang melakukan survey\n \n \n   \nKondisi ruang server / ruang penempatan modem ( AC, rak dll )\n   Foto outlet listrik\n \n \n   \nKelistrikan (PLN P-N)\n   Kelistrikan (PLN P-G)\nDOKUMENTASI FOTO\n \nJARINGAN : 2023390898\n \n   \nKelistrikan (PLN N-G)\n   Sumber Ground (grounding tertanam)\n \n \n   \nBonding (plat terminasi grounding)\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDATA PENEMPATAN PERANGKAT DI LOKASI PELANGGAN\n  \n \n \n Lokasi Penempatan Modem dan Router\n \n Kesiapan Ruang Server\n \nSiap\n Ketersedian Rak Server\n \nAda\n Space Modem dan Router\n \nAda\n Diizinkan Foto Ruang Server Pelanggan\n \nYa\n \n \nFOTO PENEMPATAN PERANGKAT DI LOKASI PELANGGAN\n   \nFoto ruang server pelanggan\n   Foto tampak depan rak pelanggan\n \n \n   \nFoto space di dalam rak pelanggan untuk penempatan\nmodem dan router\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nFOTO JALUR KABEL DALAM GEDUNG\n \n   \nFoto jalur dalam gedung 1\n   Foto jalur dalam gedung 2\n \n \n   \nFoto jalur dalam gedung 3\n   Foto jalur dalam gedung 4\n \n \n   \nFoto jalur dalam gedung 5\n   Foto jalur dalam gedung 6\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nPLAN JALUR DALAM GEDUNG\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDATA PERIZINAN DAN BIAYA YANG TIMBUL DALAM KAWASAN\n  \n \n \n Melewati kawasan private\n \nYa\n Nama Kawasan\n \n PIC Kawasan\n \n Kontak PIC Kawasan\n \n Panjang Kabel dalam Kawasan\n \n Pelaksana Penarikan Kabel dalam Kawasan  \n Deposit Kerja\n \n Supervisi\n \n Biaya Penarikan Kabel dalam Kawasan\n \n Biaya Sewa\n \n Biaya lain…\n \n Info Lain - Lain (Jika Ada)\n \n \nDATA KAWASAN UMUM\n  \n \n \n Nama Kawasan Umum / PU yang dilewati  \n Panjang Jalur Outdoor di Kawasan Umum  \n \nDATA JALUR KABEL\n \n   \nFoto jalur kawasan private\n   Foto jalur kawasan umum\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDATA SPLITTER\n  \n \n \n Lokasi Splitter\n \n ID Splitter\n \n Kapasitas Splitter\n \n Jumlah Port Kosong\n \n List Port Kosong dan Redaman\n \n Nama Node (Jika tidak ada Splitter)\n \n List port kosong\n \n Arah Akses\n \nDiarahkan ke splitter / handhole splitter\n \nFOTO SPLITTER\n \n   \nFoto tiang+ODP (terihat jenis dan kondisi luar ODP)\n   Foto tiang+ODP (terihat jenis dan kondisi luar ODP)\n \n \n   \nFoto ODP terbuka cek kondisi, kapasitas dan port\n   Foto ODP terbuka cek kondisi, kapasitas dan port\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \n \n   \nFoto hasil pengukuran port kosong\n   Foto hasil pengukuran port kosong\n \n \nDATA HH EKSISTING YANG DIPAKAI\n  \n \n \n Data HH 1 ( terdekat dengan Splitter/Node)\n \n \n   Kondisi HH-1\n \n   Lokasi HH-1\n \n   Longitude dan Latitude HH-1\n \n   Ketersediaan Closure-1\n \n   Kapasitas Closure-1\n \n   Kondisi Closure-1\n \n \n Data HH 2\n \n \n   Kondisi HH-2\n \n   Lokasi HH-2\n \n   Longitude dan Latitude HH-2\n \n   Ketersediaan Closure-2\n \n   Kapasitas Closure-2\n \n   Kondisi Closure-2\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nFOTO HH EKSISTING YANG DIPAKAI\n \n   \nFoto HH 1 tampak luar sebelum dibuka\n   Foto HH 1 setelah dibuka\n \n \n   \nFoto kondisi closure di HH 1 untuk mengonfirmasi\nkeberadaan, kondisi, dan kapasitas closure\n   Foto HH 2 sebelum dibuka\n \n \n   \nFoto HH 2 setelah dibuka\n   Foto kondisi closure di HH 2 untuk mengonfirmasi\nkeberadaan, kondisi, dan kapasitas closure\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDATA HH BARU\n  \n \n \n Data HH 1 ( terdekat dengan Splitter/Node)  \n \n   Lokasi HH-1\n \n   Longitude dan Latitude HH-1\n \n   Kebutuhan penambahan Closure-1\n \n   Kapasitas Closure-1\n \n \n Data HH 2 \n \n \n   Lokasi HH-2\n \n   Longitude dan Latitude HH-2\n \n   Kebutuhan penambahan Closure-2\n \n   Kapasitas Closure-2\n \n \n \nFOTO LOKASI HH BARU\n \n   \nFoto rencana letak HH baru ke 1\n   Foto rencana letak HH baru ke 1\n \n \n   \nFoto rencana letak HH baru ke 2\n   Foto rencana letak HH baru ke 2\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDATA TIANG EKSISTING\n   \nTiang 1  (7 m)\n   Tiang 2  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 3  (7 m)\n   Tiang 4  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 5  (7 m)\n   Tiang 6  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \n   \nTiang 7  (7 m)\n   Tiang 8  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 9  (7 m)\n   Tiang 10  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 11  (7 m)\n   Tiang 12  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDATA TIANG BARU\n   \nTiang 1  (7 m)\n   Tiang 2  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 3  (7 m)\n   Tiang 4  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 5  (7 m)\n   Tiang 6  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \n   \nTiang 7  (7 m)\n   Tiang 8  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 9  (7 m)\n   Tiang 10  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\n   \nTiang 11  (7 m)\n   Tiang 12  (7 m)\nLokasi \n   Lokasi \nLat Long \n   Lat Long \nClosure (Ada), Slak (Ada), Logo (Ada)\n   Closure (Ada), Slak (Ada), Logo (Ada)\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \n \n    \nTIME FRAME PEKERJAAN\n  \n \n \n Perizinan\n \n7\n Penggalian / Tanam Tiang & Subducting\n \n7\n Penarikan Kabel FO Outdoor\n \n7\n Penarikan Kabel FO Indoor\n \n7\n Terminasi di Pelanggan\n \n7\n Jointing\n \n7\n Instalasi Modem\n \n7\n \nINFO LAIN LAIN\n  \n \n \n INFO LAIN - LAIN\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \n \n \n \n \nBOQ FO\n \n Paket \nHarga (Rp)\n Media Group \n Item Type \n Detail \n Dist \n (Paket) \n Jasa \n Material \n 1 - PSB \n 575,000 \n 575,000 \n   ALL \n ALL \n SURVEY \n  \n 5 - PSB  1,207,500  1,207,500 \n   WIRELINE \n COPPER \n UTP\nCAT6,INSTALASI \n 76 - 150 \n 2 - PSB \n 920,000 \n 920,000 \n   ALL \n ALL \n AKTIVASI \n  \nTotal\n 2,702,500  \n \n \nBIAYA NON PAKET\n \nDESCRIPTION\nPRICE (Rp.)\nTOTAL HARGA\n0\n \n \nEstimasi RFS FO : 33 Hari Kerja\nSURVEY REPORT FO\n \nJARINGAN : 2023390898\n \nDESCRIPTION\nUNIT\nVOL\nUNIT PRICE (Rp.)\nTOTAL PRICE (Rp.)\nMATERIAL\nSERVICES\nMATERIAL\nSERVICES\nProject Management - more than 1000 m\nls\n1\n1,800,000\n1,800,000\nPermit Privat Area\nls\n5\n1,000,000\n5,000,000\nInstall cable FO all size\nm\n2302\n5,000\n11,510,000\nSteel accessories\npcs\n19\n75,000\n12,500\n1,425,000\n237,500\nFlexible Pipe 2'\nm\n25\n6,300\n2,000\n157,500\n50,000\nCable Ties 20cm\nm\n52\n1,000\n300\n52,000\n15,600\nInstalasi Closure\nunit\n2\n100,000\n200,000\nPenyambungan / Splicing / Jointing FO di OTB, Closure, Splitter.\nCore\n18\n70,000\n1,260,000\nTesting ( end to end )\nls\n1\n1,350,000\n1,350,000\nSupply and Install Slack Support and Accesories\nls\n8\n90,000\n110,000\n720,000\n880,000\nBongkar Pasang Tutup HH\nls\n3\n60,000\n82,500\n180,000\n247,500\nSupply & Install OTB 12 core include pigtail - Wallmount\nunit\n1\n1,800,000\n200,000\n1,800,000\n200,000\nSupply & Install Patch cord 2 meter, (FC/LC/SC-APC To\nFC/LC/SC-APC/duplex/SM), G.657\npcs\n2\n75,000\n3,000\n150,000\n6,000\nPickup vehicle for Material Trasportation ( dist. 40 km ), route optical\nfiber 1 km\npaket\n1\n1,000,000\n1,000,000\nSurvey and design - more than 1000 m\nis\n1\n \n \n0\n1,500,000\nPermits (Dinas PU)\nis\n2176\n \n \n0\n54,400,000\nInstall Steel Poles 7 m\npcs\n7\n \n \n0\n2,800,000\nTOTAL HARGA\n4,484,500\n82,456,600\nTOTAL HARGA\n86,941,100\nMitra,\n \nLintasarta,\n \nMochamad Hilman Hidayat\n \nAGAM EDY ELVANSYAH (ENG)\n \nDS3\n \n96222576_ENG\nDOKUMENTASI FOTO PROVISIONING\n \nJARINGAN : 2023390898\n \ndone\nSURVEY REPORT\n \nJARINGAN : 2023390898\n \nBERITA ACARA\nSURVEY\nNomor SPK  : 215164/WO-LA/2023\nTanggal\n : 09/Nov/2023\nNama Pelanggan\n: MULTIMEDIA LINK TECHNOLOGY\n \n  \n \nNo.Jaringan\n: 2023390898\nNo. FPS\n:\n \nJasa\n: LA_METRO_ETHERNET\n \n  \n \nManage Router\n:\n \n  \n \nOpsi Router 1/2/3\n:\n \n  \n \nIP LAN\n:\n \n  \n \n \nTgl.RFS LA\n: -\nTgl.RFS PLG\n: 01-Dec-2023\nLokasi Pelanggan\n: JL. GRIYA ALAM SENTOSA\n \nJenis Survey\n:  \n \n  Media Akses\n: FO\n POP\n: 1. JKTRMCSR01 - 446285\n  \n  (ADPKRMC01)\n \n  \n \nKecepatan\n: Downstream / Upstream 1000 Mbps\nKontak Person\n:\nTelepon\n:\n \n \nWaktu Pelaksanaan :\n \n  \n \nPermintaan Pelanggan\nDatang\nSelesai\n         Waktu            \n09/Nov/2023   11:00\n11/Nov/2023   17:13\n13/Nov/2023   10:02\nBiaya survey :      \n Paket \n Item \n Material (Rp)  Service (Rp)  Total (Rp) \n 1 - PSB  ALL,SURVEY \n  \n 575,000 \n 575,000 \n Sub Total\n 0 \n 575,000  \n Total\n 575,000 \nDemikian bertia acara ini dibuat untuk dapat digunakan sebagaimana mestinya.\nMitra,\n \nLintasarta,\n \nMochamad Hilman Hidayat\n \nAGAM EDY ELVANSYAH (ENG)\n \nDS3\n \n96222576_ENG\nPowered by TCPDF (www.tcpdf.org)\n"
     }
 }

@@ -26,7 +26,6 @@ def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = N
         "pelanggan": {},
         "jaringan": {},
         "pelaksanaan": {},
-        "tanda_tangan": [],  # list of {peran, nama, path_ttd}
         "vendor": {},
         "informasi_gedung": {},
         "sarpen_ruang_server": {},
@@ -36,12 +35,10 @@ def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = N
         "perizinan_biaya_kawasan": {},
         "kawasan_umum": {},
         "data_splitter": {},
-        "data_hh": [],
-        "plan_jalur_dalam_gedung": None,
-        "dokumentasi": [],   # list of {jenis, path_foto, keterangan}
-        "time_frame_pekerja": {},
+        "data_hh_eksisting": [],
+        "data_hh_baru": [],
         "berita_acara": {},
-
+        "pelaksanan_berita_acara": {},
     }
 
     # === PARSING TEKS ===
@@ -74,8 +71,16 @@ def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = N
         "selesai": waktu_matches[2] if len(waktu_matches) > 2 else "",
     }
 
-    data["vendor"]["teknisi"] = search_regex(r"Pelaksana\s+Survey\s+dari\s+Tim\s+Vendor\s*:?\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:|\nVendor|\Z)", all_text)
-    data["vendor"]["nama_vendor"] = search_regex(r"^[ \t]*Vendor\s*:?\s*(?:\n\s*)?([^\n]+)", all_text)
+    label_vendor  = [
+            "teknisi",
+            "nama_vendor",
+            "pic_pelanggan",
+            "kontak_pic_pelanggan",
+            "latitude",
+            "longitude"
+        ]
+    
+    data["vendor"] = parse_lokasi_vendor(all_text)
 
     labels = [
         "Status Gedung",
@@ -210,10 +215,8 @@ def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = N
 
     data["data_splitter"] = parse_data_splitter(all_text, labels_splitter)
 
-    data["data_hh"] = parse_multiple_hh(all_text)
-
-    if "PLAN JALUR DALAM GEDUNG" in all_text:
-        data["plan_jalur_dalam_gedung"] = "Tersedia (lihat halaman terkait)"
+    data["data_hh_eksisting"] = parse_data_hh(all_text, "eksisting")
+    data["data_hh_baru"] = parse_data_hh(all_text, "baru")
 
     data["berita_acara"]["judul_spk"] = "BERITA ACARA"
     data["berita_acara"]["tipe_spk"] = "survey"
@@ -229,35 +232,71 @@ def parse_spk_survey(all_text: str, page_texts: list[str], ttd_results: dict = N
     data["berita_acara"]["tgl_rfs_la"] = search_regex(r"Tgl\.?RFS\s*LA\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["tgl_rfs_pelanggan"] = search_regex(r"Tgl\.?RFS\s*PLG\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["lokasi_pelanggan"] = search_regex(r"Lokasi\s*Pelanggan\s*:\s*([^\n]*)", all_text)
-    data["berita_acara"]["jenis_survey"] = search_regex(r"Jenis\s*Survey\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["media_akses"] = search_regex(r"Media\s*Akses\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["pop"] = search_regex(r"POP\s*:\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:)", all_text, allow_multiline=True)
     data["berita_acara"]["kecepatan"] = search_regex(r"Kecepatan\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["kontak_person"] = search_regex(r"Kontak\s*Person\s*:\s*([^\n]*)", all_text)
     data["berita_acara"]["telepon"] = search_regex(r"Telepon\s*:\s*([^\n]*)", all_text)
-    data["berita_acara"]["waktu_pelaksanaan_perm_pelanggan"] = search_regex(r"Permintaan\s*Pelanggan\s*([^\n]*)", all_text)
-    data["berita_acara"]["waktu_pelaksanaan_datang"] = search_regex(r"Datang\s*([^\n]*)", all_text)
-    data["berita_acara"]["waktu_pelaksanaan_selesai"] = search_regex(r"Selesai\s*([^\n]*)", all_text)
-
-    data["dokumentasi"] = parse_dokumentasi(doc_results)
-
+    data["pelaksanan_berita_acara"] = {
+        "permintaan_pelanggan": waktu_matches[0] if len(waktu_matches) > 0 else "",
+        "datang": waktu_matches[1] if len(waktu_matches) > 1 else "",
+        "selesai": waktu_matches[2] if len(waktu_matches) > 2 else "",
+    }
 
     return data
 
+def parse_lokasi_vendor(all_text: str):
+    all_text = all_text.replace("−", "-").replace("–", "-").replace("—", "-").replace("―", "-")
 
-def parse_dokumentasi(doc_results):
-    """
-    Mengubah hasil deteksi dokumentasi menjadi format seragam.
-    Input doc_results: list hasil processor, misal [{'jenis': 'foto lokasi', 'path_foto': '...', 'keterangan': '...'}]
-    """
-    hasil = []
-    for doc in doc_results.get("dokumentasi", []):
-        hasil.append({
-            "jenis": doc.get("jenis"),
-            "path_foto": doc.get("path_foto"),
-            "keterangan": doc.get("keterangan")
-        })
-    return hasil
+    data = {
+        "vendor" : {}
+    }
+
+    # 🔹 Ambil koordinat
+    match = re.search(
+        r"Koordinat\s*[\r\n\s]+(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)",
+        all_text,
+        re.IGNORECASE
+    )
+    if match:
+        data["vendor"]["latitude"] = match.group(1)
+        data["vendor"]["longitude"] = match.group(2)
+
+    # 🔹 Ambil PIC pelanggan
+    match = re.search(
+        r"PIC\s+Pelanggan[^\n]*\n\s*(.*?)\s*\n\s*Kontak\s+PIC\s+Pelanggan",
+        all_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        data["vendor"]["pic_pelanggan"] = match.group(1).strip()
+
+    # 🔹 Ambil kontak PIC
+    match = re.search(
+        r"Kontak\s+PIC\s+Pelanggan\s*[:\-]?\s*[\r\n\s]*([0-9\+\-\(\) ]+)",
+        all_text,
+        re.IGNORECASE
+    )
+    if match:
+        data["vendor"]["kontak_pic_pelanggan"] = match.group(1).strip()
+
+    # 🔹 Ambil pelaksana dan vendor
+    match = re.search(
+        r"Pelaksana\s+Survey\s+dari\s+Tim\s+Vendor\s*[:\-]?\s*[\r\n\s]*(.+?)\s+Vendor\s*[:\-]?\s*[\r\n\s]*([A-Za-z0-9\s]+?)(?=\s*\n\s*INFORMASI|$)",
+        all_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        teknisi_raw = match.group(1).strip()
+        vendor_raw = match.group(2).strip()
+
+        if vendor_raw and teknisi_raw.upper().endswith(vendor_raw.upper()):
+            teknisi_raw = teknisi_raw[: -len(vendor_raw)].strip()
+
+        data["vendor"]["teknisi"] = teknisi_raw
+        data["vendor"]["nama_vendor"] = vendor_raw
+
+    return data
 
 def search_regex(pattern, text, allow_multiline=False):
     """
@@ -301,34 +340,68 @@ def search_regex(pattern, text, allow_multiline=False):
 
     return value
 
+def parse_data_hh(text: str, tipe: str) -> dict:
+    """
+    Ekstrak informasi dari bagian:
+    - 'DATA HH EKSISTING YANG DIPAKAI'
+    - 'DATA HH BARU'
+    
+    Parameter:
+        tipe: 'eksisting' atau 'baru'
+    """
+    if tipe == "eksisting":
+        pattern = r"DATA\s*HH\s*EKSISTING\s*YANG\s*DIPAKAI([\s\S]*?)(?=SURVEY REPORT FO|\Z)"
+    else:
+        pattern = r"DATA\s*HH\s*BARU([\s\S]*?)(?=FOTO LOKASI HH BARU|\Z)"
 
-def parse_multiple_hh(text: str):
-    """
-    Parsing data HH (handhole) yang bisa muncul berulang di dokumen.
-    Contoh pola teks yang didukung:
-    Data HH 1
-    Lokasi HH-1 Jl. Contoh No. 123
-    Longitude 106.12345
-    Latitude -6.12345
-    """
-    hh_list = []
-    # Pola diperbaiki agar lebih toleran terhadap spasi, newline, dan urutan teks
-    pattern = (
-        r"Data\s*HH\s*(\d+).*?"           # Tangkap nomor HH
-        r"Lokasi\s*HH-?\1\s*([^\n\r]*)"   # Tangkap lokasi
-        r".*?Longitude[^0-9\-]*([0-9\.\-]+)"  # Tangkap longitude
-        r".*?Latitude[^0-9\-]*([0-9\.\-]+)"   # Tangkap latitude
+    match = re.search(pattern, text, re.IGNORECASE)
+    section_text = match.group(1).strip() if match else ""
+
+    if not section_text:
+        return {}
+
+    # Normalisasi
+    section_text = re.sub(r"[\r\t]+", " ", section_text)
+    section_text = re.sub(r" {2,}", " ", section_text)
+    section_text = re.sub(r"\n+", "\n", section_text)
+
+    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
+    data = {}
+    current_hh = None
+
+    # deteksi semua label yg mungkin
+    label_pattern = re.compile(
+        r"^(Kondisi HH-\d+|Lokasi HH-\d+|Longitude dan Latitude HH-\d+|"
+        r"Ketersediaan Closure-\d+|Kapasitas Closure-\d+|Kondisi Closure-\d+|"
+        r"Kebutuhan penambahan Closure-\d+)$",
+        re.IGNORECASE
     )
 
-    for match in re.finditer(pattern, text, re.IGNORECASE | re.DOTALL):
-        hh_list.append({
-            "nama_hh": f"HH-{match.group(1)}",
-            "lokasi_hh": match.group(2).strip(),
-            "longitude": match.group(3),
-            "latitude": match.group(4)
-        })
+    for i, line in enumerate(lines):
+        # Deteksi header HH baru
+        match_hh = re.match(r"Data\s*HH\s*(\d+)", line, re.IGNORECASE)
+        if match_hh:
+            current_hh = f"hh_{match_hh.group(1)}"
+            data[current_hh] = {}
+            continue
 
-    return hh_list
+        if not current_hh:
+            continue
+
+        # Deteksi label
+        if label_pattern.match(line):
+            key = normalize_key(line)
+            value = None
+
+            # Cek apakah baris berikutnya adalah nilai (bukan label atau HH baru)
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                if not label_pattern.match(next_line) and not re.match(r"Data\s*HH", next_line, re.IGNORECASE):
+                    value = next_line
+
+            data[current_hh][key] = value
+
+    return data
 
 def normalize_key(label: str) -> str:
     return (

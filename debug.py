@@ -1,157 +1,78 @@
 import re
 from pprint import pprint
 
+def normalize_text(raw_text: str) -> str:
+    """
+    Bersihkan teks hasil OCR, ubah semua jenis minus ke ASCII '-'
+    """
+    # Ganti semua bentuk dash atau minus Unicode ke tanda minus biasa
+    raw_text = raw_text.replace("−", "-").replace("–", "-").replace("—", "-").replace("―", "-")
+    return raw_text
 
-# ========== 1. PARSER UNTUK PERIZINAN & BIAYA KAWASAN ==========
-def parse_perizinan_biaya_kawasan(text: str, labels: list[str]) -> dict:
-    """Ekstrak bagian 'DATA PERIZINAN DAN BIAYA YANG TIMBUL DALAM KAWASAN'"""
-    match_section = re.search(
-        r"DATA\s*PERIZINAN\s*DAN\s*BIAYA\s*YANG\s*TIMBUL\s*DALAM\s*KAWASAN([\s\S]*?)(?=DATA\s*KAWASAN\s*UMUM|\Z)",
-        text,
-        re.IGNORECASE,
-    )
+def parse_spk_survey(all_text: str):
+    all_text = normalize_text(all_text)
 
-    section_text = match_section.group(1) if match_section else text
-    section_text = normalize_text(section_text)
-    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
-
-    data = {}
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        matched_label = next(
-            (lbl for lbl in labels if re.match(re.escape(lbl), line, re.IGNORECASE)),
-            None,
-        )
-
-        if matched_label:
-            key = normalize_key(matched_label)
-            val = None
-
-            # Cek horizontal
-            horizontal_match = re.match(
-                rf"{re.escape(matched_label)}\s*[:\-]?\s*(.+)", line, re.IGNORECASE
-            )
-            if horizontal_match and horizontal_match.group(1).strip():
-                val = horizontal_match.group(1).strip()
-            else:
-                # Jika tidak, ambil baris berikutnya
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    is_next_label = any(
-                        re.match(re.escape(l), next_line, re.IGNORECASE)
-                        for l in labels
-                    )
-                    if not is_next_label and next_line:
-                        val = next_line
-                        i += 1
-
-            data[key] = val
-        i += 1
-
-    return data
-
-def parse_kawasan_umum(text: str, labels: list[str]) -> dict:
-    """Ekstrak bagian 'DATA KAWASAN UMUM'"""
-    match_section = re.search(
-        r"DATA\s*KAWASAN\s*UMUM([\s\S]*?)(?=DATA\s*JALUR\s*KABEL|\Z)",
-        text,
-        re.IGNORECASE,
-    )
-
-    section_text = match_section.group(1) if match_section else text
-    section_text = normalize_text(section_text)
-    lines = [line.strip() for line in section_text.splitlines() if line.strip()]
-
-    data = {}
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        matched_label = next(
-            (lbl for lbl in labels if re.match(re.escape(lbl), line, re.IGNORECASE)),
-            None,
-        )
-
-        if matched_label:
-            key = normalize_key(matched_label)
-            val = None
-
-            horizontal_match = re.match(
-                rf"{re.escape(matched_label)}\s*[:\-]?\s*(.+)", line, re.IGNORECASE
-            )
-            if horizontal_match and horizontal_match.group(1).strip():
-                val = horizontal_match.group(1).strip()
-            else:
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    is_next_label = any(
-                        re.match(re.escape(l), next_line, re.IGNORECASE)
-                        for l in labels
-                    )
-                    if not is_next_label and next_line:
-                        val = next_line
-                        i += 1
-            data[key] = val
-        i += 1
-
-    return data
-
-
-# ========== 3. NORMALISASI TEKS & LABEL ==========
-def normalize_text(text: str) -> str:
-    """Membersihkan teks agar lebih mudah diproses"""
-    text = re.sub(r"[\r\t]+", " ", text)
-    text = re.sub(r" {2,}", " ", text)
-    text = re.sub(r"\n+", "\n", text)
-    return text
-
-
-def normalize_key(label: str) -> str:
-    """Ubah label jadi key aman untuk dict"""
-    return (
-        label.lower()
-        .replace(" ", "_")
-        .replace("/", "_")
-        .replace(".", "")
-        .replace("(", "")
-        .replace(")", "")
-        .replace("-", "_")
-    )
-
-
-# ========== 4. DEBUGING UTAMA ==========
-def debuging(all_text: str, page_number: int) -> dict:
-    """Gabungkan parser kawasan private dan kawasan umum"""
     data = {
-        "perizinan_biaya_kawasan": {},
-        "kawasan_umum": {},
+        "vendor": {
+            "teknisi": None,
+            "nama_vendor": None,
+            "pic_pelanggan": None,
+            "kontak_pic_pelanggan": None,
+            "latitude": None,
+            "longitude": None
+        }
     }
 
-    labels_perizinan_biaya_kawasan = [
-        "Melewati kawasan private",
-        "Nama Kawasan",
-        "PIC Kawasan",
-        "Kontak PIC Kawasan",
-        "Panjang Kabel dalam Kawasan",
-        "Pelaksana Penarikan Kabel dalam Kawasan",
-        "Deposit Kerja",
-        "Supervisi",
-        "Biaya Penarikan Kabel dalam Kawasan",
-        "Biaya Sewa",
-        "Biaya lain…",
-        "Info Lain - Lain (Jika Ada)",
-    ]
-
-    labels_kawasan_umum = [
-        "Nama Kawasan Umum / PU yang dilewati",
-        "Panjang Jalur Outdoor di Kawasan Umum",
-    ]
-
-    data["perizinan_biaya_kawasan"] = parse_perizinan_biaya_kawasan(
-        all_text, labels_perizinan_biaya_kawasan
+    # 🔹 Ambil koordinat
+    match = re.search(
+        r"Koordinat\s*[\r\n\s]+(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)",
+        all_text,
+        re.IGNORECASE
     )
+    if match:
+        data["vendor"]["latitude"] = match.group(1)
+        data["vendor"]["longitude"] = match.group(2)
 
-    data["kawasan_umum"] = parse_kawasan_umum(all_text, labels_kawasan_umum)
+    # 🔹 Ambil PIC pelanggan
+    match = re.search(
+        r"PIC\s+Pelanggan[^\n]*\n\s*(.*?)\s*\n\s*Kontak\s+PIC\s+Pelanggan",
+        all_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        data["vendor"]["pic_pelanggan"] = match.group(1).strip()
 
+    # 🔹 Ambil kontak PIC
+    match = re.search(
+        r"Kontak\s+PIC\s+Pelanggan\s*[:\-]?\s*[\r\n\s]*([0-9\+\-\(\) ]+)",
+        all_text,
+        re.IGNORECASE
+    )
+    if match:
+        data["vendor"]["kontak_pic_pelanggan"] = match.group(1).strip()
+
+    # 🔹 Ambil pelaksana dan vendor
+    match = re.search(
+        r"Pelaksana\s+Survey\s+dari\s+Tim\s+Vendor\s*[:\-]?\s*[\r\n\s]*(.+?)\s+Vendor\s*[:\-]?\s*[\r\n\s]*([A-Za-z0-9\s]+?)(?=\s*\n\s*INFORMASI|$)",
+        all_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        teknisi_raw = match.group(1).strip()
+        vendor_raw = match.group(2).strip()
+
+        if vendor_raw and teknisi_raw.upper().endswith(vendor_raw.upper()):
+            teknisi_raw = teknisi_raw[: -len(vendor_raw)].strip()
+
+        data["vendor"]["teknisi"] = teknisi_raw
+        data["vendor"]["nama_vendor"] = vendor_raw
+
+    return data
+def debuging(all_text: str, page_number: int):
+    # print (all_text)
+    # exit()
+    data = {}
+    data["vendor_info"] = parse_spk_survey(all_text)
+    print(f"\n📄 Hasil Parsing Halaman {page_number}")
     pprint(data)
     return data
