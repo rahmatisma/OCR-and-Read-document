@@ -1,7 +1,6 @@
 import fitz
 # from readers.ocr.processor import process_pdf_with_images, process_page_ocr
-from parsers.dispatcher import dispatch_parser
-from debug import debuging
+from dispatcher import dispatch_parser
 
 def read_pdf(pdf_path: str, debug: bool = False) -> dict:
     """
@@ -27,18 +26,14 @@ def read_pdf(pdf_path: str, debug: bool = False) -> dict:
         all_text += text + "\n"
         per_page_text.append({"halaman": page_number, "text": text})
 
-    # print (all_text)
-    # exit()
-
-    # 🔹 Langkah 2: Jalankan processor untuk ekstraksi tanda tangan & dokumentasi
-    print(f"[INFO] Menjalankan ekstraksi gambar (tanda tangan & dokumentasi)...")
+    # # 🔹 Langkah 2: Jalankan processor untuk ekstraksi tanda tangan & dokumentasi
+    # print(f"[INFO] Menjalankan ekstraksi gambar (tanda tangan & dokumentasi)...")
     # processed_images = process_pdf_with_images(pdf_path)
 
     # 🔹 Langkah 3: Gabungkan hasil teks + gambar
     parsed_result = dispatch_parser(all_text, page_number)
 
     result = {
-        # "tanda_tangan": processed_images.get("tanda_tangan", []),
         # "dokumentasi": processed_images.get("dokumentasi", []),
         "parsed": parsed_result
     }

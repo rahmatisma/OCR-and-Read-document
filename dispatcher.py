@@ -1,6 +1,9 @@
 from parsers.spk_survey_parser import parse_spk_survey
 from parsers.spk_instalasi_parser import parse_spk_instalasi
 from parsers.spk_dismantle_parser import parse_spk_dismantle
+from parsers.spk_aktivasi_parser import parse_spk_aktivasi
+
+from parsers.spk_survey_parser import parse_spk_survey
 
 def detect_spk_type(all_text: str) -> str:
     """
@@ -37,6 +40,8 @@ def dispatch_parser(all_text: str, page_texts: list[dict]) -> dict:
         return parse_spk_instalasi(all_text, page_texts)
     elif spk_type == "dismantle":
         return parse_spk_dismantle(all_text, page_texts)
+    elif spk_type == "aktivasi":
+        return parse_spk_aktivasi(all_text, page_texts)
     else:
         return {
             "jenis_spk": "unknown",

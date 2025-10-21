@@ -5,7 +5,7 @@
             "tipe_spk": "spk survey",
             "no_spk": "215164/WO-LA/2023",
             "tanggal_spk": "09/Nov/2023",
-            "no_fps": null
+            "no_fps": "Jasa"
         },
         "pelanggan": {
             "nama_pelanggan": "MULTIMEDIA LINK TECHNOLOGY",
@@ -16,13 +16,13 @@
         "jaringan": {
             "no_jaringan": "2023390898",
             "jasa": "LA_METRO_ETHERNET",
-            "manage_router": null,
+            "manage_router": "Opsi Router 1/2/3",
             "opsi_router": null,
-            "ip_lan": null,
+            "ip_lan": "Tgl.RFS LA",
             "tgl_rfs_la": "-",
             "tgl_rfs_plg": "01-Dec-2023",
             "media_akses": "FO",
-            "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01)",
+            "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01) Kecepatan : Downstream / Upstream 1000 Mbps Kontak Person : ARIS Telepon : 085219876108",
             "kecepatan": "Downstream / Upstream 1000 Mbps"
         },
         "pelaksanaan": {
@@ -31,21 +31,19 @@
             "selesai": "13/Nov/2023   10:02"
         },
         "vendor": {
-            "vendor": {
-                "latitude": "-6.39541",
-                "longitude": "106.88371",
-                "pic_pelanggan": ".",
-                "kontak_pic_pelanggan": "0",
-                "teknisi": "Firman Gustomi",
-                "nama_vendor": "DS3"
-            }
+            "latitude": "-6.39541",
+            "longitude": "106.88371",
+            "pic_pelanggan": ".",
+            "kontak_pic_pelanggan": "0",
+            "teknisi": "Firman Gustomi",
+            "nama_vendor": "DS3"
         },
         "informasi_gedung": {
+            "kontak_person": ":",
             "alamat": "JL. GRIYA ALAM SENTOSA,",
             "status_gedung": "Milik Sendiri",
             "kondisi_gedung": "Sudah Siap",
             "pemilik_bangunan": null,
-            "kontak_person": null,
             "bagian___jabatan": null,
             "telpon___fax": null,
             "email": null,
@@ -171,19 +169,19 @@
             "tanggal": "09/Nov/2023",
             "nama_pelanggan": "MULTIMEDIA LINK TECHNOLOGY",
             "no_jaringan": "2023390898",
-            "no_fps": null,
+            "no_fps": "Jasa",
             "jasa": "LA_METRO_ETHERNET",
-            "manage_router": null,
-            "opsi_router": null,
-            "ip_lan": null,
+            "manage_router": "Opsi Router 1/2/3",
+            "opsi_router": "IP LAN",
+            "ip_lan": "Tgl.RFS LA",
             "tgl_rfs_la": "-",
             "tgl_rfs_pelanggan": "01-Dec-2023",
             "lokasi_pelanggan": "JL. GRIYA ALAM SENTOSA",
             "media_akses": "FO",
-            "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01)",
+            "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01) Kecepatan : Downstream / Upstream 1000 Mbps Kontak Person : ARIS Telepon : 085219876108",
             "kecepatan": "Downstream / Upstream 1000 Mbps",
-            "kontak_person": "ARIS",
-            "telepon": "085219876108"
+            "kontak_person": "Telepon",
+            "telepon": null
         },
         "pelaksanan_berita_acara": {
             "permintaan_pelanggan": "09/Nov/2023   11:00",

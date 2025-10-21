@@ -40,5 +40,16 @@ def pengecekan_file(file_path: str):
 
 if __name__ == "__main__":
     # Ganti path sesuai file input kamu
-    file_path = "input/pdf/Survey 1.pdf"
+    dokument = "survey"  # survey / instalasi / dismantle
+    if dokument == "survey":
+        file_path = "input/pdf/Survey 1.pdf"
+    elif dokument == "instalasi":
+        file_path = "input/pdf/instalasi.pdf"
+    elif dokument == "dismantle":
+        file_path = "input/pdf/Dismantl.pdf"
+    elif dokument == "aktivasi":
+        file_path = "input/pdf/Aktifasi.pdf"
+    else:
+        print("Kaga ada dokument kaya gitu kocakkkk")
+        exit()
     pengecekan_file(file_path)

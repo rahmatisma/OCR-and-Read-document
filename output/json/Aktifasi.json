@@ -1,0 +1,84 @@
+{
+    "parsed": {
+        "spk": {
+            "judul_spk": "SURAT PERINTAH KERJA",
+            "tipe_spk": "spk aktivasi",
+            "no_spk": "065848/WO-LA/2021",
+            "tanggal_spk": "03/Mar/2021"
+        },
+        "pelanggan": {
+            "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+            "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+            "kontak_person": null,
+            "telepon": "0215728563"
+        },
+        "jaringan": {
+            "no_jaringan": "2021242440",
+            "jasa": "LA_IPVPN",
+            "manage_router": null,
+            "opsi_router": null,
+            "ip_lan": null,
+            "tgl_rfs_la": null,
+            "tgl_rfs_plg": null,
+            "kode_jaringan": null,
+            "no_fmb": null,
+            "jenis_instalasi": null,
+            "kecepatan": "Downstream / Upstream TSEL 3GB"
+        },
+        "pelaksanaan": {
+            "permintaan_pelanggan": "03/Mar/2021   16:38",
+            "datang": "03/Mar/2021   16:46",
+            "selesai": "04/Mar/2021   09:55"
+        },
+        "vendor": {
+            "latitude": "-6.24854",
+            "longitude": "106.98937",
+            "pic_pelanggan": "tio",
+            "kontak_pic_pelanggan": "085808894952",
+            "teknisi": null,
+            "nama_vendor": null
+        },
+        "informasi_gedung": {
+            "alamat": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+            "kontak_person": "TUQINO",
+            "bagian___jabatan": null,
+            "telpon___fax": "0215728563",
+            "email": "HASIL AKTIVASI"
+        },
+        "sarpen_ruang_server": {},
+        "lokasi_antena": {},
+        "perizinan_biaya_gedung": {},
+        "penempatan_perangkat": {},
+        "perizinan_biaya_kawasan": {},
+        "kawasan_umum": {},
+        "data_splitter": {},
+        "data_hh_eksisting": [],
+        "data_hh_baru": [],
+        "berita_acara": {
+            "judul_spk": "BERITA ACARA",
+            "tipe_spk": "instalasi",
+            "nomor_spk": "065848/WO-LA/2021",
+            "tanggal": "03/Mar/2021",
+            "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+            "no_jaringan": "2021242440",
+            "no_fps": null,
+            "jasa": "LA_IPVPN",
+            "manage_router": null,
+            "opsi_router": null,
+            "ip_lan": null,
+            "tgl_rfs_la": null,
+            "tgl_rfs_pelanggan": null,
+            "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+            "media_akses": null,
+            "pop": null,
+            "kecepatan": "Downstream / Upstream TSEL 3GB",
+            "kontak_person": null,
+            "telepon": null
+        },
+        "pelaksanan_berita_acara": {
+            "permintaan_pelanggan": "03/Mar/2021   16:38",
+            "datang": "03/Mar/2021   16:46",
+            "selesai": "04/Mar/2021   09:55"
+        }
+    }
+}

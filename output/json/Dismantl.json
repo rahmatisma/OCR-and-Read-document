@@ -1,0 +1,94 @@
+{
+    "dokumentasi": [],
+    "parsed": {
+        "spk": {
+            "judul_spk": "SURAT PERINTAH KERJA",
+            "tipe_spk": "spk dismantle",
+            "no_spk": "311436/WO-LA/2025",
+            "tanggal_spk": "11/Sep/2025",
+            "no_fps": null //ngga ada
+        },
+        "pelanggan": {
+            "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+            "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+            "kontak_person": "KETUT SARJANA",
+            "telepon": "02129946000"
+        },
+        "jaringan": {
+            "no_jaringan": "2021242440",
+            "jasa": "LA_IPVPN",
+            "manage_router": null,
+            "opsi_router": null,
+            "ip_lan": null,
+            "tgl_rfs_la": "04-Sep-2025",
+            "tgl_rfs_plg": "04-Sep-2025",
+            "media_akses": "ETHERNET",
+            "pop": null,//ngga ada
+            "kecepatan": "Downstream"
+        },
+        "pelaksanaan": {
+            "permintaan_pelanggan": "11/Sep/2025   15:00",
+            "datang": "11/Sep/2025   15:05",
+            "selesai": "12/Sep/2025   03:16"
+        },
+        "vendor": {
+            // "latitude": null,
+            // "longitude": null,ngga ada 
+            "pic_pelanggan": "rusdy",
+            "kontak_pic_pelanggan": "6289603298358",
+            "teknisi": null,
+            "nama_vendor": null
+        },
+        // "informasi_gedung": {
+        //     "alamat": "JL. CUT NYAK DIEN, KALIMALANG UJUNG"
+        // },hapus ajah nanti
+        // "sarpen_ruang_server": {
+        //     "power_line___listrik": null,
+        //     "ketersediaan_power_outlet_untuk_otb,_modem,_dan_router": null,
+        //     "info_kelistrikan_pln_p_n": null,
+        //     "info_kelistrikan_pln_p_g": null,
+        //     "info_kelistrikan_pln_n_g": null,
+        //     "grounding_listrik": null,
+        //     "ups": null,
+        //     "ruangan_ber_ac": null,
+        //     "suhu_ruangan": null,
+        //     "1_lantai": null,
+        //     "2_ruang": null,
+        //     "perangkat_pelanggan": null
+        // },
+        // "lokasi_antena": {},
+        // "perizinan_biaya_gedung": {},
+        // "penempatan_perangkat": {},
+        // "perizinan_biaya_kawasan": {},
+        // "kawasan_umum": {},
+        // "data_splitter": {},
+        // "data_hh_eksisting": {},
+        // "data_hh_baru": {},hapus kalo bisa
+        "berita_acara": {
+            "judul_spk": "BERITA ACARA",
+            "tipe_spk": "survey",
+            "nomor_spk": "311436/WO-LA/2025",
+            "tanggal": "11/Sep/2025",
+            "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+            "no_jaringan": "2021242440",
+            "no_fps": null,
+            "jasa": "LA_IPVPN",
+            // "manage_router": null,
+            // "opsi_router": null,
+            // "ip_lan": null,hapus ajah
+            "tgl_rfs_la": "04-Sep-2025",
+            "tgl_rfs_pelanggan": "04-Sep-2025",
+            "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+            "media_akses": "ETHERNET",
+            // "pop": null,hapus ajah
+            "kecepatan": "Downstream",
+            "kontak_person": "KETUT SARJANA",
+            "telepon": "02129946000"
+        },
+        "pelaksanan_berita_acara": {
+            "permintaan_pelanggan": "11/Sep/2025   15:00",
+            "datang": "11/Sep/2025   15:05",
+            "selesai": "12/Sep/2025   03:16"
+        }
+    }
+}
