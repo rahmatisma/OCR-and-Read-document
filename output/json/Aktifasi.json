@@ -10,7 +10,7 @@
             "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
             "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
             "kontak_person": null,
-            "telepon": "0215728563"
+            "telepon": null
         },
         "jaringan": {
             "no_jaringan": "2021242440",
@@ -22,7 +22,7 @@
             "tgl_rfs_plg": null,
             "kode_jaringan": null,
             "no_fmb": null,
-            "jenis_instalasi": null,
+            "jenis_aktivasi": "ETHERNET",
             "kecepatan": "Downstream / Upstream TSEL 3GB"
         },
         "pelaksanaan": {
@@ -35,15 +35,15 @@
             "longitude": "106.98937",
             "pic_pelanggan": "tio",
             "kontak_pic_pelanggan": "085808894952",
-            "teknisi": null,
-            "nama_vendor": null
+            "teknisi": "TAUFIQ RAMDAN",
+            "nama_vendor": "DIKTA TEKNOLOGI"
         },
         "informasi_gedung": {
             "alamat": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
             "kontak_person": "TUQINO",
             "bagian___jabatan": null,
             "telpon___fax": "0215728563",
-            "email": "HASIL AKTIVASI"
+            "email": null
         },
         "sarpen_ruang_server": {},
         "lokasi_antena": {},
@@ -69,11 +69,10 @@
             "tgl_rfs_la": null,
             "tgl_rfs_pelanggan": null,
             "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
-            "media_akses": null,
-            "pop": null,
+            "jenis_aktivasi": "ETHERNET",
             "kecepatan": "Downstream / Upstream TSEL 3GB",
-            "kontak_person": null,
-            "telepon": null
+            "kontak_person": "TUQINO",
+            "telepon": "0215728563"
         },
         "pelaksanan_berita_acara": {
             "permintaan_pelanggan": "03/Mar/2021   16:38",

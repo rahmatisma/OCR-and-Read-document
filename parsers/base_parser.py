@@ -93,6 +93,7 @@ class BaseParser(ABC):
             "jaringan": {},
             "pelaksanaan": {},
             "vendor": {},
+            "pekerja_cabut": {},
             "informasi_gedung": {},
             "sarpen_ruang_server": {},
             "lokasi_antena": {},

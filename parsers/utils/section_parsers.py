@@ -61,32 +61,154 @@ class VendorParser:
         )
         return match.group(1).strip() if match else None
     
-    def _extract_teknisi(self) -> Optional[str]:
-        """Ambil nama teknisi"""
+    def _extract_nama_vendor(self) -> Optional[str]:
+        """Ambil nama vendor dari berbagai jenis SPK."""
+        # Pattern: kata "Vendor" diikuti whitespace/newline lalu nama vendor
         match = re.search(
-            r"Pelaksana\s+Survey\s+dari\s+Tim\s+Vendor\s*[:\-]?\s*[\r\n\s]*(.+?)\s+Vendor\s*[:\-]?\s*[\r\n\s]*([A-Za-z0-9\s]+?)(?=\s*\n\s*INFORMASI|$)",
+            r'\bVendor\b\s+([A-Z][A-Z0-9\s]+?)(?=\s*\n\s*\n|\s*\n\s*(?:INFORMASI|HASIL|PEKERJAAN|Kontak))',
+            self.text,
+            re.DOTALL
+        )
+
+        if match:
+            vendor_raw = match.group(1)
+            vendor_raw = re.sub(r"\s+", " ", vendor_raw).strip()
+            return vendor_raw
+        return None
+
+
+    def _extract_teknisi(self) -> Optional[str]:
+        """Ambil nama teknisi dari berbagai jenis SPK."""
+        # Cari vendor dulu untuk referensi
+        vendor_name = self._extract_nama_vendor()
+        
+        # Pattern untuk teknisi: setelah "Pelaksana [JENIS] dari Tim Vendor" atau "Pelaksana"
+        # sampai sebelum kata "Vendor"
+        match = re.search(
+            r'Pelaksana\s+(?:Survey|INSTALASI|AKTIVASI|DISMANTLE)?\s*(?:dari\s+Tim\s+Vendor)?\s+(.+?)\s+Vendor',
             self.text,
             re.IGNORECASE | re.DOTALL
         )
+
         if match:
-            teknisi_raw = match.group(1).strip()
-            vendor_raw = match.group(2).strip()
+            teknisi_raw = match.group(1)
+            # Bersihkan whitespace berlebih dan newline
+            teknisi_raw = re.sub(r'\s+', ' ', teknisi_raw).strip()
             
             # Hapus nama vendor dari teknisi jika ada
-            if vendor_raw and teknisi_raw.upper().endswith(vendor_raw.upper()):
-                teknisi_raw = teknisi_raw[: -len(vendor_raw)].strip()
+            if vendor_name:
+                # Hapus vendor name lengkap (exact match)
+                teknisi_raw = re.sub(
+                    rf'\b{re.escape(vendor_name)}\b',
+                    '',
+                    teknisi_raw,
+                    flags=re.IGNORECASE
+                ).strip()
             
-            return teknisi_raw
+            return teknisi_raw if teknisi_raw else None
+        
         return None
     
-    def _extract_nama_vendor(self) -> Optional[str]:
-        """Ambil nama vendor"""
+class PekerjaCabutParser:
+    """Parser khusus untuk bagian VENDOR"""
+    
+    def __init__(self, text: str):
+        self.text = TextNormalizer.normalize_dash(text)
+        self.key_normalizer = KeyNormalizer()
+    
+    def parse(self) -> dict:
+        """Parse semua data vendor"""
+        return {
+            "pic_pelanggan": self._extract_pic_pelanggan(),
+            "kontak_pic_pelanggan": self._extract_kontak_pic(),
+            "teknisi": self._extract_teknisi(),
+            "nama_vendor": self._extract_nama_vendor(),
+        }
+    
+    def _extract_latitude(self) -> Optional[str]:
+        """Ambil latitude dari koordinat"""
         match = re.search(
-            r"Pelaksana\s+Survey\s+dari\s+Tim\s+Vendor\s*[:\-]?\s*[\r\n\s]*(.+?)\s+Vendor\s*[:\-]?\s*[\r\n\s]*([A-Za-z0-9\s]+?)(?=\s*\n\s*INFORMASI|$)",
+            r"Koordinat\s*[\r\n\s]+(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)",
+            self.text,
+            re.IGNORECASE
+        )
+        return match.group(1) if match else None
+    
+    def _extract_longitude(self) -> Optional[str]:
+        """Ambil longitude dari koordinat"""
+        match = re.search(
+            r"Koordinat\s*[\r\n\s]+(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)",
+            self.text,
+            re.IGNORECASE
+        )
+        return match.group(2) if match else None
+    
+    def _extract_pic_pelanggan(self) -> Optional[str]:
+        """Ambil PIC pelanggan"""
+        match = re.search(
+            r"PIC\s+Pelanggan[^\n]*\n\s*(.*?)\s*\n\s*Kontak\s+PIC\s+Pelanggan",
             self.text,
             re.IGNORECASE | re.DOTALL
         )
-        return match.group(2).strip() if match else None
+        return match.group(1).strip() if match else None
+    
+    def _extract_kontak_pic(self) -> Optional[str]:
+        """Ambil kontak PIC pelanggan"""
+        match = re.search(
+            r"Kontak\s+PIC\s+Pelanggan\s*[:\-]?\s*[\r\n\s]*([0-9\+\-\(\) ]+)",
+            self.text,
+            re.IGNORECASE
+        )
+        return match.group(1).strip() if match else None
+    
+    def _extract_nama_vendor(self) -> Optional[str]:
+        """Ambil nama vendor dari berbagai jenis SPK."""
+        # Pattern: kata "Vendor" diikuti whitespace/newline lalu nama vendor
+        match = re.search(
+            r'\bVendor\b\s+([A-Z][A-Z0-9\s]+?)(?=\s*\n\s*\n|\s*\n\s*(?:INFORMASI|HASIL|PEKERJAAN|Kontak))',
+            self.text,
+            re.DOTALL
+        )
+
+        if match:
+            vendor_raw = match.group(1)
+            vendor_raw = re.sub(r"\s+", " ", vendor_raw).strip()
+            return vendor_raw
+        return None
+
+
+    def _extract_teknisi(self) -> Optional[str]:
+        """Ambil nama teknisi dari berbagai jenis SPK."""
+        # Cari vendor dulu untuk referensi
+        vendor_name = self._extract_nama_vendor()
+        
+        # Pattern untuk teknisi: setelah "Pelaksana [JENIS] dari Tim Vendor" atau "Pelaksana"
+        # sampai sebelum kata "Vendor"
+        match = re.search(
+            r'Pelaksana\s+(?:Survey|INSTALASI|AKTIVASI|DISMANTLE)?\s*(?:dari\s+Tim\s+Vendor)?\s+(.+?)\s+Vendor',
+            self.text,
+            re.IGNORECASE | re.DOTALL
+        )
+
+        if match:
+            teknisi_raw = match.group(1)
+            # Bersihkan whitespace berlebih dan newline
+            teknisi_raw = re.sub(r'\s+', ' ', teknisi_raw).strip()
+            
+            # Hapus nama vendor dari teknisi jika ada
+            if vendor_name:
+                # Hapus vendor name lengkap (exact match)
+                teknisi_raw = re.sub(
+                    rf'\b{re.escape(vendor_name)}\b',
+                    '',
+                    teknisi_raw,
+                    flags=re.IGNORECASE
+                ).strip()
+            
+            return teknisi_raw if teknisi_raw else None
+        
+        return None
+
 
 
 class InformasiGedungParser:
@@ -116,8 +238,19 @@ class InformasiGedungParser:
             # Jika bukan label dan ada current_label, ini adalah value
             if not matched and current_label:
                 key = self.key_normalizer.normalize(current_label)
-                data[key] = line
+                
+                # Jika label adalah email, pastikan nilainya benar-benar pola email
+                if "email" in key:
+                    email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", line)
+                    if email_match:
+                        data[key] = email_match.group(0)
+                    else:
+                        data[key] = None  # kalau tidak ditemukan email valid
+                else:
+                    data[key] = line
+                
                 current_label = None
+
         
         return data
 

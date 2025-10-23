@@ -8,28 +8,8 @@ import re
 from typing import Dict, List
 from .base_parser import BaseParser
 from parsers.utils.section_parsers import (
-    VendorParser,
-    InformasiGedungParser,
-    SarpenParser,
-    LokasiAntenaParser,
-    PerizinanBiayaGedungParser,
-    PenempatanPerangkatParser,
-    PerizinanBiayaKawasanParser,
-    KawasanUmumParser,
-    DataSplitterParser,
-    DataHHParser,
+    PekerjaCabutParser,
 )
-from .config.labels import (
-    INFORMASI_GEDUNG_LABELS,
-    SARPEN_LABELS,
-    LOKASI_ANTENA_LABELS,
-    PERIZINAN_BIAYA_GEDUNG_LABELS,
-    PENEMPATAN_PERANGKAT_LABELS,
-    PERIZINAN_BIAYA_KAWASAN_LABELS,
-    KAWASAN_UMUM_LABELS,
-    DATA_SPLITTER_LABELS,
-)
-
 
 def parse_spk_dismantle(all_text: str, page_texts: list[str], ttd_results: dict = None, doc_results: dict = None) -> dict:
     """
@@ -44,11 +24,11 @@ def parse_spk_dismantle(all_text: str, page_texts: list[str], ttd_results: dict 
     Returns:
         Dictionary berisi hasil parsing
     """
-    parser = SPKSurveyParser(all_text, page_texts, ttd_results, doc_results)
+    parser = SPKDismantleParser(all_text, page_texts, ttd_results, doc_results)
     return parser.parse()
 
 
-class SPKSurveyParser(BaseParser):
+class SPKDismantleParser(BaseParser):
     """
     Parser utama untuk SPK Survey
     Tugasnya: mengkoordinasi semua section parser
@@ -58,6 +38,19 @@ class SPKSurveyParser(BaseParser):
         super().__init__(all_text, page_texts)
         self.ttd_results = ttd_results or {}
         self.doc_results = doc_results or {}
+
+        if "BERITA ACARA" in all_text:
+            parts = all_text.split("BERITA ACARA", 1)
+            self.spk_text = parts[0].strip()
+            self.berita_text = parts[1].strip()  # JANGAN tambahkan "BERITA ACARA" lagi
+            
+            # Buat marker untuk validasi
+            self.has_berita_acara = True
+        else:
+            # Jika tidak ada BERITA ACARA, semua adalah SPK
+            self.spk_text = all_text.strip()
+            self.berita_text = ""
+            self.has_berita_acara = False
     
     def parse(self) -> dict:
         """
@@ -72,61 +65,11 @@ class SPKSurveyParser(BaseParser):
         self._parse_pelanggan_section(data)
         self._parse_jaringan_section(data)
         self._parse_pelaksanaan_section(data)
+        self._parse_list_section(data)
         self._parse_berita_acara_section(data)
         
         # 3. Parse bagian kompleks menggunakan section parser
-        data["vendor"] = VendorParser(self.all_text).parse()
-        
-        data["informasi_gedung"] = InformasiGedungParser(
-            self.all_text, 
-            INFORMASI_GEDUNG_LABELS
-        ).parse()
-        
-        data["sarpen_ruang_server"] = SarpenParser(
-            self.all_text,
-            SARPEN_LABELS
-        ).parse()
-        
-        data["lokasi_antena"] = LokasiAntenaParser(
-            self.all_text,
-            LOKASI_ANTENA_LABELS
-        ).parse()
-        
-        data["perizinan_biaya_gedung"] = PerizinanBiayaGedungParser(
-            self.all_text,
-            PERIZINAN_BIAYA_GEDUNG_LABELS
-        ).parse()
-        
-        data["penempatan_perangkat"] = PenempatanPerangkatParser(
-            self.all_text,
-            PENEMPATAN_PERANGKAT_LABELS
-        ).parse()
-        
-        data["perizinan_biaya_kawasan"] = PerizinanBiayaKawasanParser(
-            self.all_text,
-            PERIZINAN_BIAYA_KAWASAN_LABELS
-        ).parse()
-        
-        data["kawasan_umum"] = KawasanUmumParser(
-            self.all_text,
-            KAWASAN_UMUM_LABELS
-        ).parse()
-        
-        data["data_splitter"] = DataSplitterParser(
-            self.all_text,
-            DATA_SPLITTER_LABELS
-        ).parse()
-        
-        # Parse data HH
-        data["data_hh_eksisting"] = DataHHParser(
-            self.all_text,
-            "eksisting"
-        ).parse()
-        
-        data["data_hh_baru"] = DataHHParser(
-            self.all_text,
-            "baru"
-        ).parse()
+        data["pekerja_cabut"] = PekerjaCabutParser(self.all_text).parse()
         
         return data
     
@@ -140,7 +83,11 @@ class SPKSurveyParser(BaseParser):
         spk["tipe_spk"] = "spk dismantle"
         spk["no_spk"] = self.search_regex(r"Nomor\s*:\s*([^\n]*)", self.all_text)
         spk["tanggal_spk"] = self.search_regex(r"Tanggal\s*:\s*([^\n]*)", self.all_text)
-        spk["no_fps"] = self.search_regex(r"No\.?\s*FPS\s*:\s*([^\n]*)", self.all_text)
+        spk["no_mr"] = self.search_regex(
+            r"No\.\s*MR\s*:\s*([^\n]*)",
+            self.all_text
+        )
+
     
     def _parse_pelanggan_section(self, data: dict):
         """Parse bagian data pelanggan"""
@@ -170,15 +117,6 @@ class SPKSurveyParser(BaseParser):
             self.all_text
         )
         jaringan["jasa"] = self.search_regex(r"Jasa\s*:\s*([^\n]*)", self.all_text)
-        jaringan["manage_router"] = self.search_regex(
-            r"Manage\s*Router\s*:\s*([^\n]*)",
-            self.all_text
-        )
-        jaringan["opsi_router"] = self.search_regex(
-            r"Opsi\s*Router\s*(?:1|2|3)\s*:\s*([^\n]*)",
-            self.all_text
-        )
-        jaringan["ip_lan"] = self.search_regex(r"IP\s*LAN\s*:\s*([^\n]*)", self.all_text)
         jaringan["tgl_rfs_la"] = self.search_regex(
             r"Tgl\.RFS LA\s*:\s*([^\n]*)",
             self.all_text
@@ -187,19 +125,53 @@ class SPKSurveyParser(BaseParser):
             r"Tgl\.RFS PLG\s*:\s*([^\n]*)",
             self.all_text
         )
-        jaringan["media_akses"] = self.search_regex(
-            r"Media\s*Akses\s*:\s*([^\n]*)",
-            self.all_text
-        )
-        jaringan["pop"] = self.search_regex(
-            r"POP\s*:\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:)",
-            self.all_text,
-            allow_multiline=True
-        )
+        
         jaringan["kecepatan"] = self.search_regex(
             r"Kecepatan\s*:\s*([^\n]*)",
             self.all_text
         )
+    import re
+
+    def _parse_list_section(self, data: dict):
+        """
+        Parse bagian 'List Item' dan ambil semua item yang diawali dengan tanda '-'.
+        Bisa menangani jumlah item yang dinamis dan format baris tidak seragam.
+        """
+        text = self.all_text
+
+        # 1️⃣ Tangkap blok teks dari "List Item" sampai sebelum section berikutnya
+        section_match = re.search(
+            r"List\s*Item\s*:([\s\S]*?)(?=\n[A-Z][A-Za-z ]*?:|\Z)", 
+            text, 
+            re.IGNORECASE
+        )
+
+        if not section_match:
+            data["list_item"] = None
+            return data
+
+        section_text = section_match.group(1)
+
+        # 2️⃣ Tangkap semua baris list dengan awalan '-'
+        # Format contoh: "- B2WN0262020HA1346 , FORTIGATE-50E HW AND WARRANTY"
+        item_pattern = re.compile(
+            r"-\s*([A-Z0-9\-\/]+)\s*,?\s*(.+?)(?=\n\s*-\s*[A-Z0-9\-\/]+|$)",
+            re.MULTILINE | re.DOTALL
+        )
+
+        items = []
+        for match in item_pattern.finditer(section_text):
+            kode = match.group(1).strip()
+            deskripsi = match.group(2).strip().replace("\n", " ")
+            items.append({
+                "kode": kode,
+                "deskripsi": deskripsi
+            })
+
+        # 3️⃣ Simpan hasil ke dictionary utama
+        data["list_item"] = items if items else None
+        return data
+
     
     def _parse_pelaksanaan_section(self, data: dict):
         """Parse bagian waktu pelaksanaan"""
@@ -214,7 +186,7 @@ class SPKSurveyParser(BaseParser):
         """Parse bagian berita acara"""
         berita_acara = data["berita_acara"]
         berita_acara["judul_spk"] = "BERITA ACARA"
-        berita_acara["tipe_spk"] = "survey"
+        berita_acara["tipe_spk"] = "dismantle"
         berita_acara["nomor_spk"] = self.search_regex(
             r"Nomor\s*SPK\s*:\s*([^\n]*)",
             self.all_text
@@ -236,15 +208,6 @@ class SPKSurveyParser(BaseParser):
             self.all_text
         )
         berita_acara["jasa"] = self.search_regex(r"Jasa\s*:\s*([^\n]*)", self.all_text)
-        berita_acara["manage_router"] = self.search_regex(
-            r"Manage\s*Router\s*:\s*([^\n]*)",
-            self.all_text
-        )
-        berita_acara["opsi_router"] = self.search_regex(
-            r"Opsi\s*Router\s*1/2/3\s*:\s*([^\n]*)",
-            self.all_text
-        )
-        berita_acara["ip_lan"] = self.search_regex(r"IP\s*LAN\s*:\s*([^\n]*)", self.all_text)
         berita_acara["tgl_rfs_la"] = self.search_regex(
             r"Tgl\.?RFS\s*LA\s*:\s*([^\n]*)",
             self.all_text
@@ -261,22 +224,17 @@ class SPKSurveyParser(BaseParser):
             r"Media\s*Akses\s*:\s*([^\n]*)",
             self.all_text
         )
-        berita_acara["pop"] = self.search_regex(
-            r"POP\s*:\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:)",
-            self.all_text,
-            allow_multiline=True
-        )
         berita_acara["kecepatan"] = self.search_regex(
             r"Kecepatan\s*:\s*([^\n]*)",
             self.all_text
         )
         berita_acara["kontak_person"] = self.search_regex(
             r"Kontak\s*Person\s*:\s*([^\n]*)",
-            self.all_text
+            self.berita_text
         )
         berita_acara["telepon"] = self.search_regex(
             r"Telepon\s*:\s*([^\n]*)",
-            self.all_text
+            self.berita_text
         )
         
         # Waktu pelaksanaan berita acara

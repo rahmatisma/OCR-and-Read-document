@@ -42,6 +42,20 @@ class SPKInstalasiParser(BaseParser):
         super().__init__(all_text, page_texts)
         self.ttd_results = ttd_results or {}
         self.doc_results = doc_results or {}
+            
+        # SPLIT dengan validasi lebih ketat
+        if "BERITA ACARA" in all_text:
+            parts = all_text.split("BERITA ACARA", 1)
+            self.spk_text = parts[0].strip()
+            self.berita_text = parts[1].strip()  # JANGAN tambahkan "BERITA ACARA" lagi
+            
+            # Buat marker untuk validasi
+            self.has_berita_acara = True
+        else:
+            # Jika tidak ada BERITA ACARA, semua adalah SPK
+            self.spk_text = all_text.strip()
+            self.berita_text = ""
+            self.has_berita_acara = False
     
     def parse(self) -> dict:
         """
@@ -60,7 +74,7 @@ class SPKInstalasiParser(BaseParser):
         
         # 3. Parse bagian kompleks menggunakan section parser
         data["vendor"] = VendorParser(self.all_text).parse()
-        
+
         data["informasi_gedung"] = InformasiGedungParser(
             self.all_text, 
             INFORMASI_GEDUNG_LABELS
@@ -95,9 +109,10 @@ class SPKInstalasiParser(BaseParser):
             r"Kontak\s*Person\s*:\s*([^\n]*)",
             self.all_text
         )
+        # print(self.all_text)
         pelanggan["telepon"] = self.search_regex(
             r"Telepon\s*:\s*([0-9]+)",
-            self.all_text
+            self.spk_text
         )
     
     def _parse_jaringan_section(self, data: dict):
@@ -198,14 +213,9 @@ class SPKInstalasiParser(BaseParser):
             r"Lokasi\s*Pelanggan\s*:\s*([^\n]*)",
             self.all_text
         )
-        berita_acara["media_akses"] = self.search_regex(
-            r"Media\s*Akses\s*:\s*([^\n]*)",
+        berita_acara["jenis_instalasi"] = self.search_regex(
+            r"Jenis\s*Instalasi\s*:\s*([^\n]*)",
             self.all_text
-        )
-        berita_acara["pop"] = self.search_regex(
-            r"POP\s*:\s*(.*?)(?=\n[A-Z][A-Za-z ]*?:)",
-            self.all_text,
-            allow_multiline=True
         )
         berita_acara["kecepatan"] = self.search_regex(
             r"Kecepatan\s*:\s*([^\n]*)",
@@ -213,11 +223,12 @@ class SPKInstalasiParser(BaseParser):
         )
         berita_acara["kontak_person"] = self.search_regex(
             r"Kontak\s*Person\s*:\s*([^\n]*)",
-            self.all_text
+            self.berita_text
         )
+
         berita_acara["telepon"] = self.search_regex(
             r"Telepon\s*:\s*([^\n]*)",
-            self.all_text
+            self.berita_text
         )
         
         # Waktu pelaksanaan berita acara

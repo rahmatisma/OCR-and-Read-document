@@ -58,7 +58,22 @@ class SPKSurveyParser(BaseParser):
         super().__init__(all_text, page_texts)
         self.ttd_results = ttd_results or {}
         self.doc_results = doc_results or {}
-    
+        # SPLIT dengan validasi lebih ketat
+        if "BERITA ACARA" in all_text:
+            parts = all_text.split("BERITA ACARA", 1)
+            self.spk_text = parts[0].strip()
+            self.berita_text = parts[1].strip()  # JANGAN tambahkan "BERITA ACARA" lagi
+            
+            # Buat marker untuk validasi
+            self.has_berita_acara = True
+        else:
+            # Jika tidak ada BERITA ACARA, semua adalah SPK
+            self.spk_text = all_text.strip()
+            self.berita_text = ""
+            self.has_berita_acara = False
+
+        
+        
     def parse(self) -> dict:
         """
         Entry point untuk parsing SPK Survey
@@ -271,18 +286,20 @@ class SPKSurveyParser(BaseParser):
             self.all_text
         )
         berita_acara["kontak_person"] = self.search_regex(
-            r"Kontak\s*Person\s*:\s*([^\n]*)",
-            self.all_text
+            r"Kontak\s*Person\s*:\s*([\s\S]*?)(?=\n\s*Telepon\s*:)",
+            self.berita_text,
+            allow_multiline=True
         )
+
         berita_acara["telepon"] = self.search_regex(
             r"Telepon\s*:\s*([^\n]*)",
-            self.all_text
+            self.berita_text
         )
         
         # Waktu pelaksanaan berita acara
         waktu_matches = re.findall(r"\d{2}/[A-Za-z]{3}/\d{4}\s+\d{2}:\d{2}", self.all_text)
         data["pelaksanan_berita_acara"] = {
-            "permintaan_pelanggan": waktu_matches[0] if len(waktu_matches) > 0 else "",
+            "permintaan_pealanggan": waktu_matches[0] if len(waktu_matches) > 0 else "",
             "datang": waktu_matches[1] if len(waktu_matches) > 1 else "",
             "selesai": waktu_matches[2] if len(waktu_matches) > 2 else "",
         }
