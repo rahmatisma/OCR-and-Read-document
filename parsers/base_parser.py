@@ -107,3 +107,36 @@ class BaseParser(ABC):
             "berita_acara": {},
             "pelaksanan_berita_acara": {},
         }
+    
+    def _init_data_structure_checklist_wireliness(self) -> dict:
+        """
+        Inisialisasi struktur data kosong
+        Bisa di-override oleh parser turunan jika butuh struktur berbeda
+        
+        Returns:
+            Dictionary struktur data kosong
+        """
+        return {
+            "data_remote": {
+                "nama_pelanggan": "",
+                "contact_person": "",
+                "alamat": "",
+                "kota": "",
+                "propinsi": "",
+                "no_spk": "",
+                "nomor_jaringan": "",
+                "nomor_telepon": "",
+                "tanggal": "",
+                "pelaksanaan": {
+                    "jam_perintah": "",
+                    "jam_persiapan": "",
+                    "jam_berangkat": "",
+                    "jam_tiba_di_lokasi": "",
+                    "jam_mulai_kerja": "",
+                    "jam_selesai_kerja": "",
+                    "jam_pulang": "",
+                    "jam_tiba_di_kantor": "",
+                    "keterangan": ""
+                }
+            },
+        }

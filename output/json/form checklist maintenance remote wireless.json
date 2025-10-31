@@ -1,0 +1,35 @@
+{
+    "dokumentasi": [],
+    "parsed": {
+        "document_type": "checklist_wireless",
+        "jenis_spk": "checklist_wireless",
+        "data": {
+            "data_remote": {
+                "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+                "contact_person": "Pak Arfan",
+                "alamat": "JL.CUT NYAK DIEN, KALIMALANG UJUNG",
+                "kota": "",
+                "propinsi": "",
+                "no_spk": "083806/W0-LA/2021",
+                "nomor_jaringan": "2021242440",
+                "nomor_telepon": "+62 812-9024-5887",
+                "tanggal": "21-Jun-2021 18:00",
+                "pelaksanaan": {
+                    "jam_perintah": "21-Jun-2021 18:00",
+                    "jam_persiapan": "21-Jun-2021 18:08",
+                    "jam_berangkat": "21-Jun-2021 18:08",
+                    "jam_tiba_di_lokasi": "21-Jun-2021 19:42",
+                    "jam_mulai_kerja": "21-Jun-2021 19:42",
+                    "jam_selesai_kerja": "22-Jun-2021 00:03",
+                    "jam_pulang": "",
+                    "jam_tiba_di_kantor": "",
+                    "keterangan": ""
+                }
+            }
+        },
+        "metadata": {
+            "parser_used": "parse_checklist_wireless",
+            "detection_confidence": "high"
+        }
+    }
+}

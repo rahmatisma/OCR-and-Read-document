@@ -1,50 +1,152 @@
+# dispatcher.py
+"""
+Dispatcher untuk mendeteksi jenis dokumen dan mengarahkan ke parser yang sesuai
+"""
+
 from parsers.spk_survey_parser import parse_spk_survey
 from parsers.spk_instalasi_parser import parse_spk_instalasi
 from parsers.spk_dismantle_parser import parse_spk_dismantle
 from parsers.spk_aktivasi_parser import parse_spk_aktivasi
+from parsers.checklist_wireless_parser import parse_checklist_wireless
 
-from parsers.spk_survey_parser import parse_spk_survey
 
 def detect_spk_type(all_text: str) -> str:
     """
     Deteksi jenis SPK berdasarkan kata kunci di teks.
-    Return salah satu: survey / instalasi / dismantle / unknown
+    
+    Args:
+        all_text: Teks lengkap dari PDF
+        
+    Returns:
+        String jenis SPK: "spk_survey" | "spk_instalasi" | "spk_dismantle" | 
+                        "spk_aktivasi" | "checklist_wireline" | 
+                        "maintenance_remote_wireless" | "unknown"
     """
     lower_text = all_text.lower()
 
+    # Deteksi berdasarkan kata kunci (urutan penting: yang lebih spesifik di atas)
     if "spk survey" in lower_text:
-        return "survey"
+        return "spk_survey"
     elif "spk instalasi" in lower_text:
-        return "instalasi"
+        return "spk_instalasi"
     elif "spk dismantle" in lower_text:
-        return "dismantle"
+        return "spk_dismantle"
     elif "spk aktivasi" in lower_text:
-        return "aktivasi"
-    elif "wireline" in lower_text:
-        return "wireline"
-    elif "maintenace remote wireless" in lower_text:
-        return "maintenace remote wireless"
+        return "spk_aktivasi"
+    elif "checklist" in lower_text and "wireline" in lower_text:
+        return "checklist_wireline"
+    elif "checklist" in lower_text and "wireless" in lower_text:
+        return "checklist_wireless"
+    elif "maintenance remote wireless" in lower_text:
+        return "maintenance_remote_wireless"
     else:
+        print("[WARNING] Jenis SPK tidak terdeteksi dari teks")
         return "unknown"
 
 
-def dispatch_parser(all_text: str, page_texts: list[dict]) -> dict:
+def dispatch_parser(all_text: str, page_texts: list) -> dict:
     """
-    Dispatcher untuk arahkan teks ke parser sesuai jenis SPK.
+    Dispatcher untuk mengarahkan teks ke parser sesuai jenis SPK.
+    
+    Args:
+        all_text: Teks lengkap dari PDF
+        page_texts: List teks per halaman (legacy, untuk backward compatibility)
+        
+    Returns:
+        Dictionary dengan format:
+        {
+            "document_type": "spk_survey",  # ← PENTING: untuk image_extractor
+            "jenis_spk": "survey",           # ← untuk backward compatibility
+            "data": { ... parsed data ... },
+            "metadata": { ... }
+        }
     """
+    # Deteksi jenis SPK
     spk_type = detect_spk_type(all_text)
+    print(f"[INFO] Dispatcher: Jenis dokumen terdeteksi = {spk_type}")
 
-    if spk_type == "survey":
-        return parse_spk_survey(all_text, page_texts)
-    elif spk_type == "instalasi":
-        return parse_spk_instalasi(all_text, page_texts)
-    elif spk_type == "dismantle":
-        return parse_spk_dismantle(all_text, page_texts)
-    elif spk_type == "aktivasi":
-        return parse_spk_aktivasi(all_text, page_texts)
+    # Mapping jenis SPK ke parser
+    parser_map = {
+        "spk_survey": parse_spk_survey,
+        "spk_instalasi": parse_spk_instalasi,
+        "spk_dismantle": parse_spk_dismantle,
+        "spk_aktivasi": parse_spk_aktivasi,
+        "checklist_wireless": parse_checklist_wireless,  # Reuse aktivasi parser
+    }
+
+    # Ambil parser yang sesuai
+    parser_func = parser_map.get(spk_type)
+
+    if parser_func:
+        try:
+            # Panggil parser
+            parsed_data = parser_func(all_text, page_texts)
+            
+            # Tambahkan document_type ke hasil
+            result = {
+                "document_type": spk_type,  # ← untuk image_extractor
+                "jenis_spk": spk_type.replace("spk_", ""),  # backward compatibility
+                "data": parsed_data,
+                "metadata": {
+                    "parser_used": parser_func.__name__,
+                    "detection_confidence": "high"
+                }
+            }
+            
+            return result
+            
+        except Exception as e:
+            print(f"[ERROR] Parser gagal: {e}")
+            return {
+                "document_type": spk_type,
+                "jenis_spk": spk_type.replace("spk_", ""),
+                "data": {},
+                "metadata": {
+                    "error": str(e),
+                    "note": "Parser gagal, perlu cek manual."
+                }
+            }
     else:
+        # Jenis SPK tidak dikenali atau belum ada parsernya
         return {
+            "document_type": "unknown",
             "jenis_spk": "unknown",
             "data": {},
-            "note": "Jenis SPK tidak terdeteksi. Perlu cek manual."
+            "metadata": {
+                "detected_type": spk_type,
+                "note": "Jenis SPK tidak terdeteksi atau parser belum tersedia. Perlu cek manual."
+            }
         }
+
+
+# ========== HELPER FUNCTIONS (OPSIONAL) ==========
+
+def get_available_spk_types() -> list:
+    """
+    Mendapatkan daftar jenis SPK yang didukung.
+    
+    Returns:
+        List string jenis SPK
+    """
+    return [
+        "spk_survey",
+        "spk_instalasi",
+        "spk_dismantle",
+        "spk_aktivasi",
+        "checklist_wireline",
+        "checklist_wireless",
+        "maintenance_remote_wireless"
+    ]
+
+
+def validate_spk_type(spk_type: str) -> bool:
+    """
+    Validasi apakah jenis SPK didukung.
+    
+    Args:
+        spk_type: Jenis SPK yang ingin divalidasi
+        
+    Returns:
+        True jika didukung, False jika tidak
+    """
+    return spk_type in get_available_spk_types()

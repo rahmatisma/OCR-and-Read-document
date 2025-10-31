@@ -51,6 +51,12 @@ if __name__ == "__main__":
             file_path = "input/pdf/Dismantl.pdf"
         elif dokument == "aktivasi":
             file_path = "input/pdf/Aktifasi.pdf"
+        elif dokument == "1":
+            file_path = "input/pdf/form checklist maintenance remote wireless.pdf"
+        elif dokument == "2":
+            file_path = "input/pdf/form chcklisr wireline.pdf"
+        elif dokument == "3":
+            file_path = "input/pdf/Flasma - WIRELINE.pdf"
         else:
             print("Kaga ada dokument kaya gitu kocakkkk")
             exit()

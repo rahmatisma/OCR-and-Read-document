@@ -8,10 +8,6 @@ import re
 from .base_parser import BaseParser
 from parsers.utils.section_parsers import (
     VendorParser,
-    InformasiGedungParser,
-)
-from .config.labels import (
-    INFORMASI_GEDUNG_LABELS,
 )
 
 
@@ -74,13 +70,6 @@ class SPKInstalasiParser(BaseParser):
         
         # 3. Parse bagian kompleks menggunakan section parser
         data["vendor"] = VendorParser(self.all_text).parse()
-
-        data["informasi_gedung"] = InformasiGedungParser(
-            self.all_text, 
-            INFORMASI_GEDUNG_LABELS
-        ).parse()
-        
-        
         return data
     
     def _parse_spk_section(self, data: dict):

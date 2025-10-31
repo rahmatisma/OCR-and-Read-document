@@ -1,0 +1,246 @@
+{
+    "data remote": {
+        "nama pelanggan": "",
+        "contact person": "",
+        "alamat": "",
+        "kota": "",
+        "No.SPK": "",
+        "nomor jaringan": "",
+        "nomor telepon": "",
+        "propinsi": "",
+        "tanggal": "",
+        "pelaksanaan": {
+            "jam perintah": "",
+            "jam persiapan": "",
+            "jam berangkat": "",
+            "jam tiba di lokasi": "",
+            "jam mulai kerja": "",
+            "jam selesai kerja": "",
+            "jam pulang": "",
+            "jam tiba di kantor": ""
+        }
+    },
+    "indoor_area_checklist": {
+        "sarana_penunjang": {
+            "merk_ups": "",
+            "kapasitas_ups": "",
+            "pengukuran_tegangan": [
+                {
+                    "v_output": "PLN/Gedung",
+                    "p_n": "225.8 VAC",
+                    "p_g": "225.3 VAC",
+                    "n_g": "0.151 VAC"
+                },
+                {
+                    "v_output": "UPS",
+                    "p_n": "VAC",
+                    "p_g": "VAC",
+                    "n_g": "VAC"
+                },
+                {
+                    "v_output": "IT",
+                    "p_n": "VAC",
+                    "p_g": "VAC",
+                    "n_g": "VAC"
+                }
+            ],
+            "parameter_kualitas": [
+                {
+                    "quality_parameter": "Menggunakan UPS",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                },
+                {
+                    "quality_parameter": "Jenis UPS",
+                    "standard": "Sinus, Continous",
+                    "existing": "."
+                },
+                {
+                    "quality_parameter": "Ruangan Bebas Debu",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                },
+                {
+                    "quality_parameter": "Suhu Ruangan",
+                    "standard": "<26 C",
+                    "existing": ".. C"
+                },
+                {
+                    "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                }
+            ]
+        },
+        "perangkat_modem": {
+            "catatan_input_modem": "UPS",
+            "bertumpuk": "Ya",
+            "lokasi_ruang_lantai_rack": "",
+            "parameter_kualitas": [
+                {
+                    "quality_parameter": "V. Input Modem (P-N)",
+                    "standard": "210 - 230 VAC",
+                    "existing": ". VAC"
+                },
+                {
+                    "quality_parameter": "V. Input Modem (N-G)",
+                    "standard": "<1 VAC",
+                    "existing": ". VAC"
+                },
+                {
+                    "quality_parameter": "Suhu casing modem",
+                    "standard": "Tidak panas",
+                    "existing": "."
+                },
+                {
+                    "quality_parameter": "Catuan input terbounding ke ground",
+                    "standard": "Ya, kencang",
+                    "existing": "."
+                },
+                {
+                    "quality_parameter": "Splicing konektor kabel IFL di modem",
+                    "standard": "Baik, rapi",
+                    "existing": "."
+                }
+            ]
+        },
+        "perangkat_cpe": {
+            "pemilik_perangkat_cpe": "Pelanggan",
+            "jenis_perangkat_cpe": ".",
+            "parameter_kualitas": [
+                {
+                    "quality_parameter": "Perangkat CPE mendapat catuan sama dengan modem",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                },
+                {
+                    "quality_parameter": "Perangkat CPE terbounding dalam 1 ground yang sama dengan modem",
+                    "standard": "Ya, kencang",
+                    "existing": "Ya"
+                }
+            ]
+        }
+    },
+    "outdoor_area_checklist": {
+        "site": {
+            "bs_catuan_sektor": "",
+            "jarak_udara_heading": "",
+            "latitude": "",
+            "longitude": "",
+            "potential_obstacle": "",
+            "quality_parameter": [
+                {
+                    "parameter": "LOS ke BS Catuan",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                }
+            ]
+        },
+        "sarana_penunjang": {
+            "type_mounting": "Others",
+            "quality_parameter": [
+                {
+                    "parameter": "Mounting tidak goyang dan berkarat",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                },
+                {
+                    "parameter": "Center of gravity Canester = 0 (Tegak lurus)",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                },
+                {
+                    "parameter": "Disekitar mounting terdapat penangkal petir",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                },
+                {
+                    "parameter": "Sudut mounting terhadap penangkal petir < 45",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                }
+            ],
+            "tinggi_mounting": "",
+            "type_penangkal_petir": ""
+        },
+        "perangkat_antenna": {
+            "polarisasi": "",
+            "altitude": "",
+            "lokasi": "",
+            "quality_parameter": [
+                {
+                    "parameter": "Antenna terbounding dengan ground",
+                    "standard": "Ya, kencang",
+                    "existing": ""
+                },
+                {
+                    "parameter": "Posisi antena sejajar dengan permukaan air",
+                    "standard": "Ya",
+                    "existing": "Ya"
+                }
+            ]
+        },
+        "cabling_installation": {
+            "type_kabel_ifl": "",
+            "panjang_kabel_ifl": "",
+            "tahanan_short_kabel_ifl": "",
+            "quality_parameter": [
+                {
+                    "parameter": "Terpasang arrestor & terhubung dengan ground",
+                    "standard": "Ya, kencang",
+                    "existing": "Ya"
+                },
+                {
+                    "parameter": "Splicing konektor kabel IFL di antena",
+                    "standard": "Rapat, Baik",
+                    "existing": ""
+                }
+            ]
+        }
+    },
+    "data_perangkat": {
+        "existing": [
+            {
+                "nama_barang": "PSU FORTI FG-50E/FG-30E",
+                "no_reg": "B2WN0286208MA1443",
+                "sn": ""
+            },
+            {
+                "nama_barang": "FORTIGATE-50E HW AND WARRANTY",
+                "no_reg": "B2WN0262020HA1346",
+                "sn": ""
+            },
+            {
+                "nama_barang": "ADAPTOR 12V 1A",
+                "no_reg": "B2WN0150153MA0732",
+                "sn": ""
+            },
+            {
+                "nama_barang": "HUAAWEI Router B311As + Antena",
+                "no_reg": "B2WN0150152MA0732",
+                "sn": ""
+            }
+        ],
+        "tidak_terpakai": [
+            {
+                "nama_barang": "",
+                "no_reg": "",
+                "sn": ""
+            }
+        ],
+        "cabut": [
+            {
+                "nama_barang": "",
+                "no_reg": "",
+                "sn": ""
+            }
+        ],
+        "pengganti_atau_pasang_baru": [
+            {
+                "nama_barang": "",
+                "no_reg": "",
+                "sn": ""
+            }
+        ]
+    }
+}
