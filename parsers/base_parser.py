@@ -139,4 +139,23 @@ class BaseParser(ABC):
                     "keterangan": ""
                 }
             },
+            "indoor_area_checklist": {
+                "sarana_penunjang": {
+                    "merk_ups": "",
+                    "kapasitas_ups": "",
+                    "pengukuran_tegangan": [],
+                    "parameter_kualitas": []
+                },
+                "perangkat_modem": {
+                    "catatan_input_modem": "",
+                    "bertumpuk": "",
+                    "lokasi_ruang_lantai_rack": "",
+                    "parameter_kualitas": []
+                },
+                "perangkat_cpe": {
+                    "pemilik_perangkat_cpe": "",
+                    "jenis_perangkat_cpe": "",
+                    "parameter_kualitas": []
+                }
+            }
         }

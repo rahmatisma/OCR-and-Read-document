@@ -42,7 +42,7 @@ if __name__ == "__main__":
     cek = True
     while cek == True:
         # Ganti path sesuai file input kamu
-        dokument = input("Masukan dokument : ")  # survey / instalasi / dismantle
+        dokument = "1"  # survey / instalasi / dismantle
         if dokument == "survey":
             file_path = "input/pdf/Survey 1.pdf"
         elif dokument == "instalasi":
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         elif dokument == "aktivasi":
             file_path = "input/pdf/Aktifasi.pdf"
         elif dokument == "1":
-            file_path = "input/pdf/form checklist maintenance remote wireless.pdf"
+            file_path = "input/pdf/form checklist maintenance remote wireless-debug 1-2.pdf"
         elif dokument == "2":
             file_path = "input/pdf/form chcklisr wireline.pdf"
         elif dokument == "3":
