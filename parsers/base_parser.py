@@ -186,4 +186,10 @@ class BaseParser(ABC):
                     "quality_parameter": []
                 }
             },
+            "data_perangkat": {
+                "existing": [],
+                "tidak_terpakai": [],
+                "cabut": [],
+                "pengganti_atau_pasang_baru": []
+            }
         }

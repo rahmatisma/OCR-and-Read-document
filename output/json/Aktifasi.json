@@ -1,5 +1,34 @@
 {
-    "dokumentasi": [],
+    "dokumentasi": [
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal2.jpg"
+        },
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal3.jpg"
+        },
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal4.jpg"
+        },
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal5.jpg"
+        },
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal6.jpg"
+        },
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal7.jpg"
+        },
+        {
+            "jenis": "HASIL AKTIVASI",
+            "patch_foto": "output/images\\hasil_aktivasi_hal8.jpg"
+        }
+    ],
     "parsed": {
         "document_type": "spk_aktivasi",
         "jenis_spk": "aktivasi",

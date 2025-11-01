@@ -9,40 +9,20 @@
             "patch_foto": "output/images\\dokumentasi_foto_hal6.jpg"
         },
         {
-            "jenis": "Dokumentasi foto",
-            "patch_foto": "output/images\\dokumentasi_foto_hal7_partial.jpg"
-        },
-        {
             "jenis": "Foto penempatan perangkat di lokasi pelanggan",
             "patch_foto": "output/images\\foto_penempatan_perangkat_di_lokasi_pelanggan_hal7.jpg"
-        },
-        {
-            "jenis": "Foto penempatan perangkat di lokasi pelanggan",
-            "patch_foto": "output/images\\foto_penempatan_perangkat_di_lokasi_pelanggan_hal8_partial.jpg"
         },
         {
             "jenis": "Foto jalur kabel dalam gedung",
             "patch_foto": "output/images\\foto_jalur_kabel_dalam_gedung_hal8.jpg"
         },
         {
-            "jenis": "Foto jalur kabel dalam gedung",
-            "patch_foto": "output/images\\foto_jalur_kabel_dalam_gedung_hal9_partial.jpg"
-        },
-        {
             "jenis": "Plan jalur dalam gedung",
             "patch_foto": "output/images\\plan_jalur_dalam_gedung_hal9.jpg"
         },
         {
-            "jenis": "Plan jalur dalam gedung",
-            "patch_foto": "output/images\\plan_jalur_dalam_gedung_hal10_partial.jpg"
-        },
-        {
             "jenis": "Data jalur kabel",
             "patch_foto": "output/images\\data_jalur_kabel_hal10.jpg"
-        },
-        {
-            "jenis": "Data jalur kabel",
-            "patch_foto": "output/images\\data_jalur_kabel_hal11_partial.jpg"
         },
         {
             "jenis": "Foto splitter",
@@ -54,23 +34,11 @@
         },
         {
             "jenis": "Foto splitter",
-            "patch_foto": "output/images\\foto_splitter_hal13_partial.jpg"
-        },
-        {
-            "jenis": "Foto hh eksisting yang dipakai",
-            "patch_foto": "output/images\\foto_hh_eksisting_yang_dipakai_hal13.jpg"
-        },
-        {
-            "jenis": "Foto hh eksisting yang dipakai",
-            "patch_foto": "output/images\\foto_hh_eksisting_yang_dipakai_hal14_partial.jpg"
+            "patch_foto": "output/images\\foto_splitter_hal13.jpg"
         },
         {
             "jenis": "Foto lokasi hh baru",
             "patch_foto": "output/images\\foto_lokasi_hh_baru_hal14.jpg"
-        },
-        {
-            "jenis": "Foto lokasi hh baru",
-            "patch_foto": "output/images\\foto_lokasi_hh_baru_hal15_partial.jpg"
         }
     ],
     "parsed": {

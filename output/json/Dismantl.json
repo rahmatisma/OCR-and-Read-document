@@ -1,5 +1,30 @@
 {
-    "dokumentasi": [],
+    "dokumentasi": [
+        {
+            "jenis": "HASIL PEKERJAAN CABUT",
+            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal2.jpg"
+        },
+        {
+            "jenis": "HASIL PEKERJAAN CABUT",
+            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal3.jpg"
+        },
+        {
+            "jenis": "HASIL PEKERJAAN CABUT",
+            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal4.jpg"
+        },
+        {
+            "jenis": "HASIL PEKERJAAN CABUT",
+            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal5.jpg"
+        },
+        {
+            "jenis": "HASIL PEKERJAAN CABUT",
+            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal6.jpg"
+        },
+        {
+            "jenis": "HASIL PEKERJAAN CABUT",
+            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal7.jpg"
+        }
+    ],
     "parsed": {
         "document_type": "spk_dismantle",
         "jenis_spk": "dismantle",

@@ -1,16 +1,40 @@
 {
     "dokumentasi": [
         {
-            "jenis": "LIST ITEM",
-            "patch_foto": "output/images\\list_item_hal8.jpg"
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal2.jpg"
         },
         {
-            "jenis": "LIST ITEM",
-            "patch_foto": "output/images\\list_item_hal9.jpg"
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal3.jpg"
         },
         {
-            "jenis": "LIST ITEM",
-            "patch_foto": "output/images\\list_item_hal10.jpg"
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal4.jpg"
+        },
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal5.jpg"
+        },
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal6.jpg"
+        },
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal7.jpg"
+        },
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal8.jpg"
+        },
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal9.jpg"
+        },
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output/images\\hasil_instalasi_hal10.jpg"
         }
     ],
     "parsed": {

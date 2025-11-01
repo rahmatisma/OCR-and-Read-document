@@ -167,7 +167,6 @@ class ChecklistWirelessParser(BaseParser):
         # Parse DATA REMOTE (sudah ada)
         self._parse_data_remote(data["data_remote"])
         
-        
         # Parse INDOOR AREA
         indoor_text = self._extract_indoor_section()
         if indoor_text:
@@ -203,6 +202,7 @@ class ChecklistWirelessParser(BaseParser):
                 data["outdoor_area_checklist"]["cabling_installation"],
                 outdoor_text
             )
+        self._parse_data_perangkat(data["data_perangkat"])
     
         return data
     
@@ -1731,3 +1731,327 @@ class ChecklistWirelessParser(BaseParser):
         print(f"    • {param2['parameter'][:40]}... → Std={param2['standard']}, Exist={param2['existing']}")
         
         return result
+    
+    def _extract_data_perangkat_section(self) -> str:
+        """
+        Extract text dari section C. DATA PERANGKAT
+        
+        Returns:
+            String berisi text dari DATA PERANGKAT sampai section berikutnya atau akhir
+        """
+        print("\n" + "="*80)
+        print("DEBUG: Extract C. DATA PERANGKAT")
+        print("="*80)
+        
+        # Pattern yang handle text tanpa spasi dari OCR
+        patterns = [
+            # Pattern 1: Ada spasi normal
+            r'(?:C\.\s*)?DATA\s+PERANGKAT.*?(?=(?:D\.\s*)?VERIFIKASI|DOKUMENTASI|$)',
+            
+            # Pattern 2: Tanpa spasi (C.DATAPERANGKAT)
+            r'(?:C\.)?DATAPERANGKAT.*?(?=(?:D\.)?VERIFIKASI|DOKUMENTASI|$)',
+            
+            # Pattern 3: Mixed
+            r'(?:C\.\s*)?DATA\s*PERANGKAT.*?(?=(?:D\.\s*)?VERIFIKASI|DOKUMENTASI|$)',
+        ]
+        
+        for i, pattern in enumerate(patterns, 1):
+            match = re.search(pattern, self.cleaned_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                perangkat_text = match.group()
+                
+                # Validasi: pastikan ini section data perangkat (ada keyword EXISTING, CABUT, etc)
+                perangkat_keywords = ["EXISTING", "CABUT", "TIDAK TERPAKAI", "PENGGANTI"]
+                keyword_count = sum(1 for kw in perangkat_keywords if kw in perangkat_text.upper())
+                
+                print(f"Pattern {i}: Perangkat keywords={keyword_count}")
+                
+                if keyword_count >= 2:
+                    print(f"✓ Pattern {i} matched! Length: {len(perangkat_text)} chars")
+                    print(f"  Preview: {perangkat_text[:100]}...")
+                    print("="*80 + "\n")
+                    return perangkat_text
+                else:
+                    print(f"✗ Pattern {i} matched tapi keyword tidak cukup")
+        
+        print("[ERROR] Data Perangkat section tidak ditemukan")
+        print("="*80 + "\n")
+        return ""
+
+
+    def _parse_data_perangkat(self, data_perangkat: dict):
+        """
+        Parse section C. DATA PERANGKAT
+        
+        Args:
+            data_perangkat: Dictionary untuk menyimpan hasil parsing
+        """
+        print("\n" + "="*60)
+        print("Parsing C. DATA PERANGKAT")
+        print("="*60)
+        
+        perangkat_text = self._extract_data_perangkat_section()
+        
+        if not perangkat_text:
+            print("✗ Section DATA PERANGKAT tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        # Parse setiap sub-section
+        data_perangkat["existing"] = self._parse_perangkat_existing(perangkat_text)
+        data_perangkat["tidak_terpakai"] = self._parse_perangkat_tidak_terpakai(perangkat_text)
+        data_perangkat["cabut"] = self._parse_perangkat_cabut(perangkat_text)
+        data_perangkat["pengganti_pasang_baru"] = self._parse_perangkat_pengganti(perangkat_text)
+        
+        print(f"✓ EXISTING: {len(data_perangkat['existing'])} items")
+        print(f"✓ TIDAK TERPAKAI: {len(data_perangkat['tidak_terpakai'])} items")
+        print(f"✓ CABUT: {len(data_perangkat['cabut'])} items")
+        print(f"✓ PENGGANTI/PASANG BARU: {len(data_perangkat['pengganti_pasang_baru'])} items")
+        print("="*60 + "\n")
+
+
+    def _parse_perangkat_existing(self, text: str) -> list:
+        """
+        Parse sub-section EXISTING
+        
+        Strategy baru untuk handle 2-column layout:
+        - OCR membaca: "EXISTING TIDAK TERPAKAI Nama... PSU... FORTIGATE... CABUT PENGGANTI"
+        - Semua item B2WN sebelum kata "CABUT" = EXISTING (karena layout tabel, item ada di bawah EXISTING)
+        - Item setelah "CABUT" diabaikan (masuk section lain)
+        """
+        print("  → Parsing EXISTING...")
+        
+        # Strategy: Ambil semua text dari awal sampai kata "CABUT"
+        # Karena layout 2 kolom, semua item sebelum "CABUT" adalah EXISTING
+        pattern = r'C\.?DATAPERANGKAT.*?(?=CABUT)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Section untuk EXISTING tidak ditemukan")
+            return []
+        
+        existing_text = match.group()
+        
+        print(f"    DEBUG: EXISTING text length = {len(existing_text)}")
+        
+        # Parse items berdasarkan No. Reg pattern (B2WN...)
+        return self._extract_items_by_noreg(existing_text, "EXISTING")
+
+
+    def _parse_perangkat_tidak_terpakai(self, text: str) -> list:
+        """
+        Parse sub-section TIDAK TERPAKAI
+        
+        Strategy: Karena layout 2 kolom, kolom TIDAK TERPAKAI ada di sebelah kanan EXISTING.
+        Dalam OCR horizontal, text "TIDAK TERPAKAI" muncul, tapi items-nya (B2WN) 
+        sebenarnya ada di kolom kiri (EXISTING).
+        
+        Jadi: Cari B2WN yang muncul SETELAH kata "CABUT" dan SEBELUM kata "PENGGANTI"
+        Karena row berikutnya adalah CABUT | PENGGANTI
+        """
+        print("  → Parsing TIDAK TERPAKAI...")
+        
+        # Extract section antara CABUT dan PENGGANTI
+        # Jika ada B2WN di sini, berarti ada item di kolom TIDAK TERPAKAI
+        pattern = r'CABUT.*?(?=PENGGANTI|$)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Section untuk TIDAK TERPAKAI tidak ditemukan")
+            return []
+        
+        cabut_section = match.group()
+        
+        # Cek apakah ada B2WN di section ini
+        # Kalau tidak ada, berarti TIDAK TERPAKAI kosong
+        if not re.search(r'B2WN[A-Z0-9]{10,}', cabut_section, re.IGNORECASE):
+            print("    ✓ TIDAK TERPAKAI: Tidak ada item (kosong)")
+            return []
+        
+        return self._extract_items_by_noreg(cabut_section, "TIDAK TERPAKAI")
+
+
+    def _parse_perangkat_cabut(self, text: str) -> list:
+        """Parse sub-section CABUT"""
+        print("  → Parsing CABUT...")
+        
+        # Extract section CABUT sampai PENGGANTI
+        pattern = r'CABUT.*?(?=PENGGANTI|$)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Section CABUT tidak ditemukan")
+            return []
+        
+        cabut_text = match.group()
+        return self._extract_items_by_noreg(cabut_text, "CABUT")
+
+
+    def _parse_perangkat_pengganti(self, text: str) -> list:
+        """Parse sub-section PENGGANTI/PASANG BARU"""
+        print("  → Parsing PENGGANTI/PASANG BARU...")
+        
+        # Extract section PENGGANTI sampai akhir
+        pattern = r'PENGGANTI.*?$'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Section PENGGANTI tidak ditemukan")
+            return []
+        
+        pengganti_text = match.group()
+        return self._extract_items_by_noreg(pengganti_text, "PENGGANTI")
+
+
+    def _extract_items_by_noreg(self, text: str, section_name: str) -> list:
+        """
+        Extract items dari section berdasarkan No. Reg pattern
+        
+        Strategy: 
+        - No. Reg selalu format B2WN + angka
+        - Setiap kali ketemu B2WN... = item baru
+        - Text sebelum B2WN = nama barang
+        - S/N biasanya kosong (karena layout tabel, S/N ada di kolom terpisah yang tidak ter-OCR dengan baik)
+        
+        Args:
+            text: Text dari section
+            section_name: Nama section untuk logging
+            
+        Returns:
+            List of items [{"nama_barang": "...", "no_reg": "...", "sn": "..."}]
+        """
+        items = []
+        
+        # Pattern untuk No. Reg: B2WN diikuti minimal 10 digit
+        noreg_pattern = r'(B2WN[A-Z0-9]{10,})'
+        
+        # Find all No. Reg dalam text
+        noreg_matches = list(re.finditer(noreg_pattern, text, re.IGNORECASE))
+        
+        if not noreg_matches:
+            print(f"    ✓ {section_name}: Tidak ada item (kosong)")
+            return []
+        
+        print(f"    ✓ {section_name}: Found {len(noreg_matches)} items")
+        
+        for i, match in enumerate(noreg_matches):
+            no_reg = match.group(1)
+            start_pos = match.start()
+            end_pos = match.end()
+            
+            # Extract nama barang (text sebelum No. Reg)
+            if i == 0:
+                # Item pertama: ambil dari setelah header "Nama Barang No.Reg S/N"
+                header_pattern = r'(?:Nama\s+Barang|No\.?\s*Reg|S/N)'
+                header_matches = list(re.finditer(header_pattern, text[:start_pos], re.IGNORECASE))
+                if header_matches:
+                    last_header_pos = header_matches[-1].end()
+                    nama_text = text[last_header_pos:start_pos]
+                else:
+                    # Fallback: ambil 100 char sebelum No. Reg
+                    nama_text = text[max(0, start_pos - 100):start_pos]
+            else:
+                # Item selanjutnya: ambil dari akhir No. Reg sebelumnya
+                prev_end = noreg_matches[i-1].end()
+                nama_text = text[prev_end:start_pos]
+            
+            # Clean nama barang
+            nama_barang = self._clean_nama_barang(nama_text)
+            
+            # S/N: Untuk layout 2-kolom ini, S/N biasanya kosong atau tidak ter-parse dengan baik
+            # Strategy: Cek apakah ada text setelah No.Reg SEBELUM No.Reg berikutnya
+            # Tapi jangan ambil jika text itu adalah nama barang (mengandung huruf banyak)
+            sn = ""
+            
+            if i < len(noreg_matches) - 1:
+                next_start = noreg_matches[i+1].start()
+                potential_sn = text[end_pos:next_start].strip()
+                
+                # Filter: Jika potential_sn panjang dan mengandung banyak kata, 
+                # kemungkinan itu nama barang item berikutnya, bukan S/N
+                words = potential_sn.split()
+                if len(words) <= 2 and len(potential_sn) < 30:
+                    # Kemungkinan ini S/N (pendek)
+                    sn = self._clean_sn(potential_sn)
+                else:
+                    # Kemungkinan ini nama barang item berikutnya
+                    sn = ""
+            else:
+                # Item terakhir: cek apakah ada text pendek setelahnya
+                potential_sn = text[end_pos:min(len(text), end_pos + 50)].strip()
+                # Hanya ambil jika tidak ada keyword section berikutnya
+                if not re.search(r'CABUT|PENGGANTI|TIDAK\s*TERPAKAI', potential_sn, re.IGNORECASE):
+                    words = potential_sn.split()
+                    if len(words) <= 2 and len(potential_sn) < 30:
+                        sn = self._clean_sn(potential_sn)
+            
+            item = {
+                "nama_barang": nama_barang,
+                "no_reg": no_reg,
+                "sn": sn
+            }
+            
+            items.append(item)
+            print(f"      • Item {i+1}: '{nama_barang[:30]}...' | {no_reg} | '{sn}'")
+        
+        return items
+
+
+    def _clean_nama_barang(self, text: str) -> str:
+        """
+        Clean nama barang dari noise
+        
+        Args:
+            text: Raw text nama barang
+            
+        Returns:
+            Cleaned nama barang
+        """
+        # Remove common noise
+        text = re.sub(r'Nama\s+Barang', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'No\.?\s*Reg', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'S/N', '', text, flags=re.IGNORECASE)
+        
+        # Remove multiple spaces/newlines
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Strip whitespace
+        text = text.strip()
+        
+        # Remove leading/trailing symbols
+        text = text.strip('|,.-_')
+        
+        return text
+
+
+    def _clean_sn(self, text: str) -> str:
+        """
+        Clean S/N dari noise
+        Biasanya S/N kosong, tapi kalau ada isinya, clean juga
+        
+        Args:
+            text: Raw text S/N
+            
+        Returns:
+            Cleaned S/N
+        """
+        # Remove common keywords yang nyelip
+        keywords_to_remove = [
+            r'TIDAK\s+TERPAKAI', r'CABUT', r'PENGGANTI', r'PASANG\s+BARU',
+            r'Nama\s+Barang', r'No\.?\s*Reg', r'S/N'
+        ]
+        
+        for keyword in keywords_to_remove:
+            text = re.sub(keyword, '', text, flags=re.IGNORECASE)
+        
+        # Remove multiple spaces/newlines
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Strip whitespace
+        text = text.strip()
+        
+        # Jika hanya symbol, return kosong
+        if not text or re.match(r'^[|,.\-_\s]+$', text):
+            return ""
+        
+        return text
