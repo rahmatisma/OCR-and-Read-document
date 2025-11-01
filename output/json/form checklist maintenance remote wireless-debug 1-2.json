@@ -126,6 +126,83 @@
                         }
                     ]
                 }
+            },
+            "outdoor_area_checklist": {
+                "site": {
+                    "bs_catuan_sektor": "",
+                    "jarak_udara_heading": "",
+                    "latitude": "",
+                    "longitude": "",
+                    "potential_obstacle": "",
+                    "quality_parameter": [
+                        {
+                            "parameter": "LOS ke BS Catuan",
+                            "standard": "Ya",
+                            "existing": "Ya"
+                        }
+                    ]
+                },
+                "sarana_penunjang": {
+                    "type_mounting": "Others",
+                    "quality_parameter": [
+                        {
+                            "parameter": "Mounting tidak goyang dan berkarat",
+                            "standard": "Ya",
+                            "existing": "Ya"
+                        },
+                        {
+                            "parameter": "Center of gravity Canester = 0 (Tegak lurus)",
+                            "standard": "Ya",
+                            "existing": ""
+                        },
+                        {
+                            "parameter": "Disekitar mounting terdapat penangkal petir",
+                            "standard": "Ya",
+                            "existing": "Ya"
+                        },
+                        {
+                            "parameter": "Sudut mounting terhadap penangkal petir < 45",
+                            "standard": "Ya",
+                            "existing": "Ya"
+                        }
+                    ],
+                    "tinggi_mounting": "Meter",
+                    "type_penangkal_petir": "N/A"
+                },
+                "perangkat_antenna": {
+                    "polarisasi": "",
+                    "altitude": "MDPL",
+                    "lokasi": "",
+                    "quality_parameter": [
+                        {
+                            "parameter": "Antenna terbounding dengan ground",
+                            "standard": "Ya, kencang",
+                            "existing": ""
+                        },
+                        {
+                            "parameter": "Posisi antena sejajar dengan permukaan air",
+                            "standard": "Ya",
+                            "existing": "Ya"
+                        }
+                    ]
+                },
+                "cabling_installation": {
+                    "type_kabel_ifl": "",
+                    "panjang_kabel_ifl": "Meter",
+                    "tahanan_short_kabel_ifl": "",
+                    "quality_parameter": [
+                        {
+                            "parameter": "Terpasang arrestor & terhubung dengan ground",
+                            "standard": "Ya, kencang",
+                            "existing": "Ya"
+                        },
+                        {
+                            "parameter": "Splicing konektor kabel IFL di antena",
+                            "standard": "Rapat, Baik",
+                            "existing": ""
+                        }
+                    ]
+                }
             }
         },
         "metadata": {

@@ -157,5 +157,33 @@ class BaseParser(ABC):
                     "jenis_perangkat_cpe": "",
                     "parameter_kualitas": []
                 }
-            }
+            },
+            "outdoor_area_checklist": {
+                "site": {
+                    "bs_catuan_sektor": "",
+                    "jarak_udara_heading": "",
+                    "latitude": "",
+                    "longitude": "",
+                    "potential_obstacle": "",
+                    "quality_parameter": []
+                },
+                "sarana_penunjang": {
+                    "type_mounting": "",
+                    "quality_parameter": [],
+                    "tinggi_mounting": "",
+                    "type_penangkal_petir": ""
+                },
+                "perangkat_antenna": {
+                    "polarisasi": "",
+                    "altitude": "",
+                    "lokasi": "",
+                    "quality_parameter": []
+                },
+                "cabling_installation": {
+                    "type_kabel_ifl": "",
+                    "panjang_kabel_ifl": "",
+                    "tahanan_short_kabel_ifl": "",
+                    "quality_parameter": []
+                }
+            },
         }

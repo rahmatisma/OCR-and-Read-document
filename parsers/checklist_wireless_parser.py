@@ -167,6 +167,7 @@ class ChecklistWirelessParser(BaseParser):
         # Parse DATA REMOTE (sudah ada)
         self._parse_data_remote(data["data_remote"])
         
+        
         # Parse INDOOR AREA
         indoor_text = self._extract_indoor_section()
         if indoor_text:
@@ -183,7 +184,26 @@ class ChecklistWirelessParser(BaseParser):
                 data["indoor_area_checklist"]["perangkat_cpe"],
                 indoor_text
             )
-        
+        # TAMBAHKAN INI - Parse OUTDOOR AREA:
+        outdoor_text = self._extract_outdoor_section()
+        if outdoor_text:
+            self._parse_outdoor_site(
+                data["outdoor_area_checklist"]["site"],
+                outdoor_text
+            )
+            self._parse_outdoor_sarana_penunjang(
+                data["outdoor_area_checklist"]["sarana_penunjang"],
+                outdoor_text
+            )
+            self._parse_outdoor_perangkat_antenna(
+                data["outdoor_area_checklist"]["perangkat_antenna"],
+                outdoor_text
+            )
+            self._parse_outdoor_cabling_installation(
+                data["outdoor_area_checklist"]["cabling_installation"],
+                outdoor_text
+            )
+    
         return data
     
     def _parse_data_remote(self, data_remote: dict):
@@ -1101,3 +1121,613 @@ class ChecklistWirelessParser(BaseParser):
             "standard": standard,
             "existing": existing
         }
+
+    def _extract_outdoor_section(self) -> str:
+        """
+        Extract text dari section OUTDOOR AREA CHECKLIST
+        
+        Returns:
+            String berisi text dari OUTDOOR AREA CHECKLIST sampai section berikutnya
+        """
+        print("\n" + "="*80)
+        print("DEBUG: Extract OUTDOOR AREA CHECKLIST")
+        print("="*80)
+        
+        # Pattern yang handle text tanpa spasi dari OCR
+        patterns = [
+            # Pattern 1: Ada spasi normal
+            r'(?:B\.\s*)?OUTDOOR\s+AREA\s+CHECKLIST.*?(?=(?:C\.\s*)?DATA\s*PERANGKAT|VERIFIKASI|$)',
+            
+            # Pattern 2: Tanpa spasi (B.OUTDOORAREACHECKLIST)
+            r'(?:B\.)?OUTDOORAREACHECKLIST.*?(?=(?:C\.)?DATA\s*PERANGKAT|VERIFIKASI|$)',
+            
+            # Pattern 3: Mixed
+            r'(?:B\.\s*)?OUTDOOR\s*AREA\s*CHECKLIST.*?(?=(?:C\.\s*)?DATA\s*PERANGKAT|VERIFIKASI|$)',
+        ]
+        
+        for i, pattern in enumerate(patterns, 1):
+            match = re.search(pattern, self.cleaned_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                outdoor_text = match.group()
+                
+                # Validasi: pastikan ini section outdoor (ada keyword SITE, MOUNTING, ANTENNA)
+                outdoor_keywords = ["SITE", "MOUNTING", "ANTENNA", "CABLING"]
+                keyword_count = sum(1 for kw in outdoor_keywords if kw in outdoor_text.upper())
+                
+                print(f"Pattern {i}: Outdoor keywords={keyword_count}")
+                
+                if keyword_count >= 2:
+                    print(f"✓ Pattern {i} matched! Length: {len(outdoor_text)} chars")
+                    print(f"  Preview: {outdoor_text[:100]}...")
+                    print("="*80 + "\n")
+                    return outdoor_text
+                else:
+                    print(f"✗ Pattern {i} matched tapi keyword tidak cukup")
+        
+        print("[ERROR] Outdoor section tidak ditemukan")
+        print("="*80 + "\n")
+        return ""
+
+
+    def _parse_outdoor_site(self, site_data: dict, outdoor_text: str):
+        """
+        Parse section SITE dari OUTDOOR AREA CHECKLIST
+        
+        Args:
+            site_data: Dictionary untuk menyimpan hasil parsing
+            outdoor_text: Text dari outdoor section
+        """
+        print("\n" + "="*60)
+        print("STEP 1: Parsing SITE")
+        print("="*60)
+        
+        # Extract sub-section SITE sampai SARANA PENUNJANG
+        pattern = r'SITE.*?(?=SARANA\s*PENUNJANG|$)'
+        match = re.search(pattern, outdoor_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("✗ Section SITE tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        site_text = match.group()
+        print(f"✓ Section ditemukan, length: {len(site_text)} chars")
+        
+        # Parse fields
+        site_data["bs_catuan_sektor"] = self._extract_bs_catuan_sektor(site_text)
+        site_data["jarak_udara_heading"] = self._extract_jarak_udara_heading(site_text)
+        site_data["latitude"] = self._extract_latitude(site_text)
+        site_data["longitude"] = self._extract_longitude(site_text)
+        site_data["potential_obstacle"] = self._extract_potential_obstacle(site_text)
+        site_data["quality_parameter"] = self._parse_site_quality_parameter(site_text)
+        
+        print(f"✓ BS Catuan/Sektor: '{site_data['bs_catuan_sektor']}'")
+        print(f"✓ Jarak Udara/Heading: '{site_data['jarak_udara_heading']}'")
+        print(f"✓ Latitude: '{site_data['latitude']}'")
+        print(f"✓ Longitude: '{site_data['longitude']}'")
+        print(f"✓ Potential Obstacle: '{site_data['potential_obstacle']}'")
+        print(f"✓ Quality Parameter: {len(site_data['quality_parameter'])} rows")
+        print("="*60 + "\n")
+
+
+    def _extract_bs_catuan_sektor(self, text: str) -> str:
+        """Extract BS Catuan / Sektor"""
+        pattern = r'BS\s+Catuan\s*/\s*Sektor\s+([A-Za-z0-9\s,./\-]+?)(?=LOS|Jarak|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Filter keyword yang nyelip
+            if value and not re.match(r'^(LOS|Jarak|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _extract_jarak_udara_heading(self, text: str) -> str:
+        """Extract Jarak Udara / Heading"""
+        pattern = r'Jarak\s+Udara\s*/\s*Heading\s+([A-Za-z0-9\s,./\-°]+?)(?=Latitude|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Filter jika hanya titik atau keyword
+            if value and value not in ['.', '·', '-'] and not re.match(r'^(Latitude|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _extract_latitude(self, text: str) -> str:
+        """Extract Latitude"""
+        pattern = r'Latitude\s+([\d\s,.\-°\'\"NSEW]+?)(?=Longitude|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Filter jika hanya titik atau keyword
+            if value and value not in ['.', '·', '-'] and not re.match(r'^(Longitude|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _extract_longitude(self, text: str) -> str:
+        """Extract Longitude"""
+        pattern = r'Longitude\s+([\d\s,.\-°\'\"NSEW]+?)(?=Potential|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Filter jika hanya titik atau keyword
+            if value and value not in ['.', '·', '-'] and not re.match(r'^(Potential|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _extract_potential_obstacle(self, text: str) -> str:
+        """Extract Potential obstacle"""
+        pattern = r'Potential\s+obstacle\s+([A-Za-z0-9\s,./\-]+?)(?=SARANA|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Filter jika hanya titik atau keyword
+            if value and value not in ['.', '·', '-'] and not re.match(r'^(SARANA|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _parse_site_quality_parameter(self, text: str) -> list:
+        """
+        Parse Quality Parameter untuk SITE
+        Hanya 1 parameter: LOS ke BS Catuan
+        """
+        print("  → Parsing Site Quality Parameter...")
+        
+        # Cari "LOS ke BS Catuan" diikuti Ya/Tidak (2x untuk standard & existing)
+        pattern = r'LOS\s+ke\s+BS\s+Catuan\s+(Ya|Tidak)\s+(Ya|Tidak)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            result = [{
+                "parameter": "LOS ke BS Catuan",
+                "standard": match.group(1),
+                "existing": match.group(2)
+            }]
+            print(f"    • LOS ke BS Catuan: Std={result[0]['standard']}, Exist={result[0]['existing']}")
+            return result
+        
+        print("    ✗ LOS ke BS Catuan tidak ditemukan")
+        return [{
+            "parameter": "LOS ke BS Catuan",
+            "standard": "Ya",
+            "existing": "Ya"
+        }]
+
+
+    def _parse_outdoor_sarana_penunjang(self, sarana_data: dict, outdoor_text: str):
+        """
+        Parse section SARANA PENUNJANG dari OUTDOOR
+        
+        Args:
+            sarana_data: Dictionary untuk menyimpan hasil parsing
+            outdoor_text: Text dari outdoor section
+        """
+        print("\n" + "="*60)
+        print("STEP 2: Parsing SARANA PENUNJANG (Outdoor)")
+        print("="*60)
+        
+        # Extract sub-section SARANA PENUNJANG sampai PERANGKAT ANTENNA
+        pattern = r'SARANA\s*PENUNJANG.*?(?=PERANGKAT\s*ANTENNA|$)'
+        match = re.search(pattern, outdoor_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("✗ Section SARANA PENUNJANG tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        sarana_text = match.group()
+        print(f"✓ Section ditemukan, length: {len(sarana_text)} chars")
+        
+        # Parse fields
+        sarana_data["type_mounting"] = self._extract_type_mounting(sarana_text)
+        sarana_data["tinggi_mounting"] = self._extract_tinggi_mounting(sarana_text)
+        sarana_data["type_penangkal_petir"] = self._extract_type_penangkal_petir(sarana_text)
+        sarana_data["quality_parameter"] = self._parse_sarana_outdoor_quality_parameter(sarana_text)
+        
+        print(f"✓ Type Mounting: '{sarana_data['type_mounting']}'")
+        print(f"✓ Tinggi Mounting: '{sarana_data['tinggi_mounting']}'")
+        print(f"✓ Type Penangkal Petir: '{sarana_data['type_penangkal_petir']}'")
+        print(f"✓ Quality Parameter: {len(sarana_data['quality_parameter'])} rows")
+        print("="*60 + "\n")
+
+
+    def _extract_type_mounting(self, text: str) -> str:
+        """Extract Type mounting"""
+        pattern = r'Type\s+mounting\s+(Others|Pole|Wall|Rooftop|[\w\s]+?)(?=\s+(?:Ya|Mounting|Center|QUALITY)|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Ambil hanya kata pertama jika ada space diikuti Ya/keyword
+            value = value.split()[0] if ' ' in value else value
+            return value
+        
+        return ""
+
+
+    def _extract_tinggi_mounting(self, text: str) -> str:
+        """Extract Tinggi mounting - ambil angka + Meter, atau minimal 'Meter' saja"""
+        # Pattern 1: Ada angka sebelum Meter
+        pattern1 = r'Tinggi\s+mounting\s+([\d.]+\s*(?:Meter|M|m))'
+        match1 = re.search(pattern1, text, re.IGNORECASE)
+        if match1:
+            return match1.group(1).strip()
+        
+        # Pattern 2: Hanya 'Meter' tanpa angka (atau titik di depan)
+        pattern2 = r'Tinggi\s+mounting\s+[.\s]*?(Meter|M|m)\b'
+        match2 = re.search(pattern2, text, re.IGNORECASE)
+        if match2:
+            return match2.group(1)  # Return 'Meter' saja
+        
+        return ""
+
+
+    def _extract_type_penangkal_petir(self, text: str) -> str:
+        """Extract Type penangkal petir"""
+        pattern = r'Type\s+penangkal\s+petir\s+(N/A|[\w\s,./\-]+?)(?=\s+PT\.|PERANGKAT|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            if value and value not in ['.', '·', '-']:
+                return value
+        
+        return ""
+
+
+    def _parse_sarana_outdoor_quality_parameter(self, text: str) -> list:
+        """
+        Parse Quality Parameter untuk SARANA PENUNJANG (Outdoor)
+        Ada 4 parameters
+        """
+        print("  → Parsing Sarana Outdoor Quality Parameter...")
+        
+        result = []
+        
+        # 1. Mounting tidak goyang dan berkarat
+        param1 = {
+            "parameter": "Mounting tidak goyang dan berkarat",
+            "standard": "",
+            "existing": ""
+        }
+        pattern1 = r'Mounting\s+tidak\s+goyang\s+dan\s+berkarat.*?(Ya|Tidak)\s+(Ya|Tidak)'
+        match1 = re.search(pattern1, text, re.IGNORECASE | re.DOTALL)
+        if match1:
+            param1["standard"] = match1.group(1)
+            param1["existing"] = match1.group(2)
+        result.append(param1)
+        print(f"    • {param1['parameter'][:40]}... → Std={param1['standard']}, Exist={param1['existing']}")
+        
+        # 2. Center of gravity Canester = 0 (Tegak lurus)
+        param2 = {
+            "parameter": "Center of gravity Canester = 0 (Tegak lurus)",
+            "standard": "",
+            "existing": ""
+        }
+        pattern2 = r'Center\s+of\s+gravity.*?Tegak\s+lurus.*?(Ya|Tidak)\s+(Ya|Tidak)?'
+        match2 = re.search(pattern2, text, re.IGNORECASE | re.DOTALL)
+        if match2:
+            param2["standard"] = match2.group(1)
+            param2["existing"] = match2.group(2) if match2.group(2) else ""
+        result.append(param2)
+        print(f"    • {param2['parameter'][:40]}... → Std={param2['standard']}, Exist={param2['existing']}")
+        
+        # 3. Disekitar mounting terdapat penangkal petir
+        param3 = {
+            "parameter": "Disekitar mounting terdapat penangkal petir",
+            "standard": "",
+            "existing": ""
+        }
+        pattern3 = r'Disekitar\s+mounting\s+terdapat\s+penangkal\s+petir.*?(Ya|Tidak)\s+(Ya|Tidak)'
+        match3 = re.search(pattern3, text, re.IGNORECASE | re.DOTALL)
+        if match3:
+            param3["standard"] = match3.group(1)
+            param3["existing"] = match3.group(2)
+        result.append(param3)
+        print(f"    • {param3['parameter'][:40]}... → Std={param3['standard']}, Exist={param3['existing']}")
+        
+        # 4. Sudut mounting terhadap penangkal petir < 45
+        param4 = {
+            "parameter": "Sudut mounting terhadap penangkal petir < 45",
+            "standard": "",
+            "existing": ""
+        }
+        pattern4 = r'Sudut\s+mounting\s+terhadap\s+penangkal\s+petir.*?<\s*45.*?(Ya|Tidak)\s+(Ya|Tidak)'
+        match4 = re.search(pattern4, text, re.IGNORECASE | re.DOTALL)
+        if match4:
+            param4["standard"] = match4.group(1)
+            param4["existing"] = match4.group(2)
+        result.append(param4)
+        print(f"    • {param4['parameter'][:40]}... → Std={param4['standard']}, Exist={param4['existing']}")
+        
+        return result
+
+
+    def _parse_outdoor_perangkat_antenna(self, antenna_data: dict, outdoor_text: str):
+        """
+        Parse section PERANGKAT ANTENNA dari OUTDOOR
+        
+        Args:
+            antenna_data: Dictionary untuk menyimpan hasil parsing
+            outdoor_text: Text dari outdoor section
+        """
+        print("\n" + "="*60)
+        print("STEP 3: Parsing PERANGKAT ANTENNA")
+        print("="*60)
+        
+        # Extract sub-section PERANGKAT ANTENNA sampai CABLING
+        pattern = r'PERANGKAT\s*ANTENNA.*?(?=CABLING\s*INSTALLATION|$)'
+        match = re.search(pattern, outdoor_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("✗ Section PERANGKAT ANTENNA tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        antenna_text = match.group()
+        print(f"✓ Section ditemukan, length: {len(antenna_text)} chars")
+        
+        # Parse fields
+        antenna_data["polarisasi"] = self._extract_polarisasi(antenna_text)
+        antenna_data["altitude"] = self._extract_altitude(antenna_text)
+        antenna_data["lokasi"] = self._extract_lokasi_antenna(antenna_text)
+        antenna_data["quality_parameter"] = self._parse_antenna_quality_parameter(antenna_text)
+        
+        print(f"✓ Polarisasi: '{antenna_data['polarisasi']}'")
+        print(f"✓ Altitude: '{antenna_data['altitude']}'")
+        print(f"✓ Lokasi: '{antenna_data['lokasi']}'")
+        print(f"✓ Quality Parameter: {len(antenna_data['quality_parameter'])} rows")
+        print("="*60 + "\n")
+
+
+    def _extract_polarisasi(self, text: str) -> str:
+        """Extract Polarisasi"""
+        pattern = r'Polarisasi\s+([A-Za-z0-9\s,./\-]+?)(?=Antenna\s+terbounding|Altitude|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            if value and value not in ['.', '·', '-'] and not re.match(r'^(Antenna|Altitude|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _extract_altitude(self, text: str) -> str:
+        """Extract Altitude - ambil angka + MDPL, atau minimal 'MDPL' saja"""
+        # Pattern 1: Ada angka sebelum MDPL
+        pattern1 = r'Altitude\s+([\d.]+\s*(?:MDPL|mdpl|M|m))'
+        match1 = re.search(pattern1, text, re.IGNORECASE)
+        if match1:
+            return match1.group(1).strip()
+        
+        # Pattern 2: Hanya 'MDPL' tanpa angka (atau titik/Ya di depan - karena OCR bisa nyelip 'Ya')
+        # Pola: Altitude [Ya] [.] MDPL
+        pattern2 = r'Altitude\s+(?:Ya\s+)?[.\s]*?(MDPL|mdpl)\b'
+        match2 = re.search(pattern2, text, re.IGNORECASE)
+        if match2:
+            return match2.group(1)  # Return 'MDPL' saja
+        
+        return ""
+
+
+    def _extract_lokasi_antenna(self, text: str) -> str:
+        """
+        Extract Lokasi antenna
+        CATATAN: Lokasi bisa muncul setelah quality parameter, jadi perlu hati-hati
+        Jika hanya ada '0' atau angka kecil, kemungkinan itu bagian tabel/layout, bukan nilai sebenarnya
+        """
+        # Pattern: ambil text setelah 'Lokasi' sampai section berikutnya
+        pattern = r'Lokasi\s+([A-Za-z][A-Za-z0-9\s,./\-°]+?)(?=\s*CABLING|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            if value and value not in ['.', '·', '-']:
+                return value
+        
+        # Jika tidak match (berarti setelah Lokasi langsung CABLING/angka kecil), return kosong
+        return ""
+
+
+    def _parse_antenna_quality_parameter(self, text: str) -> list:
+        """
+        Parse Quality Parameter untuk PERANGKAT ANTENNA
+        Ada 2 parameters dengan format STANDARD | EXISTING di kolom tabel
+        
+        Struktur tabel OCR:
+        Row 1: Polarisasi | Antenna terbounding dengan ground | Ya, kencang | (kosong)
+        Row 2: Altitude MDPL | Posisi antena sejajar dengan permukaan air | Ya | Ya
+        Row 3: Lokasi | (kosong)
+        """
+        print("  → Parsing Antenna Quality Parameter...")
+        
+        result = []
+        
+        # 1. Antenna terbounding dengan ground
+        param1 = {
+            "parameter": "Antenna terbounding dengan ground",
+            "standard": "",
+            "existing": ""
+        }
+        # Pattern: Antenna terbounding dengan ground diikuti STANDARD
+        # Existing untuk parameter ini biasanya kosong (tidak ada di OCR)
+        pattern1 = r'Antenna\s+terbounding\s+dengan\s+ground\s+(Ya,?\s*kencang|Ya|Tidak)'
+        match1 = re.search(pattern1, text, re.IGNORECASE)
+        if match1:
+            param1["standard"] = match1.group(1)
+            param1["existing"] = ""
+        result.append(param1)
+        print(f"    • {param1['parameter'][:40]}... → Std={param1['standard']}, Exist={param1['existing']}")
+        
+        # 2. Posisi antena sejajar dengan permukaan air
+        param2 = {
+            "parameter": "Posisi antena sejajar dengan permukaan air",
+            "standard": "",
+            "existing": ""
+        }
+        
+        # Strategy baru: 
+        # OCR format: "Altitude Ya . MDPL Posisi antena sejajar dengan permukaan air Ya Lokasi"
+        # - "Ya" pertama (antara Altitude dan MDPL) = STANDARD
+        # - "Ya" kedua (setelah "permukaan air") = EXISTING
+        
+        # Cari section dari Altitude sampai nama parameter
+        section_before_pattern = r'Altitude\s+(Ya|Tidak)\s+[.\s]*?MDPL\s+Posisi\s+antena\s+sejajar\s+dengan\s+permukaan\s+air'
+        match_before = re.search(section_before_pattern, text, re.IGNORECASE)
+        
+        if match_before:
+            # Ya/Tidak antara Altitude dan MDPL = STANDARD
+            param2["standard"] = match_before.group(1)
+            print(f"    DEBUG: Found STANDARD = {param2['standard']}")
+        
+        # Cari Ya/Tidak setelah "permukaan air" sampai Lokasi
+        section_after_pattern = r'Posisi\s+antena\s+sejajar\s+dengan\s+permukaan\s+air\s+(Ya|Tidak)'
+        match_after = re.search(section_after_pattern, text, re.IGNORECASE)
+        
+        if match_after:
+            # Ya/Tidak setelah "permukaan air" = EXISTING
+            param2["existing"] = match_after.group(1)
+            print(f"    DEBUG: Found EXISTING = {param2['existing']}")
+        
+        result.append(param2)
+        print(f"    • {param2['parameter'][:40]}... → Std={param2['standard']}, Exist={param2['existing']}")
+        
+        return result
+
+
+    def _parse_outdoor_cabling_installation(self, cabling_data: dict, outdoor_text: str):
+        """
+        Parse section CABLING INSTALLATION dari OUTDOOR
+        
+        Args:
+            cabling_data: Dictionary untuk menyimpan hasil parsing
+            outdoor_text: Text dari outdoor section
+        """
+        print("\n" + "="*60)
+        print("STEP 4: Parsing CABLING INSTALLATION")
+        print("="*60)
+        
+        # Extract sub-section CABLING INSTALLATION sampai akhir
+        pattern = r'CABLING\s*INSTALLATION.*?(?=(?:C\.)?DATA\s*PERANGKAT|$)'
+        match = re.search(pattern, outdoor_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("✗ Section CABLING INSTALLATION tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        cabling_text = match.group()
+        print(f"✓ Section ditemukan, length: {len(cabling_text)} chars")
+        
+        # Parse fields
+        cabling_data["type_kabel_ifl"] = self._extract_type_kabel_ifl(cabling_text)
+        cabling_data["panjang_kabel_ifl"] = self._extract_panjang_kabel_ifl(cabling_text)
+        cabling_data["tahanan_short_kabel_ifl"] = self._extract_tahanan_short_kabel_ifl(cabling_text)
+        cabling_data["quality_parameter"] = self._parse_cabling_quality_parameter(cabling_text)
+        
+        print(f"✓ Type Kabel IFL: '{cabling_data['type_kabel_ifl']}'")
+        print(f"✓ Panjang Kabel IFL: '{cabling_data['panjang_kabel_ifl']}'")
+        print(f"✓ Tahanan Short Kabel IFL: '{cabling_data['tahanan_short_kabel_ifl']}'")
+        print(f"✓ Quality Parameter: {len(cabling_data['quality_parameter'])} rows")
+        print("="*60 + "\n")
+
+
+    def _extract_type_kabel_ifl(self, text: str) -> str:
+        """Extract Type kabel IFL"""
+        pattern = r'Type\s+kabel\s+IFL\s+([A-Za-z0-9\s,./\-]+?)(?=Terpasang|Panjang|QUALITY|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            if value and value not in ['.', '·', '-'] and not re.match(r'^(Terpasang|Panjang|QUALITY)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _extract_panjang_kabel_ifl(self, text: str) -> str:
+        """Extract Panjang kabel IFL - ambil angka + Meter, atau minimal 'Meter' saja"""
+        # Pattern 1: Ada angka sebelum Meter
+        pattern1 = r'Panjang\s+kabel\s+IFL\s+([\d.]+\s*(?:Meter|M|m))'
+        match1 = re.search(pattern1, text, re.IGNORECASE)
+        if match1:
+            return match1.group(1).strip()
+        
+        # Pattern 2: Hanya 'Meter' tanpa angka
+        pattern2 = r'Panjang\s+kabel\s+IFL\s+[.\s]*?(Meter|M|m)\b'
+        match2 = re.search(pattern2, text, re.IGNORECASE)
+        if match2:
+            return match2.group(1)  # Return 'Meter' saja
+        
+        return ""
+
+
+    def _extract_tahanan_short_kabel_ifl(self, text: str) -> str:
+        """Extract Tahanan Short kabel IFL - bersihkan trailing colon dan whitespace"""
+        pattern = r'Tahanan\s+Short\s+kabel\s+IFL\s+([A-Za-z0-9\s,./\-:]+?)(?=\s*C\.|DATA|VERIFIKASI|$)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            # Remove trailing colon dan whitespace
+            value = value.rstrip(':').strip()
+            # Jangan ambil jika hanya symbol atau keyword
+            if value and value not in ['.', '·', '-', ':', ''] and not re.match(r'^(C\.|DATA|VERIFIKASI)', value, re.IGNORECASE):
+                return value
+        
+        return ""
+
+
+    def _parse_cabling_quality_parameter(self, text: str) -> list:
+        """
+        Parse Quality Parameter untuk CABLING INSTALLATION
+        Ada 2 parameters
+        """
+        print("  → Parsing Cabling Quality Parameter...")
+        
+        result = []
+        
+        # 1. Terpasang arrestor & terhubung dengan ground
+        param1 = {
+            "parameter": "Terpasang arrestor & terhubung dengan ground",
+            "standard": "",
+            "existing": ""
+        }
+        pattern1 = r'Terpasang\s+arrestor.*?ground\s+(Ya,?\s*kencang|Ya|Tidak)\s+(Ya,?\s*kencang|Ya|Tidak)'
+        match1 = re.search(pattern1, text, re.IGNORECASE | re.DOTALL)
+        if match1:
+            param1["standard"] = match1.group(1)
+            param1["existing"] = match1.group(2)
+        result.append(param1)
+        print(f"    • {param1['parameter'][:40]}... → Std={param1['standard']}, Exist={param1['existing']}")
+        
+        # 2. Splicing konektor kabel IFL di antena
+        param2 = {
+            "parameter": "Splicing konektor kabel IFL di antena",
+            "standard": "",
+            "existing": ""
+        }
+        pattern2 = r'Splicing\s+konektor\s+kabel\s+IFL\s+di\s+antena\s+(Rapat,?\s*Baik|Baik|Tidak\s+baik)\s+(\.|-|Rapat,?\s*Baik|Baik|Tidak\s+baik)?'
+        match2 = re.search(pattern2, text, re.IGNORECASE)
+        if match2:
+            param2["standard"] = match2.group(1)
+            param2["existing"] = match2.group(2) if match2.group(2) and match2.group(2) not in ['.', '-', ':'] else ""
+        result.append(param2)
+        print(f"    • {param2['parameter'][:40]}... → Std={param2['standard']}, Exist={param2['existing']}")
+        
+        return result
