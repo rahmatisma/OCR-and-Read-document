@@ -1821,8 +1821,6 @@ class ChecklistWirelessParser(BaseParser):
         """
         print("  → Parsing EXISTING...")
         
-        # Strategy: Ambil semua text dari awal sampai kata "CABUT"
-        # Karena layout 2 kolom, semua item sebelum "CABUT" adalah EXISTING
         pattern = r'C\.?DATAPERANGKAT.*?(?=CABUT)'
         match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
         
@@ -1833,8 +1831,11 @@ class ChecklistWirelessParser(BaseParser):
         existing_text = match.group()
         
         print(f"    DEBUG: EXISTING text length = {len(existing_text)}")
-        
-        # Parse items berdasarkan No. Reg pattern (B2WN...)
+        print(f"    DEBUG RAW TEXT:")
+        print("="*60)
+        print(existing_text)  # ← TAMBAHKAN INI
+        print("="*60)
+
         return self._extract_items_by_noreg(existing_text, "EXISTING")
 
 
@@ -1907,11 +1908,10 @@ class ChecklistWirelessParser(BaseParser):
         """
         Extract items dari section berdasarkan No. Reg pattern
         
-        Strategy: 
-        - No. Reg selalu format B2WN + angka
-        - Setiap kali ketemu B2WN... = item baru
-        - Text sebelum B2WN = nama barang
-        - S/N biasanya kosong (karena layout tabel, S/N ada di kolom terpisah yang tidak ter-OCR dengan baik)
+        Strategy FINAL FIX v2:
+        1. Find all No.Reg positions
+        2. Untuk setiap No.Reg, ambil nama barang dari text sebelumnya
+        3. Handle kata yang terpotong (seperti WARRANTY yang jadi baris terpisah)
         
         Args:
             text: Text dari section
@@ -1923,67 +1923,76 @@ class ChecklistWirelessParser(BaseParser):
         items = []
         
         # Pattern untuk No. Reg: B2WN diikuti minimal 10 digit
-        noreg_pattern = r'(B2WN[A-Z0-9]{10,})'
+        noreg_pattern = r'B2WN[A-Z0-9]{10,}'
         
-        # Find all No. Reg dalam text
+        # Find all No. Reg positions
         noreg_matches = list(re.finditer(noreg_pattern, text, re.IGNORECASE))
         
         if not noreg_matches:
             print(f"    ✓ {section_name}: Tidak ada item (kosong)")
             return []
         
-        print(f"    ✓ {section_name}: Found {len(noreg_matches)} items")
+        print(f"    DEBUG: Found {len(noreg_matches)} No.Reg in {section_name}")
         
         for i, match in enumerate(noreg_matches):
-            no_reg = match.group(1)
-            start_pos = match.start()
-            end_pos = match.end()
+            no_reg = match.group()
+            noreg_start = match.start()
+            noreg_end = match.end()
             
-            # Extract nama barang (text sebelum No. Reg)
+            # === EXTRACT NAMA BARANG ===
+            # Tentukan start position untuk extract nama
             if i == 0:
-                # Item pertama: ambil dari setelah header "Nama Barang No.Reg S/N"
-                header_pattern = r'(?:Nama\s+Barang|No\.?\s*Reg|S/N)'
-                header_matches = list(re.finditer(header_pattern, text[:start_pos], re.IGNORECASE))
-                if header_matches:
-                    last_header_pos = header_matches[-1].end()
-                    nama_text = text[last_header_pos:start_pos]
-                else:
-                    # Fallback: ambil 100 char sebelum No. Reg
-                    nama_text = text[max(0, start_pos - 100):start_pos]
-            else:
-                # Item selanjutnya: ambil dari akhir No. Reg sebelumnya
-                prev_end = noreg_matches[i-1].end()
-                nama_text = text[prev_end:start_pos]
-            
-            # Clean nama barang
-            nama_barang = self._clean_nama_barang(nama_text)
-            
-            # S/N: Untuk layout 2-kolom ini, S/N biasanya kosong atau tidak ter-parse dengan baik
-            # Strategy: Cek apakah ada text setelah No.Reg SEBELUM No.Reg berikutnya
-            # Tapi jangan ambil jika text itu adalah nama barang (mengandung huruf banyak)
-            sn = ""
-            
-            if i < len(noreg_matches) - 1:
-                next_start = noreg_matches[i+1].start()
-                potential_sn = text[end_pos:next_start].strip()
+                # Item pertama: start dari awal text (atau setelah header jika ada)
+                nama_start = 0
                 
-                # Filter: Jika potential_sn panjang dan mengandung banyak kata, 
-                # kemungkinan itu nama barang item berikutnya, bukan S/N
-                words = potential_sn.split()
-                if len(words) <= 2 and len(potential_sn) < 30:
-                    # Kemungkinan ini S/N (pendek)
-                    sn = self._clean_sn(potential_sn)
-                else:
-                    # Kemungkinan ini nama barang item berikutnya
-                    sn = ""
+                # Cari header terakhir sebelum No.Reg pertama
+                header_pattern = r'(Nama\s+Barang|No\.?\s*Reg|S/N|EXISTING|TIDAK\s+TERPAKAI|CABUT|PENGGANTI)'
+                headers = list(re.finditer(header_pattern, text[:noreg_start], re.IGNORECASE))
+                if headers:
+                    nama_start = headers[-1].end()
             else:
-                # Item terakhir: cek apakah ada text pendek setelahnya
-                potential_sn = text[end_pos:min(len(text), end_pos + 50)].strip()
-                # Hanya ambil jika tidak ada keyword section berikutnya
-                if not re.search(r'CABUT|PENGGANTI|TIDAK\s*TERPAKAI', potential_sn, re.IGNORECASE):
-                    words = potential_sn.split()
-                    if len(words) <= 2 and len(potential_sn) < 30:
-                        sn = self._clean_sn(potential_sn)
+                # Item selanjutnya: start dari SETELAH No.Reg sebelumnya
+                nama_start = noreg_matches[i-1].end()
+            
+            # Extract text untuk nama barang
+            nama_text_raw = text[nama_start:noreg_start]
+            
+            # Clean dan extract nama barang
+            nama_barang = self._extract_nama_barang_before_noreg(nama_text_raw)
+            
+            # === HANDLE KATA TERPOTONG (seperti WARRANTY) ===
+            # Jika nama barang dimulai dengan kata UPPERCASE pendek (1-2 kata),
+            # kemungkinan itu lanjutan dari item sebelumnya
+            if i > 0 and len(items) > 0:
+                words = nama_barang.split()
+                
+                # Cek apakah kata pertama adalah continuation word (uppercase, pendek)
+                # seperti: WARRANTY, AND, DENGAN, dll
+                if len(words) >= 2:
+                    first_word = words[0]
+                    
+                    # Jika kata pertama uppercase dan pendek (< 12 chars)
+                    # DAN item sebelumnya tidak berakhir dengan kata tersebut
+                    # MAKA: pindahkan ke item sebelumnya
+                    if (first_word.isupper() and 
+                        len(first_word) <= 12 and 
+                        not items[-1]["nama_barang"].endswith(first_word)):
+                        
+                        # Tambahkan kata pertama ke item sebelumnya
+                        items[-1]["nama_barang"] += " " + first_word
+                        
+                        # Sisa kata jadi nama barang item ini
+                        nama_barang = ' '.join(words[1:])
+                        
+                        print(f"      ⚠ Detected continuation word: '{first_word}' moved to previous item")
+            
+            # Skip jika nama barang kosong atau invalid
+            if not nama_barang or len(nama_barang) < 3:
+                print(f"      ⚠ Skipping invalid item: empty nama_barang")
+                continue
+            
+            # S/N - kosong untuk layout 2 kolom
+            sn = ""
             
             item = {
                 "nama_barang": nama_barang,
@@ -1992,34 +2001,57 @@ class ChecklistWirelessParser(BaseParser):
             }
             
             items.append(item)
-            print(f"      • Item {i+1}: '{nama_barang[:30]}...' | {no_reg} | '{sn}'")
+            print(f"      • Item {len(items)}: '{nama_barang}' | {no_reg}")
+        
+        if not items:
+            print(f"    ✓ {section_name}: Tidak ada item valid (kosong)")
+        else:
+            print(f"    ✓ {section_name}: Found {len(items)} valid items")
         
         return items
 
 
-    def _clean_nama_barang(self, text: str) -> str:
+    def _extract_nama_barang_before_noreg(self, text: str) -> str:
         """
-        Clean nama barang dari noise
+        Extract nama barang dari text yang ADA SEBELUM No.Reg
+        
+        Strategy:
+        1. Clean dari header/keyword
+        2. Ambil maksimal 10 kata terakhir (cukup untuk nama panjang)
+        3. Clean whitespace dan symbols
         
         Args:
-            text: Raw text nama barang
+            text: Raw text sebelum No.Reg
             
         Returns:
             Cleaned nama barang
         """
-        # Remove common noise
+        # Remove headers dan keywords
+        text = re.sub(r'C\.?DATA\s*PERANGKAT', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'EXISTING', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'TIDAK\s+TERPAKAI', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'CABUT', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'PENGGANTI.*?PASANG\s+BARU', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'PENGGANTI', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'PASANG\s+BARU', '', text, flags=re.IGNORECASE)
         text = re.sub(r'Nama\s+Barang', '', text, flags=re.IGNORECASE)
         text = re.sub(r'No\.?\s*Reg', '', text, flags=re.IGNORECASE)
         text = re.sub(r'S/N', '', text, flags=re.IGNORECASE)
         
-        # Remove multiple spaces/newlines
+        # Normalize whitespace
         text = re.sub(r'\s+', ' ', text)
-        
-        # Strip whitespace
         text = text.strip()
         
         # Remove leading/trailing symbols
-        text = text.strip('|,.-_')
+        text = text.strip('|,.-_:;')
+        
+        # Ambil maksimal 10 kata terakhir
+        words = text.split()
+        if len(words) > 10:
+            text = ' '.join(words[-10:])
+        
+        # Final cleanup
+        text = text.strip()
         
         return text
 
@@ -2027,7 +2059,6 @@ class ChecklistWirelessParser(BaseParser):
     def _clean_sn(self, text: str) -> str:
         """
         Clean S/N dari noise
-        Biasanya S/N kosong, tapi kalau ada isinya, clean juga
         
         Args:
             text: Raw text S/N
@@ -2035,23 +2066,22 @@ class ChecklistWirelessParser(BaseParser):
         Returns:
             Cleaned S/N
         """
-        # Remove common keywords yang nyelip
+        # Remove common keywords
         keywords_to_remove = [
             r'TIDAK\s+TERPAKAI', r'CABUT', r'PENGGANTI', r'PASANG\s+BARU',
-            r'Nama\s+Barang', r'No\.?\s*Reg', r'S/N'
+            r'Nama\s+Barang', r'No\.?\s*Reg', r'S/N', r'EXISTING'
         ]
         
         for keyword in keywords_to_remove:
             text = re.sub(keyword, '', text, flags=re.IGNORECASE)
         
-        # Remove multiple spaces/newlines
+        # Normalize whitespace
         text = re.sub(r'\s+', ' ', text)
-        
-        # Strip whitespace
         text = text.strip()
+        text = text.strip('|,.-_:;')
         
-        # Jika hanya symbol, return kosong
-        if not text or re.match(r'^[|,.\-_\s]+$', text):
+        # Jika kosong atau hanya symbols
+        if not text or re.match(r'^[|,.\-_\s:;]+$', text):
             return ""
         
         return text

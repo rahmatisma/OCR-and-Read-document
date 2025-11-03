@@ -9,7 +9,6 @@ class LabelConfig:
     # Label untuk SPK Survey
     SPK_SURVEY = [
         "Dokumentasi foto",
-        # "Dokumentasi foto provisioning",  # ← DIHAPUS, tidak perlu diambil
         "Foto penempatan perangkat di lokasi pelanggan",
         "Foto jalur kabel dalam gedung",
         "Plan jalur dalam gedung",

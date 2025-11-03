@@ -13,16 +13,8 @@
             "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal4.jpg"
         },
         {
-            "jenis": "HASIL PEKERJAAN CABUT",
-            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal5.jpg"
-        },
-        {
-            "jenis": "HASIL PEKERJAAN CABUT",
-            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal6.jpg"
-        },
-        {
-            "jenis": "HASIL PEKERJAAN CABUT",
-            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal7.jpg"
+            "jenis": "DISMANTLE ITEMS",
+            "patch_foto": "output/images\\dismantle_items_hal5.jpg"
         }
     ],
     "parsed": {

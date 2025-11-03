@@ -5,36 +5,28 @@
             "patch_foto": "output/images\\hasil_instalasi_hal2.jpg"
         },
         {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal3.jpg"
+            "jenis": "PHOTO INSTALASI ETHERNET",
+            "patch_foto": "output/images\\photo_instalasi_ethernet_hal3.jpg"
         },
         {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal4.jpg"
+            "jenis": "PHOTO INSTALASI ETHERNET",
+            "patch_foto": "output/images\\photo_instalasi_ethernet_hal4.jpg"
         },
         {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal5.jpg"
+            "jenis": "PHOTO INSTALASI ETHERNET",
+            "patch_foto": "output/images\\photo_instalasi_ethernet_hal4.jpg"
         },
         {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal6.jpg"
+            "jenis": "FOTO LAIN-LAIN",
+            "patch_foto": "output/images\\foto_lain-lain_hal6.jpg"
         },
         {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal7.jpg"
+            "jenis": "LIST ITEM",
+            "patch_foto": "output/images\\list_item_hal8.jpg"
         },
         {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal8.jpg"
-        },
-        {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal9.jpg"
-        },
-        {
-            "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal10.jpg"
+            "jenis": "LIST ITEM",
+            "patch_foto": "output/images\\list_item_hal9.jpg"
         }
     ],
     "parsed": {
