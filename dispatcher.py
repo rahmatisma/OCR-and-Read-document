@@ -8,6 +8,7 @@ from parsers.spk_instalasi_parser import parse_spk_instalasi
 from parsers.spk_dismantle_parser import parse_spk_dismantle
 from parsers.spk_aktivasi_parser import parse_spk_aktivasi
 from parsers.checklist_wireless_parser import parse_checklist_wireless
+from parsers.checklist_wireline_parser import parse_checklist_wireline
 
 
 def detect_spk_type(all_text: str) -> str:
@@ -44,13 +45,15 @@ def detect_spk_type(all_text: str) -> str:
         return "unknown"
 
 
-def dispatch_parser(all_text: str, page_texts: list) -> dict:
+# ========== UPDATE FUNCTION INI ==========
+def dispatch_parser(all_text: str, page_texts: list, ocr_data: list = None) -> dict:
     """
     Dispatcher untuk mengarahkan teks ke parser sesuai jenis SPK.
     
     Args:
         all_text: Teks lengkap dari PDF
         page_texts: List teks per halaman (legacy, untuk backward compatibility)
+        ocr_data: List of OCR data dengan bbox/position (BARU)
         
     Returns:
         Dictionary dengan format:
@@ -64,6 +67,13 @@ def dispatch_parser(all_text: str, page_texts: list) -> dict:
     # Deteksi jenis SPK
     spk_type = detect_spk_type(all_text)
     print(f"[INFO] Dispatcher: Jenis dokumen terdeteksi = {spk_type}")
+    
+    # ========== DEBUG OCR DATA ==========
+    if ocr_data:
+        print(f"[INFO] Dispatcher: OCR data tersedia ({len(ocr_data)} items)")
+    else:
+        print(f"[WARNING] Dispatcher: OCR data KOSONG atau None")
+    # ====================================
 
     # Mapping jenis SPK ke parser
     parser_map = {
@@ -71,7 +81,8 @@ def dispatch_parser(all_text: str, page_texts: list) -> dict:
         "spk_instalasi": parse_spk_instalasi,
         "spk_dismantle": parse_spk_dismantle,
         "spk_aktivasi": parse_spk_aktivasi,
-        "checklist_wireless": parse_checklist_wireless,  # Reuse aktivasi parser
+        "checklist_wireless": parse_checklist_wireless,
+        "checklist_wireline": parse_checklist_wireline,
     }
 
     # Ambil parser yang sesuai
@@ -79,8 +90,20 @@ def dispatch_parser(all_text: str, page_texts: list) -> dict:
 
     if parser_func:
         try:
-            # Panggil parser
-            parsed_data = parser_func(all_text, page_texts)
+            # ========== PASS OCR DATA KE PARSER ==========
+            # Cek apakah parser support ocr_data parameter
+            import inspect
+            sig = inspect.signature(parser_func)
+            
+            if 'ocr_data' in sig.parameters:
+                # Parser support ocr_data
+                print(f"[INFO] Calling parser dengan OCR data")
+                parsed_data = parser_func(all_text, page_texts, ocr_data=ocr_data)
+            else:
+                # Parser belum support ocr_data (backward compatibility)
+                print(f"[WARNING] Parser {parser_func.__name__} belum support ocr_data")
+                parsed_data = parser_func(all_text, page_texts)
+            # =============================================
             
             # Tambahkan document_type ke hasil
             result = {
@@ -89,7 +112,8 @@ def dispatch_parser(all_text: str, page_texts: list) -> dict:
                 "data": parsed_data,
                 "metadata": {
                     "parser_used": parser_func.__name__,
-                    "detection_confidence": "high"
+                    "detection_confidence": "high",
+                    "ocr_data_available": bool(ocr_data)  # ← TAMBAHKAN INFO INI
                 }
             }
             
@@ -97,6 +121,9 @@ def dispatch_parser(all_text: str, page_texts: list) -> dict:
             
         except Exception as e:
             print(f"[ERROR] Parser gagal: {e}")
+            import traceback
+            traceback.print_exc()
+            
             return {
                 "document_type": spk_type,
                 "jenis_spk": spk_type.replace("spk_", ""),

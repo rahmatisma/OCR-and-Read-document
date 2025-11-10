@@ -18,20 +18,22 @@ def ensure_dir(path):
         os.makedirs(path)
 
 
-def process_page_ocr(page, enhance=False, return_structured=False, max_dimension=1920):
+def process_page_ocr(page, enhance=False, return_structured=False, return_data=False, max_dimension=1920):
     """
     Proses OCR pada satu halaman PDF dengan opsi structured output.
     
     Args:
         page: PyMuPDF page object
         enhance: Apply preprocessing (False = lebih cepat untuk form jelas)
-        return_structured: Return dict dengan OCR data detail atau string saja
+        return_structured: Return tuple (text, lines) - DEPRECATED, gunakan return_data
+        return_data: Return dict {'text': str, 'data': list} untuk parser (RECOMMENDED)
         max_dimension: Maksimum dimensi gambar untuk speed optimization
     
     Returns:
-        - String: teks saja (jika return_structured=False)
-        - Tuple: (text, ocr_lines) (jika return_structured=True)
-            ocr_lines format: [{'text': str, 'score': float, 'bbox': list, 'position': tuple}, ...]
+        - String: teks saja (default)
+        - Tuple: (text, ocr_lines) (jika return_structured=True) - DEPRECATED
+        - Dict: {'text': str, 'data': list} (jika return_data=True) - RECOMMENDED
+            data format: [{'text': str, 'score': float, 'bbox': [x1,y1,x2,y2], 'position': (y,x)}, ...]
     """
     try:
         # 1. Render dengan DPI optimal (150 untuk balance speed/quality)
@@ -50,7 +52,7 @@ def process_page_ocr(page, enhance=False, return_structured=False, max_dimension
         img_np = np.array(img)
         
         # 3. Jalankan OCR
-        if return_structured:
+        if return_data or return_structured:
             # Return structured data untuk coordinate-based parsing
             result = run_ocr(img_np, enhance_image=enhance, return_structured=True)
             
@@ -61,8 +63,17 @@ def process_page_ocr(page, enhance=False, return_structured=False, max_dimension
                 print(f"[DEBUG] Sample OCR items (first 5):")
                 for i, item in enumerate(result['lines'][:5]):
                     text_preview = item['text'][:50] + "..." if len(item['text']) > 50 else item['text']
-                    print(f"  [{i}] '{text_preview}' (score={item['score']:.2f})")
+                    print(f"  [{i}] '{text_preview}' (score={item['score']:.2f}, bbox={item.get('bbox', 'N/A')})")
             
+            # ========== NEW: Return format untuk parser ==========
+            if return_data:
+                return {
+                    'text': result['text'],
+                    'data': result['lines']  # lines sudah ada bbox dan position
+                }
+            # =====================================================
+            
+            # Backward compatibility untuk return_structured
             return result['text'], result['lines']
         else:
             # Return text only (backward compatible)
@@ -74,6 +85,8 @@ def process_page_ocr(page, enhance=False, return_structured=False, max_dimension
         import traceback
         traceback.print_exc()
         
+        if return_data:
+            return {'text': '', 'data': []}
         if return_structured:
             return "", []
         return ""

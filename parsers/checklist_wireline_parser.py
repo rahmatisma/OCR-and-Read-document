@@ -1,2 +1,1022 @@
-def parse_checklist_wireline (all_text: str, page_texts: list[str]) -> dict:
-    print("Parsing checklist wireline...")
+"""
+Checklist Wireless Parser V11 - CABUT/PENGGANTI EXTRACTION FIXED
+Taruh file ini di: parsers/checklist_wireless_parser.py
+
+Critical Fixes:
+1. Fixed CABUT/PENGGANTI extraction -gunakan spatial detection dari OCR
+2. Extract nama barang per-column (tidak cross-column)
+3. Handle multi-line nama barang dengan OCR proximity detection
+4. Fallback ke text-based splitting jika OCR data tidak tersedia
+"""
+import re
+from .base_parser import BaseParser
+
+
+def parse_checklist_wireline(all_text: str, page_texts: list[str], ttd_results: dict = None, doc_results: dict = None, ocr_data: list = None) -> dict:
+    """Fungsi wrapper untuk kompatibilitas dengan kode lama"""
+    parser = ChecklistWirelineParser(all_text, page_texts, ttd_results, doc_results, ocr_data)
+    return parser.parse()
+
+
+class ChecklistWirelineParser(BaseParser):
+    """Parser untuk Form Checklist Maintenance Remote Wireless"""
+    
+    FIELD_LABELS = [
+        "Nama Pelanggan", "Contact Person", "Nomor Jaringan", "Nomor Telepon",
+        "Alamat", "Kota", "Propinsi", "Provinsi", "No. SPK", "No SPK", "Tanggal",
+        "Jam Perintah", "Jam Persiapan", "Jam Berangkat", "Jam Tiba Di Lokasi",
+        "Jam Mulai Kerja", "Jam Selesai Kerja", "Jam Pulang", "Jam Tiba Di Kantor"
+    ]
+    
+    def __init__(self, all_text: str, page_texts: list[str], ttd_results: dict = None, doc_results: dict = None, ocr_data: list = None):
+        super().__init__(all_text, page_texts)
+        self.ttd_results = ttd_results or {}
+        self.doc_results = doc_results or {}
+        self.ocr_data = ocr_data or []
+        
+        self.cleaned_text = self._clean_text(all_text)
+        
+        self.spatial_map = {}
+        if self.ocr_data:
+            self._build_spatial_map()
+    
+    def _clean_text(self, text: str) -> str:
+        """Clean text dari OCR artifacts"""
+        text = re.sub(r'\b(\d{2})-Jum-(\d{4})', r'\1-Jun-\2', text)
+        text = re.sub(r' +', ' ', text)
+        text = text.replace('：', ':')
+        return text
+    
+    def _build_spatial_map(self):
+        """Build spatial map dari OCR data"""
+        for idx, item in enumerate(self.ocr_data):
+            text_key = self._normalize_text(item['text'])
+            self.spatial_map[text_key] = {
+                'text': item['text'],
+                'bbox': item.get('bbox', []),
+                'position': item.get('position', (0, 0)),
+                'index': idx,
+                'score': item.get('score', 1.0)
+            }
+    
+    def _normalize_text(self, text: str) -> str:
+        """Normalize text untuk matching"""
+        return text.lower().replace(' ', '').replace(':', '').replace('：', '')
+    
+    def _find_field_spatial(self, field_pattern: str) -> dict:
+        """Cari field label menggunakan spatial map"""
+        if not self.spatial_map:
+            return None
+        
+        for text_key, data in self.spatial_map.items():
+            if re.search(field_pattern, data['text'], re.IGNORECASE):
+                return data
+        
+        return None
+    
+    def _get_values_after_field(self, field_index: int, max_items: int = 5) -> list:
+        """Ambil multiple values setelah field"""
+        if field_index < 0 or field_index >= len(self.ocr_data):
+            return []
+        
+        field_item = self.ocr_data[field_index]
+        field_y = field_item['position'][0]
+        
+        values = []
+        
+        for i in range(field_index + 1, min(field_index + max_items + 1, len(self.ocr_data))):
+            item = self.ocr_data[i]
+            item_text = item['text'].strip()
+            
+            if item_text in [':', '：', '.', ',', '-']:
+                continue
+            
+            if self._is_field_label(item_text):
+                break
+            
+            item_y = item['position'][0]
+            y_distance = abs(item_y - field_y)
+            
+            if y_distance < 40:
+                values.append(item_text)
+        
+        return values
+    
+    def _is_field_label(self, text: str) -> bool:
+        """Check apakah text adalah field label"""
+        text_normalized = text.strip().lower()
+        for label in self.FIELD_LABELS:
+            if label.lower() in text_normalized:
+                return True
+        return False
+    
+    def _clean_value(self, value: str) -> str:
+        """Clean extracted value"""
+        if not value:
+            return ""
+        
+        value = re.sub(r'^[:\：\s]+', '', value)
+        value = re.sub(r'^i:', '', value)
+        value = value.strip(' :：.,')
+        
+        return value
+    
+    def _extract_field_simple(self, field_pattern: str) -> str:
+        """Simple extraction untuk non-datetime fields"""
+        
+        if not self.ocr_data:
+            return self._extract_field_regex(field_pattern)
+        
+        field_info = self._find_field_spatial(field_pattern)
+        
+        if not field_info:
+            return self._extract_field_regex(field_pattern)
+        
+        field_index = field_info['index']
+        values = self._get_values_after_field(field_index, max_items=3)
+        
+        if not values:
+            return self._extract_field_regex(field_pattern)
+        
+        value = values[0] if values else ""
+        cleaned = self._clean_value(value)
+        
+        return cleaned
+    
+    def _extract_field_regex(self, field_pattern: str) -> str:
+        """Fallback regex extraction"""
+        pattern = rf"{field_pattern}\s*[：:]?\s*([^\n]+?)(?=\n|$)"
+        match = re.search(pattern, self.cleaned_text, re.IGNORECASE)
+        
+        if match:
+            value = match.group(1).strip()
+            value = self._clean_value(value)
+            
+            for label in self.FIELD_LABELS:
+                if label in value:
+                    value = value.split(label)[0].strip()
+            
+            if value and not self._is_field_label(value):
+                return value
+        
+        return ""
+    
+    def parse(self) -> dict:
+        """Entry point untuk parsing"""
+        data = self._init_data_structure_checklist_wireline()
+        
+        # Parse DATA REMOTE
+        self._parse_data_remote(data["data_remote"])
+        self._parse_global_checklist(data["global_checklist"])
+        self._parse_data_perangkat(data["data_perangkat"])
+        
+        return data
+    
+    def _parse_data_remote(self, data_remote: dict):
+        """Parse bagian data remote"""
+        
+        data_remote["nama_pelanggan"] = self._extract_field_simple(r"Nama\s*Pelanggan")
+        data_remote["contact_person"] = self._extract_field_simple(r"Contact\s*Person")
+        data_remote["nomor_jaringan"] = self._extract_field_simple(r"Nomor\s*Jaringan")
+        data_remote["nomor_telepon"] = self._extract_field_simple(r"Nomor\s*Telepon")
+        data_remote["alamat"] = self._extract_field_simple(r"Alamat")
+        data_remote["kota"] = self._extract_field_simple(r"Kota")
+        
+        # Propinsi with validation
+        propinsi = self._extract_field_simple(r"Prop(?:i|o)nsi")
+        if "SPK" in propinsi or "spk" in propinsi.lower():
+            propinsi = ""
+        data_remote["propinsi"] = propinsi
+        
+        data_remote["no_spk"] = self._extract_field_simple(r"No\.?\s*SPK")
+        data_remote["tanggal"] = self._extract_tanggal()
+        
+        self._parse_pelaksanaan(data_remote["pelaksanaan"])
+    
+    def _extract_tanggal(self) -> str:
+        """Extract tanggal field (bukan jam pelaksanaan)"""
+        pattern = r"Tanggal\s*[：:]?\s*(\d{2}-[A-Za-z]{3}-\d{4}(?:\s+\d{2}:\d{2})?)"
+        match = re.search(pattern, self.cleaned_text, re.IGNORECASE)
+        
+        if match:
+            return match.group(1)
+        
+        return ""
+    
+    def _parse_pelaksanaan(self, pelaksanaan: dict):
+        """Parse pelaksanaan dengan table-aware extraction"""
+        
+        jam_section = self._extract_jam_section()
+        
+        if not jam_section:
+            return
+        
+        # Extract all dates and times
+        dates = re.findall(r'\d{2}-[A-Za-z]{3}-\d{4}', jam_section)
+        times = re.findall(r'\d{2}:\d{2}', jam_section)
+        
+        # Standard mapping for 6-datetime format
+        standard_mapping = {
+            "jam_perintah": 0,
+            "jam_persiapan": 1,
+            "jam_berangkat": 2,
+            "jam_tiba_di_lokasi": 3,
+            "jam_mulai_kerja": 4,
+            "jam_selesai_kerja": 5,
+            "jam_pulang": None,
+            "jam_tiba_di_kantor": None
+        }
+        
+        # Apply mapping
+        for field_key, idx in standard_mapping.items():
+            if idx is None:
+                field_value = self._check_field_in_text(field_key)
+                pelaksanaan[field_key] = field_value
+            elif idx < len(dates) and idx < len(times):
+                pelaksanaan[field_key] = f"{dates[idx]} {times[idx]}"
+            elif idx < len(dates):
+                pelaksanaan[field_key] = dates[idx]
+            else:
+                pelaksanaan[field_key] = ""
+    
+    def _extract_jam_section(self) -> str:
+        """Extract jam pelaksanaan section"""
+        match = re.search(
+            r'Jam\s*Perintah.*?(?=GLOBAL|Latitude|DATA\s*LOKASI|$)', 
+            self.cleaned_text, 
+            re.IGNORECASE | re.DOTALL
+        )
+        
+        return match.group() if match else ""
+    
+    def _check_field_in_text(self, field_key: str) -> str:
+        """Check if a supposedly empty field actually has value in text"""
+        
+        pattern_map = {
+            "jam_pulang": r"Jam\s*Pulang\s*[：:]?\s*(\d{2}-[A-Za-z]{3}-\d{4}(?:\s+\d{2}:\d{2})?)",
+            "jam_tiba_di_kantor": r"Jam\s*Tiba\s*(?:Di\s*)?Kantor\s*[：:]?\s*(\d{2}-[A-Za-z]{3}-\d{4}(?:\s+\d{2}:\d{2})?)"
+        }
+        
+        pattern = pattern_map.get(field_key)
+        if not pattern:
+            return ""
+        
+        match = re.search(pattern, self.cleaned_text, re.IGNORECASE)
+        return match.group(1) if match else ""
+    
+    def validate(self) -> bool:
+        """Validasi dokumen wireless"""
+        return "WIRELESS" in self.all_text.upper() or "WIRELINE" in self.all_text.upper()
+    
+    # ==================== GLOBAL CHECKLIST PARSER ====================
+    
+    def _parse_global_checklist(self, global_checklist: dict):
+        """Parse bagian GLOBAL CHECKLIST"""
+        
+        global_section = self._extract_global_section()
+        
+        if not global_section:
+            return
+        
+        self._parse_data_lokasi(global_checklist["data_lokasi"], global_section)
+        self._parse_electrical(global_checklist["electrical"], global_section)
+        self._parse_environment(global_checklist["environment"], global_section)
+    
+    def _extract_global_section(self) -> str:
+        """Extract GLOBAL CHECKLIST section"""
+        match = re.search(
+            r'GLOBAL\s*CHECKLIST.*?(?=\n\s*(?:INDOOR|OUTDOOR)\s*AREA|KESIMPULAN|CHECKLIST\s*PERANGKAT|$)',
+            self.cleaned_text,
+            re.IGNORECASE | re.DOTALL
+        )
+        
+        return match.group() if match else ""
+    
+    def _parse_data_lokasi(self, data_lokasi: dict, section_text: str):
+        """Parse DATA LOKASI dari GLOBAL CHECKLIST"""
+        
+        # Extract Latitude
+        lat_pattern = r"Latitude\s*[：:]?\s*([\d°'\"\.]+?)(?=\s+Longitude|\s+\d+\.|\s+1\.)"
+        lat_match = re.search(lat_pattern, section_text, re.IGNORECASE)
+        data_lokasi["latitude"] = lat_match.group(1).strip() if lat_match and lat_match.group(1).strip() != "." else ""
+        
+        # Extract Longitude
+        long_pattern = r"Longitude\s*[：:]?\s*([^\s]+)"
+        long_match = re.search(long_pattern, section_text, re.IGNORECASE)
+        if long_match:
+            long_value = long_match.group(1).strip()
+            long_value = re.split(r'(?=Posisi|PLN|UPS|P-N)', long_value, flags=re.IGNORECASE)[0]
+            data_lokasi["longitude"] = long_value if long_value != "." else ""
+        else:
+            data_lokasi["longitude"] = ""
+        
+        # Extract Posisi Modem
+        posisi_pattern = r"Posisi\s*Modem\s*di\s*Lt\.\s*[：:]?\s*([a-zA-Z\s]+?)(?=\s+Ruang|\s+P-N|\s+\d{3})"
+        posisi_match = re.search(posisi_pattern, section_text, re.IGNORECASE)
+        data_lokasi["posisi_modem_di_lt"] = posisi_match.group(1).strip() if posisi_match else ""
+        
+        # Extract Ruang
+        ruang_pattern = r"Ruang\s*[：:]?\s*([a-zA-Z\s]+?)(?=\s+P-G|\s+\d{3}\.|\s+\d+\s*VAC)"
+        ruang_match = re.search(ruang_pattern, section_text, re.IGNORECASE)
+        data_lokasi["ruang"] = ruang_match.group(1).strip() if ruang_match else ""
+    
+    def _parse_electrical(self, electrical: dict, section_text: str):
+        """Parse ELECTRICAL section dari GLOBAL CHECKLIST"""
+        
+        # 1. Output Tegangan yang mengacu ke modem
+        tegangan_section = self._extract_tegangan_table(section_text)
+        
+        if tegangan_section:
+            # Extract each row and assign to nested structure
+            p_n_data = self._extract_tegangan_row(tegangan_section, "P-N")
+            p_g_data = self._extract_tegangan_row(tegangan_section, "P-G")
+            n_g_data = self._extract_tegangan_row(tegangan_section, "N-G")
+            
+            # Assign to existing nested structure
+            electrical["output_tegangan_mengacu_modem"]["p_n"] = p_n_data
+            electrical["output_tegangan_mengacu_modem"]["p_g"] = p_g_data
+            electrical["output_tegangan_mengacu_modem"]["n_g"] = n_g_data
+        
+        # 2. Grounding Bar terkoneksi ke
+        grounding_pattern = r"Grounding\s*Bar\s*terkoneksi\s*ke\s*[：:]?\s*([A-Za-z\s]+?)(?=\s*NDOORAREA|\s*INDOOR|\s*OUTDOOR|\s*$)"
+        grounding_match = re.search(grounding_pattern, section_text, re.IGNORECASE)
+        
+        if grounding_match:
+            value = grounding_match.group(1).strip()
+            electrical["grounding_bar_terkoneksi_ke"] = value if not re.search(r'INDOOR|OUTDOOR|AREA|NDOOR', value, re.IGNORECASE) else ""
+        else:
+            electrical["grounding_bar_terkoneksi_ke"] = ""
+    
+    def _extract_tegangan_table(self, section_text: str) -> str:
+        """Extract tegangan table section"""
+        
+        pattern1 = r'Output\s*Tegangan.*?(?=Grounding\s*Bar|ENVIRONMENT|INDOOR|OUTDOOR|$)'
+        match = re.search(pattern1, section_text, re.IGNORECASE | re.DOTALL)
+        
+        if match:
+            return match.group()
+        
+        pattern2 = r'1\.\s*Output\s*Tegangan.*?(?=\n\s*2\.|$)'
+        match = re.search(pattern2, section_text, re.IGNORECASE | re.DOTALL)
+        
+        if match:
+            return match.group()
+        
+        return ""
+    
+    def _extract_tegangan_row(self, table_text: str, row_label: str) -> dict:
+        """Extract satu row dari tegangan table (PLN, UPS, IT)"""
+        
+        row_data = {"pln": "", "ups": "", "it": ""}
+        
+        # Pattern 1: Format dengan angka atau titik
+        pattern1 = rf"{row_label}\s+([\d\.]+)\s*VAC\s+([\d\.]+)\s*VAC\s+([\d\.]+)\s*VAC"
+        match = re.search(pattern1, table_text, re.IGNORECASE)
+        
+        if match:
+            pln_val = match.group(1).strip()
+            ups_val = match.group(2).strip()
+            it_val = match.group(3).strip()
+            
+            row_data["pln"] = f"{pln_val} VAC" if pln_val != "." else ""
+            row_data["ups"] = f"{ups_val} VAC" if ups_val != "." else ""
+            row_data["it"] = f"{it_val} VAC" if it_val != "." else ""
+            return row_data
+        
+        # Pattern 2: Format dengan explicit ". VAC"
+        pattern2 = rf"{row_label}\s+([\d\.]+\s+VAC)\s+(\.\s+VAC)\s+(\.\s+VAC)"
+        match = re.search(pattern2, table_text, re.IGNORECASE)
+        
+        if match:
+            pln = match.group(1).strip()
+            ups = match.group(2).strip()
+            it = match.group(3).strip()
+            
+            row_data["pln"] = pln if not pln.startswith('.') else ""
+            row_data["ups"] = "" if ups.startswith('. ') else ups
+            row_data["it"] = "" if it.startswith('. ') else it
+            return row_data
+        
+        # Pattern 3: Flexible fallback
+        row_pattern = rf"{row_label}\s+(.+?)(?=\n|P-[NG]|N-G|Grounding|$)"
+        row_match = re.search(row_pattern, table_text, re.IGNORECASE)
+        
+        if row_match:
+            row_content = row_match.group(1)
+            vac_values = re.findall(r'([\d\.]+)\s*VAC', row_content)
+            
+            if vac_values:
+                if len(vac_values) >= 1:
+                    row_data["pln"] = f"{vac_values[0]} VAC" if vac_values[0] != "." else ""
+                if len(vac_values) >= 2:
+                    row_data["ups"] = f"{vac_values[1]} VAC" if vac_values[1] != "." else ""
+                if len(vac_values) >= 3:
+                    row_data["it"] = f"{vac_values[2]} VAC" if vac_values[2] != "." else ""
+        
+        return row_data
+    
+    def _parse_environment(self, environment: dict, section_text: str):
+        """Parse ENVIRONMENT section dari GLOBAL CHECKLIST"""
+        
+        # 1. AC Pendingin Ruangan
+        ac_pattern = r"(?:\d+\.)?\s*AC\s*Pendingin\s*Ruangan\s*[：:]?\s*([A-Za-z]+)"
+        ac_match = re.search(ac_pattern, section_text, re.IGNORECASE)
+        environment["ac_pendingin_ruangan"] = ac_match.group(1).strip() if ac_match else ""
+        
+        # 2. Suhu Ruangan Perangkat
+        suhu_pattern = r"Suhu\s*Ruangan\s*Perangkat\s*[：:]?\s*([\d\.]+)\s*[°℃C}]?"
+        suhu_match = re.search(suhu_pattern, section_text, re.IGNORECASE)
+        environment["suhu_ruangan_perangkat"] = f"{suhu_match.group(1).strip()}°" if suhu_match else ""
+
+    # ==================== DATA PERANGKAT PARSER - FIXED VERSION ====================
+    
+    def _extract_data_perangkat_section(self) -> str:
+        """Extract text dari section C. DATA PERANGKAT"""
+        
+        patterns = [
+            r'(?:C\.\s*)?DATA\s+PERANGKAT.*?(?=(?:D\.\s*)?VERIFIKASI|DOKUMENTASI|$)',
+            r'(?:C\.)?DATAPERANGKAT.*?(?=(?:D\.)?VERIFIKASI|DOKUMENTASI|$)',
+            r'(?:C\.\s*)?DATA\s*PERANGKAT.*?(?=(?:D\.\s*)?VERIFIKASI|DOKUMENTASI|$)',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, self.cleaned_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                perangkat_text = match.group()
+                
+                perangkat_keywords = ["EXISTING", "CABUT", "TIDAK TERPAKAI", "PENGGANTI"]
+                keyword_count = sum(1 for kw in perangkat_keywords if kw in perangkat_text.upper())
+                
+                if keyword_count >= 2:
+                    return perangkat_text
+        
+        return ""
+    
+    def _parse_data_perangkat(self, data_perangkat: dict):
+        print("\n" + "="*60)
+        print("Parsing C. DATA PERANGKAT (FIXED)")
+        print("="*60)
+        
+        # ===== TAMBAHKAN INI =====
+        print(f"\n[DEBUG] OCR Data Status:")
+        print(f"  - Available: {bool(self.ocr_data)}")
+        print(f"  - Length: {len(self.ocr_data) if self.ocr_data else 0}")
+        
+        if self.ocr_data:
+            print(f"\n[DEBUG] First 20 OCR items:")
+            for i, item in enumerate(self.ocr_data[:20]):
+                print(f"  [{i}] text='{item['text'][:30]}...' bbox={item.get('bbox', [])} pos={item.get('position', ())}")
+        # =========================
+        
+        perangkat_text = self._extract_data_perangkat_section()
+        # exit()
+        """Parse section C. DATA PERANGKAT - FIXED VERSION"""
+        print("\n" + "="*60)
+        print("Parsing C. DATA PERANGKAT (FIXED)")
+        print("="*60)
+        
+        perangkat_text = self._extract_data_perangkat_section()
+        
+        if not perangkat_text:
+            print("✗ Section DATA PERANGKAT tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        # ===== TAMBAHKAN DEBUG PRINT DI SINI =====
+        print("\n[DEBUG] FULL PERANGKAT TEXT:")
+        print(repr(perangkat_text[:500]))  # Print 500 karakter pertama
+        print("=" * 60)
+        # =========================================
+        
+        # Parse section EXISTING/TIDAK TERPAKAI
+        existing_section = self._extract_section_before_cabut(perangkat_text)
+        
+        if existing_section:
+            left_col, right_col = self._split_columns_by_header(existing_section)
+            
+            left_items = self._extract_items_by_noreg(left_col, "EXISTING_COL")
+            right_items = self._extract_items_by_noreg(right_col, "TIDAK_TERPAKAI_COL")
+            
+            # Handle column swap
+            if len(left_items) == 0 and len(right_items) > 0:
+                print("[SWAP] Swapping EXISTING ↔ TIDAK TERPAKAI")
+                data_perangkat["existing"] = right_items
+                data_perangkat["tidak_terpakai"] = left_items
+            else:
+                data_perangkat["existing"] = left_items
+                data_perangkat["tidak_terpakai"] = right_items
+        
+        # Parse section CABUT/PENGGANTI - FIXED WITH OCR DETECTION
+        cabut_section = self._extract_section_after_cabut(perangkat_text)
+        
+        # ===== TAMBAHKAN DEBUG PRINT UNTUK CABUT SECTION =====
+        print("\n[DEBUG] RAW CABUT SECTION:")
+        print(repr(cabut_section))
+        print("=" * 60)
+        
+        # Debug: Header detection
+        header_matches = list(re.finditer(r'Nama\s+Barang', cabut_section, re.IGNORECASE))
+        print(f"\n[DEBUG] Found {len(header_matches)} 'Nama Barang' headers at positions:")
+        for i, m in enumerate(header_matches):
+            print(f"  Header {i+1}: position {m.start()}")
+        
+        # Debug: No.Reg detection
+        noreg_pattern = r'B2W[A-Z][A-Z0-9]{10,}'
+        noreg_matches = list(re.finditer(noreg_pattern, cabut_section, re.IGNORECASE))
+        print(f"\n[DEBUG] Found {len(noreg_matches)} No.Reg:")
+        for m in noreg_matches:
+            print(f"  - {m.group()} at position {m.start()}")
+        print("=" * 60 + "\n")
+        # ======================================================
+        
+        if cabut_section:
+            # NEW: Use OCR-based extraction
+            all_items = self._extract_items_by_noreg_with_column_detect(cabut_section)
+            
+            if all_items:
+                # FIX: Don't use pop() in list comprehension (causes issues)
+                cabut_items = []
+                pengganti_items = []
+                
+                for item in all_items:
+                    column = item.get('column', None)
+                    # Remove column flag before adding
+                    item_clean = {k: v for k, v in item.items() if k != 'column'}
+                    
+                    if column == 'left':
+                        cabut_items.append(item_clean)
+                    elif column == 'right':
+                        pengganti_items.append(item_clean)
+                
+                data_perangkat["cabut"] = cabut_items
+                data_perangkat["pengganti_atau_pasang_baru"] = pengganti_items
+                
+                print(f"✓ OCR-based extraction: CABUT={len(cabut_items)}, PENGGANTI={len(pengganti_items)}")
+            else:
+                # Fallback
+                print("⚠ OCR extraction failed, using fallback")
+                left_col, right_col = self._split_columns_by_header(cabut_section)
+                left_items = self._extract_items_by_noreg(left_col, "CABUT_COL")
+                right_items = self._extract_items_by_noreg(right_col, "PENGGANTI_COL")
+                
+                if len(left_items) == 0 and len(right_items) > 0:
+                    print("[SWAP] Swapping CABUT ↔ PENGGANTI")
+                    data_perangkat["cabut"] = right_items
+                    data_perangkat["pengganti_atau_pasang_baru"] = left_items
+                else:
+                    data_perangkat["cabut"] = left_items
+                    data_perangkat["pengganti_atau_pasang_baru"] = right_items
+        
+        # Extract Note
+        note_pattern = r'Note\s*:\s*(.+?)$'
+        note_match = re.search(note_pattern, perangkat_text, re.IGNORECASE)
+        if note_match:
+            data_perangkat["note"] = note_match.group(1).strip()
+        
+        print(f"✓ EXISTING: {len(data_perangkat['existing'])} items")
+        print(f"✓ TIDAK TERPAKAI: {len(data_perangkat['tidak_terpakai'])} items")
+        print(f"✓ CABUT: {len(data_perangkat['cabut'])} items")
+        print(f"✓ PENGGANTI: {len(data_perangkat['pengganti_atau_pasang_baru'])} items")
+        print("="*60 + "\n")
+
+    def _extract_section_before_cabut(self, text: str) -> str:
+        """Extract section EXISTING/TIDAK TERPAKAI"""
+        pattern = r'(?:EXISTING.*?)(?=\bCABUT\b|$)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        return match.group() if match else ""
+
+    def _extract_section_after_cabut(self, text: str) -> str:
+        """Extract section CABUT/PENGGANTI"""
+        pattern = r'\bCABUT\b.*?$'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        return match.group() if match else ""
+
+    def _split_columns_by_header(self, text: str) -> tuple:
+        """Split text menjadi 2 kolom berdasarkan header 'Nama Barang'"""
+        header_pattern = r'Nama\s+Barang'
+        headers = list(re.finditer(header_pattern, text, re.IGNORECASE))
+        
+        if len(headers) < 2:
+            return text, ""
+        
+        first_header_start = headers[0].start()
+        second_header_start = headers[1].start()
+        
+        left_column = text[first_header_start:second_header_start]
+        right_column = text[second_header_start:]
+        
+        return left_column.strip(), right_column.strip()
+
+    def _extract_items_by_noreg(self, text: str, section_name: str) -> list:
+        """Extract items dari text berdasarkan No.Reg pattern"""
+        items = []
+        
+        if not text or len(text) < 10:
+            return []
+        
+        noreg_pattern = r'B2W[A-Z][A-Z0-9]{10,}'
+        noreg_matches = list(re.finditer(noreg_pattern, text, re.IGNORECASE))
+        
+        if not noreg_matches:
+            return []
+        
+        for i, match in enumerate(noreg_matches):
+            no_reg = match.group()
+            noreg_start = match.start()
+            noreg_end = match.end()
+            
+            # Extract nama barang BEFORE No.Reg
+            if i == 0:
+                nama_before_start = 0
+            else:
+                nama_before_start = noreg_matches[i-1].end()
+            
+            nama_before_raw = text[nama_before_start:noreg_start]
+            
+            # Extract nama barang AFTER No.Reg
+            nama_after_start = noreg_end
+            if i < len(noreg_matches) - 1:
+                nama_after_end = noreg_matches[i + 1].start()
+            else:
+                nama_after_end = min(noreg_end + 200, len(text))
+            
+            nama_after_raw = text[nama_after_start:nama_after_end]
+            
+            # Combine before + after
+            nama_combined_raw = nama_before_raw + " " + nama_after_raw
+            nama_barang = self._clean_nama_barang_flexible(nama_combined_raw)
+            
+            if not nama_barang or len(nama_barang) < 3:
+                continue
+            
+            items.append({
+                "nama_barang": nama_barang,
+                "no_reg": no_reg,
+                "sn": ""
+            })
+        
+        return items
+    
+    def _extract_items_by_noreg_with_column_detect(self, text: str) -> list:
+        """
+        Extract items dengan automatic column detection - FIXED VERSION
+        
+        Strategy:
+        1. Find all No.Reg positions
+        2. Try spatial detection first (if OCR data available)
+        3. Fallback: text-based column detection
+        
+        Returns:
+            list of items dengan flag 'column': 'left' atau 'right'
+        """
+        print(f"\n    [COLUMN DETECT] Starting...")
+        
+        if not text or len(text) < 10:
+            print(f"    [COLUMN DETECT] Text too short")
+            return []
+        
+        noreg_pattern = r'B2W[A-Z][A-Z0-9]{10,}'
+        noreg_matches = list(re.finditer(noreg_pattern, text, re.IGNORECASE))
+        
+        if not noreg_matches:
+            print(f"    [COLUMN DETECT] No No.Reg found")
+            return []
+        
+        print(f"    [COLUMN DETECT] Found {len(noreg_matches)} No.Reg")
+        
+        # Try spatial detection first
+        if self.ocr_data:
+            items_with_columns = self._detect_columns_by_spatial_fixed(noreg_matches, text)
+            if items_with_columns:
+                print(f"    [COLUMN DETECT] ✓ Success via SPATIAL method")
+                return items_with_columns
+        
+        # Fallback: Text-based column detection
+        print(f"    [COLUMN DETECT] Using TEXT-BASED method")
+        return self._extract_items_text_based(noreg_matches, text)
+    
+    def _detect_columns_by_spatial_fixed(self, noreg_matches: list, text: str) -> list:
+        """
+        Detect columns menggunakan OCR bbox/position data - FIXED VERSION
+        
+        Returns:
+            list of items dengan column flag, atau None jika gagal
+        """
+        if not self.ocr_data:
+            return None
+        
+        noreg_spatial = []
+        
+        for match in noreg_matches:
+            no_reg_text = match.group()
+            
+            found = False
+            for ocr_item in self.ocr_data:
+                if no_reg_text in ocr_item['text']:
+                    bbox = ocr_item.get('bbox', [])
+                    position = ocr_item.get('position', (0, 0))
+                    
+                    if bbox and len(bbox) == 4:
+                        x_coord = bbox[0]
+                        y_coord = bbox[1]
+                    elif position:
+                        y_coord = position[0]
+                        x_coord = position[1]
+                    else:
+                        continue
+                    
+                    noreg_spatial.append({
+                        'no_reg': no_reg_text,
+                        'x_coord': x_coord,
+                        'y_coord': y_coord,
+                        'match': match,
+                        'ocr_idx': self.ocr_data.index(ocr_item)
+                    })
+                    found = True
+                    break
+            
+            if not found:
+                print(f"      [SPATIAL] No.Reg {no_reg_text} not found in OCR data")
+        
+        if len(noreg_spatial) < len(noreg_matches):
+            print(f"      [SPATIAL] Incomplete: {len(noreg_spatial)}/{len(noreg_matches)}")
+            return None
+        
+        if len(noreg_spatial) < 2:
+            return None
+        
+        # Calculate X coordinate range
+        x_coords = [item['x_coord'] for item in noreg_spatial]
+        x_min = min(x_coords)
+        x_max = max(x_coords)
+        x_range = x_max - x_min
+        
+        print(f"      [SPATIAL] X range: {x_min:.0f} to {x_max:.0f} (range={x_range:.0f}px)")
+        
+        if x_range < 100:
+            print(f"      [SPATIAL] Range too small, treating as single column")
+            return None
+        
+        x_threshold = x_min + (x_range / 2)
+        print(f"      [SPATIAL] X threshold: {x_threshold:.0f}px")
+        
+        # Classify items
+        items = []
+        
+        for spatial_item in noreg_spatial:
+            no_reg = spatial_item['no_reg']
+            x_coord = spatial_item['x_coord']
+            y_coord = spatial_item['y_coord']
+            ocr_idx = spatial_item['ocr_idx']
+            
+            column = 'left' if x_coord < x_threshold else 'right'
+            
+            # Extract nama barang menggunakan OCR data
+            nama_barang = self._extract_nama_barang_from_ocr(ocr_idx, x_coord, y_coord, column, x_threshold)
+            
+            if not nama_barang or len(nama_barang) < 3:
+                print(f"      [SPATIAL] ⚠ Skipping {no_reg}: nama_barang too short")
+                continue
+            
+            items.append({
+                "nama_barang": nama_barang,
+                "no_reg": no_reg,
+                "sn": "",
+                "column": column
+            })
+            
+            print(f"      • Spatial: '{nama_barang}' | {no_reg} | X={x_coord:.0f} → {column}")
+        
+        return items if items else None
+    
+    def _extract_nama_barang_from_ocr(self, noreg_idx: int, noreg_x: float, noreg_y: float, column: str, x_threshold: float) -> str:
+        """
+        Extract nama barang dari OCR data berdasarkan proximity ke No.Reg
+        """
+        nama_parts = []
+        
+        # Search radius: 100px atas, 50px bawah
+        y_min = noreg_y - 100
+        y_max = noreg_y + 50
+        
+        # X range untuk column
+        if column == 'left':
+            x_min = 0
+            x_max = x_threshold - 20
+        else:
+            x_min = x_threshold + 20
+            x_max = float('inf')
+        
+        print(f"      [OCR EXTRACT] Searching Y: {y_min:.0f}-{y_max:.0f}, X: {x_min:.0f}-{x_max:.0f}")
+        
+        # ========== FIX: Expanded header blacklist ==========
+        header_blacklist = [
+            'Nama Barang', 'Nama', 'Barang',
+            'No. Reg', 'No.Reg', 'No Reg', 'No', 'Reg',
+            'S/N', 'SN',
+            'CABUT', 'PENGGANTI', 'PASANG BARU', 'PENGGANTL',
+            'EXISTING', 'TIDAK TERPAKAI'
+        ]
+        # ================================================
+        
+        for i, ocr_item in enumerate(self.ocr_data):
+            if i == noreg_idx:
+                continue
+            
+            text = ocr_item['text'].strip()
+            
+            if not text or len(text) < 2:
+                continue
+            
+            # ========== FIX: Check against blacklist ==========
+            if any(header.lower() == text.lower() for header in header_blacklist):
+                continue
+            # ================================================
+            
+            # Skip No.Reg lain
+            if re.match(r'B2W[A-Z][A-Z0-9]{10,}', text, re.IGNORECASE):
+                continue
+            
+            # Get coordinates
+            bbox = ocr_item.get('bbox', [])
+            position = ocr_item.get('position', (0, 0))
+            
+            if bbox and len(bbox) == 4:
+                item_x = bbox[0]
+                item_y = bbox[1]
+            elif position:
+                item_y = position[0]
+                item_x = position[1]
+            else:
+                continue
+            
+            # Check if in range
+            if not (y_min <= item_y <= y_max):
+                continue
+            
+            if not (x_min <= item_x <= x_max):
+                continue
+            
+            nama_parts.append((item_y, text))
+        
+        # Sort by Y coordinate (top to bottom)
+        nama_parts.sort(key=lambda x: x[0])
+        
+        # Combine
+        nama_barang = ' '.join([part[1] for part in nama_parts])
+        
+        print(f"      [OCR EXTRACT] Found {len(nama_parts)} parts: {repr(nama_barang[:100])}")
+        
+        return self._clean_nama_barang_flexible(nama_barang)
+    
+    def _extract_items_text_based(self, noreg_matches: list, text: str) -> list:
+        """
+        Fallback: Extract items using text-based column detection - FIXED v4
+        
+        Strategy: 
+        - Item 1 (CABUT): Ambil BEFORE noreg1 + AFTER noreg1 sampai sebelum item2 mulai
+        - Item 2 (PENGGANTI): Ambil AFTER noreg1 sampai noreg2 + AFTER noreg2
+        """
+        items = []
+        
+        if len(noreg_matches) != 2:
+            print(f"    [TEXT-BASED] Only supports 2 items, found {len(noreg_matches)}")
+            return []
+        
+        print(f"    [TEXT-BASED] Processing 2 items")
+        
+        # Find ALL "Nama Barang" headers
+        header_matches = list(re.finditer(r'Nama\s+Barang', text, re.IGNORECASE))
+        
+        if len(header_matches) < 2:
+            print(f"    [TEXT-BASED] Need 2 headers, found {len(header_matches)}")
+            return []
+        
+        # Get positions
+        left_header_end = header_matches[0].end()
+        right_header_start = header_matches[1].start()
+        
+        noreg1_start = noreg_matches[0].start()
+        noreg1_end = noreg_matches[0].end()
+        noreg1_text = noreg_matches[0].group()
+        
+        noreg2_start = noreg_matches[1].start()
+        noreg2_end = noreg_matches[1].end()
+        noreg2_text = noreg_matches[1].group()
+        
+        print(f"    [TEXT-BASED] Left header ends: {left_header_end}")
+        print(f"    [TEXT-BASED] Right header starts: {right_header_start}")
+        print(f"    [TEXT-BASED] NoReg1: {noreg1_start}-{noreg1_end} = {noreg1_text}")
+        print(f"    [TEXT-BASED] NoReg2: {noreg2_start}-{noreg2_end} = {noreg2_text}")
+        
+        # ========== ITEM 1 (CABUT - kolom kiri) ==========
+        # BEFORE: dari left_header_end sampai noreg1_start
+        before1 = text[left_header_end:noreg1_start]
+        
+        # AFTER: dari noreg1_end sampai right_header_start (awal kolom kanan)
+        after1 = text[noreg1_end:right_header_start]
+        
+        # Combine
+        combined1 = before1 + " " + after1
+        
+        # Clean
+        combined1 = re.sub(r'No\.?\s*Reg', '', combined1, flags=re.IGNORECASE)
+        combined1 = re.sub(r'S/N', '', combined1, flags=re.IGNORECASE)
+        combined1 = re.sub(r'Nama\s+Barang', '', combined1, flags=re.IGNORECASE)
+        combined1 = re.sub(r'B2W[A-Z][A-Z0-9]{10,}', '', combined1, flags=re.IGNORECASE)
+        
+        nama1 = self._clean_nama_barang_flexible(combined1)
+        
+        print(f"      [ITEM 1 CABUT] Before ({left_header_end}-{noreg1_start}): {repr(before1[:80])}")
+        print(f"      [ITEM 1 CABUT] After ({noreg1_end}-{right_header_start}): {repr(after1[:80])}")
+        print(f"      [ITEM 1 CABUT] Cleaned: {repr(nama1)}")
+        
+        if nama1 and len(nama1) >= 3:
+            items.append({
+                "nama_barang": nama1,
+                "no_reg": noreg1_text,
+                "sn": "",
+                "column": "left"
+            })
+        
+        # ========== ITEM 2 (PENGGANTI - kolom kanan) ==========
+        # BEFORE: dari right_header_start sampai noreg2_start
+        # Tapi skip bagian yang overlap dengan AFTER item1
+        before2_start = max(right_header_start, noreg1_end + len(after1.strip()) + 1)
+        before2 = text[right_header_start:noreg2_start]
+        
+        # AFTER: dari noreg2_end sampai "Note" atau akhir
+        note_pos = text.find("Note", noreg2_end)
+        after2_end = note_pos if note_pos > 0 else len(text)
+        after2 = text[noreg2_end:after2_end]
+        
+        # Combine
+        combined2 = before2 + " " + after2
+        
+        # Clean
+        combined2 = re.sub(r'No\.?\s*Reg', '', combined2, flags=re.IGNORECASE)
+        combined2 = re.sub(r'S/N', '', combined2, flags=re.IGNORECASE)
+        combined2 = re.sub(r'Nama\s+Barang', '', combined2, flags=re.IGNORECASE)
+        combined2 = re.sub(r'B2W[A-Z][A-Z0-9]{10,}', '', combined2, flags=re.IGNORECASE)
+        
+        # Remove "B BIVOCOM" pattern (keep only first occurrence)
+        combined2 = re.sub(r'\s+B\s+BIVOCOM', '', combined2)
+        
+        nama2 = self._clean_nama_barang_flexible(combined2)
+        
+        print(f"      [ITEM 2 PENGGANTI] Before ({right_header_start}-{noreg2_start}): {repr(before2[:80])}")
+        print(f"      [ITEM 2 PENGGANTI] After ({noreg2_end}-{after2_end}): {repr(after2[:80])}")
+        print(f"      [ITEM 2 PENGGANTI] Cleaned: {repr(nama2)}")
+        
+        if nama2 and len(nama2) >= 3:
+            items.append({
+                "nama_barang": nama2,
+                "no_reg": noreg2_text,
+                "sn": "",
+                "column": "right"
+            })
+        
+        return items
+    
+    def _clean_nama_barang_flexible(self, text: str) -> str:
+        """Clean nama barang dengan flexible rules"""
+        
+        # Remove section markers at beginning
+        text = re.sub(r'^CABUT\s+PENGGANTL?/?\s*PASANG\s+BARU\s+', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^CABUT\s+', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^PENGGANTL?/?\s*PASANG\s+BARU\s+', '', text, flags=re.IGNORECASE)
+        
+        # Remove "Note:" and after
+        text = re.sub(r'\s+Note\s*:.*$', '', text, flags=re.IGNORECASE)
+        
+        # Remove section headers
+        text = re.sub(r'^C\.?DATA\s*PERANGKAT\s*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^EXISTING\s*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^TIDAK\s+TERPAKAI\s*', '', text, flags=re.IGNORECASE)
+        
+        # ========== FIX: Remove ALL variations of headers ==========
+        # Remove "Nama Barang" + any combination of "No.Reg" and "S/N"
+        text = re.sub(r'Nama\s+Barang\s+(?:No\.?\s*Reg\s+)?(?:S/N\s+)?', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'Nama\s+Barang\s*', '', text, flags=re.IGNORECASE)
+        
+        # Remove standalone "No. Reg" and "S/N" (anywhere in text, not just beginning)
+        text = re.sub(r'\bNo\.?\s*Reg\b', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bS/N\b', '', text, flags=re.IGNORECASE)
+        # ========================================================
+        
+        # Normalize whitespace
+        text = re.sub(r'\n+', ' ', text)
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Strip
+        text = text.strip()
+        text = text.strip('|,.-_:;')
+        
+        # Remove any leaked No.Reg
+        text = re.sub(r'B2W[A-Z][A-Z0-9]{10,}', '', text, flags=re.IGNORECASE)
+        
+        # Final cleanup
+        text = re.sub(r'\s+', ' ', text)
+        text = text.strip()
+        
+        return text

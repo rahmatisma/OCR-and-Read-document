@@ -1,0 +1,95 @@
+{
+    "dokumentasi": [],
+    "parsed": {
+        "document_type": "checklist_wireline",
+        "jenis_spk": "checklist_wireline",
+        "data": {
+            "data_remote": {
+                "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+                "contact_person": "Pak Arya",
+                "alamat": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+                "kota": "",
+                "no_spk": "078890/WO-LA/2021",
+                "nomor_jaringan": "2021242440",
+                "nomor_telepon": "+62 895-3320-85507",
+                "propinsi": "",
+                "tanggal": "20-May-2021 09:21",
+                "pelaksanaan": {
+                    "jam_perintah": "20-May-2021 09:21",
+                    "jam_persiapan": "20-May-2021 10:23",
+                    "jam_berangkat": "20-May-2021 10:23",
+                    "jam_tiba_di_lokasi": "20-May-2021 10:45",
+                    "jam_mulai_kerja": "20-May-2021 10:50",
+                    "jam_selesai_kerja": "20-May-2021 12:20",
+                    "jam_pulang": "",
+                    "jam_tiba_di_kantor": "",
+                    "keterangan": ""
+                }
+            },
+            "global_checklist": {
+                "data_lokasi": {
+                    "latitude": "",
+                    "longitude": "",
+                    "posisi_modem_di_lt": "",
+                    "ruang": ""
+                },
+                "electrical": {
+                    "output_tegangan_mengacu_modem": {
+                        "p_n": {
+                            "pln": "225.8 VAC",
+                            "ups": "",
+                            "it": ""
+                        },
+                        "p_g": {
+                            "pln": "225.5 VAC",
+                            "ups": "",
+                            "it": ""
+                        },
+                        "n_g": {
+                            "pln": "0.054 VAC",
+                            "ups": "",
+                            "it": ""
+                        }
+                    },
+                    "grounding_bar_terkoneksi_ke": "Modem"
+                },
+                "environment": {
+                    "ac_pendingin_ruangan": "Ada",
+                    "suhu_ruangan_perangkat": "26°"
+                }
+            },
+            "data_perangkat": {
+                "existing": [
+                    {
+                        "nama_barang": "HUAAWEI Router B311As + Antena FORTIGATE-50E HW AND WARRANTY",
+                        "no_reg": "B2WN0150152MA0732",
+                        "sn": ""
+                    },
+                    {
+                        "nama_barang": "FORTIGATE-50E HW AND WARRANTY PSU FORTI FG-50E/FG-30E",
+                        "no_reg": "B2WN0262020HA1346",
+                        "sn": ""
+                    },
+                    {
+                        "nama_barang": "PSU FORTI FG-50E/FG-30E ADAPTOR 12V 1A",
+                        "no_reg": "B2WN0286208MA1443",
+                        "sn": ""
+                    },
+                    {
+                        "nama_barang": "ADAPTOR 12V 1A",
+                        "no_reg": "B2WN0150153MA0732",
+                        "sn": ""
+                    }
+                ],
+                "tidak_terpakai": [],
+                "cabut": [],
+                "pengganti_atau_pasang_baru": [],
+                "note": ""
+            }
+        },
+        "metadata": {
+            "parser_used": "parse_checklist_wireline",
+            "detection_confidence": "high"
+        }
+    }
+}

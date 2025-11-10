@@ -1,0 +1,12 @@
+{
+    "dokumentasi": [],
+    "parsed": {
+        "document_type": "checklist_wireline",
+        "jenis_spk": "checklist_wireline",
+        "data": {},
+        "metadata": {
+            "error": "'<=' not supported between instances of 'int' and 'list'",
+            "note": "Parser gagal, perlu cek manual."
+        }
+    }
+}

@@ -193,3 +193,146 @@ class BaseParser(ABC):
                 "pengganti_atau_pasang_baru": []
             }
         }
+    
+    def _init_data_structure_checklist_wireline(self) -> dict:
+        """
+        Inisialisasi struktur data kosong
+        Bisa di-override oleh parser turunan jika butuh struktur berbeda
+        
+        Returns:
+            Dictionary struktur data kosong
+        """
+        return {
+            "data_remote": {
+                "nama_pelanggan": "",
+                "contact_person": "",
+                "alamat": "",
+                "kota": "",
+                "no_spk": "",
+                "nomor_jaringan": "",
+                "nomor_telepon": "",
+                "propinsi": "",
+                "tanggal": "",
+                "pelaksanaan": {
+                    "jam_perintah": "",
+                    "jam_persiapan": "",
+                    "jam_berangkat": "",
+                    "jam_tiba_di_lokasi": "",
+                    "jam_mulai_kerja": "",
+                    "jam_selesai_kerja": "",
+                    "jam_pulang": "",
+                    "jam_tiba_di_kantor": "",
+                    "keterangan": ""
+                }
+            },
+            "global_checklist": {
+                "data_lokasi": {
+                    "latitude": "",
+                    "longitude": "",
+                    "posisi_modem_di_lt": "",
+                    "ruang": ""
+                },
+                "electrical": {
+                    "output_tegangan_mengacu_modem": {
+                        "p_n": {
+                            "pln": "",
+                            "ups": "",
+                            "it": ""
+                        },
+                        "p_g": {
+                            "pln": "",
+                            "ups": "",
+                            "it": ""
+                        },
+                        "n_g": {
+                            "pln": "",
+                            "ups": "",
+                            "it": ""
+                        }
+                    },
+                    "grounding_bar_terkoneksi_ke": ""
+                },
+                "environment": {
+                    "ac_pendingin_ruangan": "",
+                    "suhu_ruangan_perangkat": ""
+                }
+            },
+            # "indoor_area_checklist": {
+            #     "indikator_modem": {
+            #         "power": "",
+            #         "109_dcd_link_wan": ""
+            #     },
+            #     "merek": {
+            #         "td_txd_103": "",
+            #         "rd_rxd_104": "",
+            #         "rts_105": "",
+            #         "cts_106": "",
+            #         "alarm_led": ""
+            #     },
+            #     "front_panel_display": {
+            #         "all_stu_modem": {
+            #             "standard": "",
+            #             "nms_engineer": "",
+            #             "on_site_teknisi": "",
+            #             "perbaikan": "",
+            #             "hasil_akhir": ""
+            #         },
+            #         "tainet_scorpio": {
+            #             "standard": "",
+            #             "nms_engineer": "",
+            #             "on_site_teknisi": "",
+            #             "perbaikan": "",
+            #             "hasil_akhir": ""
+            #         }
+            #     },
+            #     "modem_fo": {
+            #         "optical_led_alarm": ""
+            #     },
+            #     "lc_signal_quality_checked_by_kop": {
+            #         "stu_160": "",
+            #         "stu_1088_2304": "",
+            #         "adsl_modem": ""
+            #     },
+            #     "lc_signal_quality_checked_by_avo_meter": {
+            #         "stu_1088_2304_tainet": {
+            #             "standard": "",
+            #             "existing": "",
+            #             "perbaikan": "",
+            #             "hasil_akhir": ""
+            #         },
+            #         "hrb_area": {
+            #             "standard": "",
+            #             "existing": "",
+            #             "perbaikan": "",
+            #             "hasil_akhir": ""
+            #         },
+            #         "adtran_express": {
+            #             "standard": "",
+            #             "existing": "",
+            #             "perbaikan": "",
+            #             "hasil_akhir": ""
+            #         }
+            #     }
+            # },
+            # "line_checklist": {
+            #     "site_area": {
+            #         "parameter_kualitas": []
+            #     },
+            #     "hrb_r_lintas": {
+            #         "parameter_kualitas": []
+            #     },
+            #     "line_fo": {
+            #         "parameter_kualitas": []
+            #     },
+            #     "tes_konektivitas": {
+            #         "parameter_kualitas": []
+            #     }
+            # },
+            "data_perangkat": {
+                "existing": [],
+                "tidak_terpakai": [],
+                "cabut": [],
+                "pengganti_atau_pasang_baru": [],
+                "note": ""
+            }
+        }
