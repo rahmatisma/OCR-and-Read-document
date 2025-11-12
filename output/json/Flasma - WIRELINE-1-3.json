@@ -3,10 +3,91 @@
     "parsed": {
         "document_type": "checklist_wireline",
         "jenis_spk": "checklist_wireline",
-        "data": {},
+        "data": {
+            "data_remote": {
+                "nama_pelanggan": "BANK SYARIAH INDONESIA TBK",
+                "contact_person": "-",
+                "alamat": "JL sultan hasanudin tambun selatan kabupaten bekasi",
+                "kota": "",
+                "no_spk": "306054/W0-LA/2025",
+                "nomor_jaringan": "2024428443",
+                "nomor_telepon": "",
+                "propinsi": "",
+                "tanggal": "06-Aug-2025 07:10",
+                "pelaksanaan": {
+                    "jam_perintah": "06-Aug-2025 07:10",
+                    "jam_persiapan": "06-Aug-2025 08:33",
+                    "jam_berangkat": "06-Aug-2025 08:50",
+                    "jam_tiba_di_lokasi": "06-Aug-2025 09:51",
+                    "jam_mulai_kerja": "06-Aug-2025 09:56",
+                    "jam_selesai_kerja": "06-Aug-2025 11:09",
+                    "jam_pulang": "",
+                    "jam_tiba_di_kantor": "",
+                    "keterangan": ""
+                }
+            },
+            "global_checklist": {
+                "data_lokasi": {
+                    "latitude": "6°1549292",
+                    "longitude": "107356269",
+                    "posisi_modem_di_lt": "dilantai",
+                    "ruang": "atm centre"
+                },
+                "electrical": {
+                    "output_tegangan_mengacu_modem": {
+                        "p_n": {
+                            "pln": "231.3 VAC",
+                            "ups": "231.3 VAC",
+                            "it": "231.3 VAC"
+                        },
+                        "p_g": {
+                            "pln": "231.6 VAC",
+                            "ups": "231.6 VAC",
+                            "it": "231.6 VAC"
+                        },
+                        "n_g": {
+                            "pln": "0.476 VAC",
+                            "ups": "0.476 VAC",
+                            "it": "0.476 VAC"
+                        }
+                    },
+                    "grounding_bar_terkoneksi_ke": ""
+                },
+                "environment": {
+                    "ac_pendingin_ruangan": "Ada",
+                    "suhu_ruangan_perangkat": "25°"
+                }
+            },
+            "data_perangkat": {
+                "existing": [
+                    {
+                        "nama_barang": "BIVOCOM INDUSTRIAL 4G",
+                        "no_reg": "B2WS0200137MA0606",
+                        "sn": ""
+                    }
+                ],
+                "tidak_terpakai": [],
+                "cabut": [
+                    {
+                        "nama_barang": "ADAPTER 12V, 1.5A FOR BIVOCOM",
+                        "no_reg": "B2WS0200138MA0514B",
+                        "sn": ""
+                    }
+                ],
+                "pengganti_atau_pasang_baru": [
+                    {
+                        "nama_barang": "ADAPTER 12V. 1.5A FOR BIVOCOM",
+                        "no_reg": "B2WS0200138MA557B",
+                        "sn": ""
+                    }
+                ],
+                "note": "pergantian psu"
+            }
+        },
         "metadata": {
-            "error": "'<=' not supported between instances of 'int' and 'list'",
-            "note": "Parser gagal, perlu cek manual."
+            "parser_used": "parse_checklist_wireline",
+            "detection_confidence": "high",
+            "ocr_data_available": true
         }
     }
 }

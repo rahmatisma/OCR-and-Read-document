@@ -61,17 +61,17 @@
             "data_perangkat": {
                 "existing": [
                     {
-                        "nama_barang": "HUAAWEI Router B311As + Antena FORTIGATE-50E HW AND WARRANTY",
+                        "nama_barang": "HUAAWEI Router B311As + Antena",
                         "no_reg": "B2WN0150152MA0732",
                         "sn": ""
                     },
                     {
-                        "nama_barang": "FORTIGATE-50E HW AND WARRANTY PSU FORTI FG-50E/FG-30E",
+                        "nama_barang": "FORTIGATE-50E HW AND WARRANTY",
                         "no_reg": "B2WN0262020HA1346",
                         "sn": ""
                     },
                     {
-                        "nama_barang": "PSU FORTI FG-50E/FG-30E ADAPTOR 12V 1A",
+                        "nama_barang": "PSU FORTI FG-50E/FG-30E",
                         "no_reg": "B2WN0286208MA1443",
                         "sn": ""
                     },
@@ -89,7 +89,8 @@
         },
         "metadata": {
             "parser_used": "parse_checklist_wireline",
-            "detection_confidence": "high"
+            "detection_confidence": "high",
+            "ocr_data_available": false
         }
     }
 }

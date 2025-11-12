@@ -443,7 +443,41 @@ class ChecklistWirelineParser(BaseParser):
             match = re.search(pattern, self.cleaned_text, re.IGNORECASE | re.DOTALL)
             if match:
                 perangkat_text = match.group()
-                
+                # ===== TAMBAHKAN DEBUG INI =====
+                if self.ocr_data:
+                    print("\n" + "="*80)
+                    print("DEBUG: OCR ITEMS IN DATA PERANGKAT SECTION")
+                    print("="*80)
+                    
+                    # Filter OCR items yang ada di section ini
+                    for i, item in enumerate(self.ocr_data):
+                        text = item['text']
+                        
+                        # Cek apakah text ini ada di perangkat_text
+                        if any(keyword in text.upper() for keyword in ['CABUT', 'PENGGANTI', 'ADAPTER', 'BIVOCOM', 'B2WS']):
+                            bbox = item.get('bbox', [])
+                            position = item.get('position', (0, 0))
+                            
+                            # Get X, Y coordinates
+                            if bbox and len(bbox) > 0 and len(bbox[0]) >= 2:
+                                x_coord = bbox[0][0]
+                                y_coord = bbox[0][1]
+                            else:
+                                y_coord, x_coord = position
+                            
+                            print(f"[{i:3d}] Y={y_coord:6.1f} X={x_coord:6.1f} | '{text}'")
+                    
+                    print("="*80 + "\n")
+                # ===============================
+                print("\n=== ALL OCR ITEMS 224-235 ===")
+                for i in range(224, min(235, len(self.ocr_data))):
+                    item = self.ocr_data[i]
+                    bbox = item.get('bbox', [])
+                    if bbox and len(bbox) > 0:
+                        x, y = bbox[0][0], bbox[0][1]
+                    else:
+                        y, x = item.get('position', (0, 0))
+                    print(f"[{i}] Y={y:6.1f} X={x:6.1f} | '{item['text']}'")
                 perangkat_keywords = ["EXISTING", "CABUT", "TIDAK TERPAKAI", "PENGGANTI"]
                 keyword_count = sum(1 for kw in perangkat_keywords if kw in perangkat_text.upper())
                 
@@ -608,7 +642,13 @@ class ChecklistWirelineParser(BaseParser):
         return left_column.strip(), right_column.strip()
 
     def _extract_items_by_noreg(self, text: str, section_name: str) -> list:
-        """Extract items dari text berdasarkan No.Reg pattern"""
+        """
+        Extract items dari text berdasarkan No.Reg pattern - FIXED V2
+        
+        Strategy:
+        - Hanya ambil text BEFORE No.Reg sebagai nama barang
+        - Jangan ambil text AFTER No.Reg (karena bisa jadi bagian dari item berikutnya)
+        """
         items = []
         
         if not text or len(text) < 10:
@@ -620,40 +660,56 @@ class ChecklistWirelineParser(BaseParser):
         if not noreg_matches:
             return []
         
+        print(f"    [{section_name}] Found {len(noreg_matches)} No.Reg patterns")
+        
         for i, match in enumerate(noreg_matches):
             no_reg = match.group()
             noreg_start = match.start()
             noreg_end = match.end()
             
-            # Extract nama barang BEFORE No.Reg
+            # FIXED V2: Only extract nama barang BEFORE No.Reg
             if i == 0:
+                # First item: start from beginning (skip headers)
                 nama_before_start = 0
+                
+                # Skip headers if they exist
+                header_match = re.search(r'Nama\s+Barang', text[:noreg_start], re.IGNORECASE)
+                if header_match:
+                    nama_before_start = header_match.end()
             else:
+                # Subsequent items: start from previous No.Reg end
                 nama_before_start = noreg_matches[i-1].end()
             
             nama_before_raw = text[nama_before_start:noreg_start]
             
-            # Extract nama barang AFTER No.Reg
-            nama_after_start = noreg_end
-            if i < len(noreg_matches) - 1:
-                nama_after_end = noreg_matches[i + 1].start()
-            else:
-                nama_after_end = min(noreg_end + 200, len(text))
+            # Clean nama barang
+            nama_barang = self._clean_nama_barang_flexible(nama_before_raw)
             
-            nama_after_raw = text[nama_after_start:nama_after_end]
-            
-            # Combine before + after
-            nama_combined_raw = nama_before_raw + " " + nama_after_raw
-            nama_barang = self._clean_nama_barang_flexible(nama_combined_raw)
-            
+            # Skip if too short or empty
             if not nama_barang or len(nama_barang) < 3:
+                print(f"    [{section_name}] Skipping No.Reg {no_reg}: nama_barang too short ('{nama_barang}')")
                 continue
+            
+            # FIXED V2: Check for trailing single character after No.Reg (like "B")
+            trailing_char = ""
+            after_noreg_snippet = text[noreg_end:noreg_end+30].strip()
+            
+            # Check if first character after No.Reg is a single letter
+            if after_noreg_snippet and len(after_noreg_snippet) > 0:
+                first_char = after_noreg_snippet[0]
+                if first_char.isalpha() and (len(after_noreg_snippet) == 1 or not after_noreg_snippet[1].isalnum()):
+                    trailing_char = first_char
+                    print(f"    [{section_name}] Found trailing char '{trailing_char}' for {no_reg}")
+            
+            final_no_reg = no_reg + trailing_char
             
             items.append({
                 "nama_barang": nama_barang,
-                "no_reg": no_reg,
+                "no_reg": final_no_reg,
                 "sn": ""
             })
+            
+            print(f"    [{section_name}] ✓ Item {i+1}: '{nama_barang}' | {final_no_reg}")
         
         return items
     
@@ -711,26 +767,66 @@ class ChecklistWirelineParser(BaseParser):
             no_reg_text = match.group()
             
             found = False
-            for ocr_item in self.ocr_data:
+            for ocr_idx_scan, ocr_item in enumerate(self.ocr_data):
                 if no_reg_text in ocr_item['text']:
                     bbox = ocr_item.get('bbox', [])
                     position = ocr_item.get('position', (0, 0))
                     
                     if bbox and len(bbox) == 4:
-                        x_coord = bbox[0]
-                        y_coord = bbox[1]
+                        x_coord = bbox[0][0]
+                        y_coord = bbox[0][1]
                     elif position:
                         y_coord = position[0]
                         x_coord = position[1]
                     else:
                         continue
                     
+                    try:
+                        x_coord = float(x_coord)
+                        y_coord = float(y_coord)
+                    except Exception:
+                        print(f"      [SPATIAL] ⚠ Gagal konversi koordinat untuk {no_reg_text}: {bbox}")
+                        continue
+                    
+                    # FIXED V7: Check for trailing single character with X coordinate validation
+                    trailing_char = ""
+                    
+                    # Only check for trailing char if No.Reg doesn't already end with a letter after digits
+                    # Pattern: B2WS0200138MA0514 → needs trailing, B2WS0200138MA557B → already complete
+                    if not re.search(r'\d[A-Z]$', no_reg_text):
+                        for j in range(ocr_idx_scan + 1, min(ocr_idx_scan + 5, len(self.ocr_data))):
+                            next_item = self.ocr_data[j]
+                            next_text = next_item['text'].strip()
+                            
+                            # Check if it's a single letter
+                            if len(next_text) == 1 and next_text.isalpha():
+                                next_bbox = next_item.get('bbox', [])
+                                if next_bbox and len(next_bbox) > 0:
+                                    next_y = next_bbox[0][1]
+                                    next_x = next_bbox[0][0]
+                                else:
+                                    next_pos = next_item.get('position', (0, 0))
+                                    next_y = next_pos[0]
+                                    next_x = next_pos[1]
+                                
+                                y_distance = abs(float(next_y) - y_coord)
+                                x_distance = abs(float(next_x) - x_coord)
+                                
+                                # FIXED V7: Check both Y distance (<20px) AND X distance (<150px)
+                                if y_distance < 25 and x_distance < 150:
+                                    trailing_char = next_text
+                                    print(f"      [SPATIAL] ✓ Found trailing '{trailing_char}' for {no_reg_text} (Y dist={y_distance:.1f}px, X dist={x_distance:.1f}px)")
+                                    break
+                    
+                    # Append trailing character if found
+                    final_no_reg = no_reg_text + trailing_char
+                    
                     noreg_spatial.append({
-                        'no_reg': no_reg_text,
+                        'no_reg': final_no_reg,
                         'x_coord': x_coord,
                         'y_coord': y_coord,
                         'match': match,
-                        'ocr_idx': self.ocr_data.index(ocr_item)
+                        'ocr_idx': ocr_idx_scan
                     })
                     found = True
                     break
@@ -770,6 +866,23 @@ class ChecklistWirelineParser(BaseParser):
             ocr_idx = spatial_item['ocr_idx']
             
             column = 'left' if x_coord < x_threshold else 'right'
+
+            # ===== TAMBAHKAN DEBUG INI =====
+            print(f"\n      [PROCESSING] NoReg={no_reg} at Y={y_coord:.0f}, X={x_coord:.0f}, Column={column}")
+            print(f"      [PROCESSING] OCR Index={ocr_idx}")
+            
+            # Print OCR items dalam radius Y ±50px untuk debugging
+            print(f"      [NEARBY ITEMS] Showing items within Y={y_coord-50:.0f} to Y={y_coord+30:.0f}:")
+            for i, item in enumerate(self.ocr_data):
+                bbox = item.get('bbox', [])
+                if bbox and len(bbox) > 0:
+                    item_x, item_y = bbox[0][0], bbox[0][1]
+                else:
+                    item_y, item_x = item.get('position', (0, 0))
+                
+                if (y_coord - 50) <= item_y <= (y_coord + 30):
+                    print(f"        [{i:3d}] Y={item_y:6.1f} X={item_x:6.1f} | '{item['text'][:40]}'")
+            # ================================
             
             # Extract nama barang menggunakan OCR data
             nama_barang = self._extract_nama_barang_from_ocr(ocr_idx, x_coord, y_coord, column, x_threshold)
@@ -791,83 +904,130 @@ class ChecklistWirelineParser(BaseParser):
     
     def _extract_nama_barang_from_ocr(self, noreg_idx: int, noreg_x: float, noreg_y: float, column: str, x_threshold: float) -> str:
         """
-        Extract nama barang dari OCR data berdasarkan proximity ke No.Reg
+        Extract nama barang dari OCR data - FIXED V5 (STRICT X BOUNDARY)
+        
+        Fixes V5:
+        - Add X coordinate validation untuk ensure item ada di kolom tabel yang benar
+        - Untuk left column: X harus < 600px (tidak boleh di tengah page)
+        - Untuk right column: X harus > 600px
         """
         nama_parts = []
         
-        # Search radius: 100px atas, 50px bawah
-        y_min = noreg_y - 100
-        y_max = noreg_y + 50
+        # Find CLOSEST table header Y coordinate
+        header_y = None
+        header_candidates = []
         
-        # X range untuk column
+        for i in range(max(0, noreg_idx - 30), noreg_idx):
+            item = self.ocr_data[i]
+            text = item['text'].strip().lower()
+            
+            if text in ['nama barang', 'no. reg', 'no.reg', 's/n']:
+                bbox = item.get('bbox', [])
+                if bbox and len(bbox) > 0:
+                    y_coord = bbox[0][1]
+                    header_candidates.append((i, y_coord, text))
+        
+        if header_candidates:
+            header_candidates.sort(key=lambda x: x[1], reverse=True)
+            header_idx, header_y, header_text = header_candidates[0]
+            print(f"      [OCR EXTRACT v5] Found header '{header_text}' at index={header_idx}, Y={header_y}")
+        
+        # Y range
+        if header_y is not None:
+            y_min = header_y + 10
+        else:
+            y_min = noreg_y - 15
+        
+        y_max = noreg_y + 25
+        
+        # FIXED V5: X range dengan batas yang lebih strict
         if column == 'left':
             x_min = 0
-            x_max = x_threshold - 20
+            x_max = 400  # CHANGED: dari x_threshold-50 ke hard limit 400px
         else:
-            x_min = x_threshold + 20
+            x_min = 600  # CHANGED: dari x_threshold+50 ke hard limit 600px
             x_max = float('inf')
         
-        print(f"      [OCR EXTRACT] Searching Y: {y_min:.0f}-{y_max:.0f}, X: {x_min:.0f}-{x_max:.0f}")
+        print(f"      [OCR EXTRACT v5] Header Y={header_y}, NoReg Y={noreg_y:.0f}")
+        print(f"      [OCR EXTRACT v5] Column={column}, Y: {y_min:.0f}-{y_max:.0f}, X: {x_min:.0f}-{x_max:.0f}")
         
-        # ========== FIX: Expanded header blacklist ==========
-        header_blacklist = [
-            'Nama Barang', 'Nama', 'Barang',
-            'No. Reg', 'No.Reg', 'No Reg', 'No', 'Reg',
-            'S/N', 'SN',
-            'CABUT', 'PENGGANTI', 'PASANG BARU', 'PENGGANTL',
-            'EXISTING', 'TIDAK TERPAKAI'
+        # Comprehensive blacklist
+        keyword_blacklist = [
+            'nama barang', 'nama', 'barang', 'no. reg', 'no.reg', 'no reg', 'no', 'reg', 's/n', 'sn',
+            'cabut', 'pengganti', 'penggantl', 'pasang baru', 'existing', 'tidak terpakai',
+            'jam', 'perintah', 'persiapan', 'berangkat', 'tiba', 'lokasi', 'mulai', 'selesai', 'kerja', 'pulang', 'kantor',
+            'gedung', 'sub', 'mdf', 'lantai', 'ruang',
+            'berkarat', 'bad', 'contact', 'putus',
+            'note', 'pergantian', 'psu', 'verifikasi', 'pelaksana', 'pelanggan',
+            # ADDED V5: Date patterns
+            'aug', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'sep', 'oct', 'nov', 'dec',
+            'agt', 'agu', 'mei', 'okt', 'des'
         ]
-        # ================================================
         
         for i, ocr_item in enumerate(self.ocr_data):
             if i == noreg_idx:
                 continue
             
             text = ocr_item['text'].strip()
+            text_lower = text.lower()
             
+            # Skip empty or too short
             if not text or len(text) < 2:
                 continue
             
-            # ========== FIX: Check against blacklist ==========
-            if any(header.lower() == text.lower() for header in header_blacklist):
+            # Skip single character
+            if len(text) == 1:
+                print(f"        [SKIP] Single char: '{text}'")
                 continue
-            # ================================================
             
-            # Skip No.Reg lain
+            # ADDED V5: Skip date patterns (DD-MMM-YYYY atau HH:MM)
+            if re.match(r'\d{2}-[A-Za-z]{3}-\d{4}', text) or re.match(r'\d{2}:\d{2}', text):
+                print(f"        [SKIP] Date/Time pattern: '{text}'")
+                continue
+            
+            # Skip blacklisted keywords
+            if any(keyword in text_lower for keyword in keyword_blacklist):
+                print(f"        [SKIP] Blacklisted: '{text}'")
+                continue
+            
+            # Skip No.Reg patterns
             if re.match(r'B2W[A-Z][A-Z0-9]{10,}', text, re.IGNORECASE):
                 continue
             
             # Get coordinates
-            bbox = ocr_item.get('bbox', [])
-            position = ocr_item.get('position', (0, 0))
+            bbox = ocr_item.get("bbox", [])
+            position = ocr_item.get("position", (0, 0))
             
-            if bbox and len(bbox) == 4:
-                item_x = bbox[0]
-                item_y = bbox[1]
-            elif position:
-                item_y = position[0]
-                item_x = position[1]
+            if bbox and isinstance(bbox[0], (list, tuple)) and len(bbox[0]) >= 2:
+                item_x = float(bbox[0][0])
+                item_y = float(bbox[0][1])
+            elif position and isinstance(position, (list, tuple)) and len(position) == 2:
+                item_y, item_x = map(float, position)
             else:
                 continue
             
-            # Check if in range
+            # Y range check
             if not (y_min <= item_y <= y_max):
                 continue
             
+            # FIXED V5: Strict X range check
             if not (x_min <= item_x <= x_max):
+                print(f"        [SKIP] Wrong column: '{text}' X={item_x:.0f} (need {x_min:.0f}-{x_max:.0f})")
                 continue
             
+            # Add to parts
             nama_parts.append((item_y, text))
+            print(f"        [ADD] Y={item_y:.0f} X={item_x:.0f} | '{text}'")
         
-        # Sort by Y coordinate (top to bottom)
+        # Sort and combine
         nama_parts.sort(key=lambda x: x[0])
-        
-        # Combine
         nama_barang = ' '.join([part[1] for part in nama_parts])
         
-        print(f"      [OCR EXTRACT] Found {len(nama_parts)} parts: {repr(nama_barang[:100])}")
+        print(f"      [OCR EXTRACT v5] Found {len(nama_parts)} parts")
+        print(f"      [OCR EXTRACT v5] Result: '{nama_barang}'")
         
         return self._clean_nama_barang_flexible(nama_barang)
+
     
     def _extract_items_text_based(self, noreg_matches: list, text: str) -> list:
         """
