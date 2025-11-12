@@ -257,63 +257,132 @@ class BaseParser(ABC):
                     "suhu_ruangan_perangkat": ""
                 }
             },
-            # "indoor_area_checklist": {
-            #     "indikator_modem": {
-            #         "power": "",
-            #         "109_dcd_link_wan": ""
-            #     },
-            #     "merek": {
-            #         "td_txd_103": "",
-            #         "rd_rxd_104": "",
-            #         "rts_105": "",
-            #         "cts_106": "",
-            #         "alarm_led": ""
-            #     },
-            #     "front_panel_display": {
-            #         "all_stu_modem": {
-            #             "standard": "",
-            #             "nms_engineer": "",
-            #             "on_site_teknisi": "",
-            #             "perbaikan": "",
-            #             "hasil_akhir": ""
-            #         },
-            #         "tainet_scorpio": {
-            #             "standard": "",
-            #             "nms_engineer": "",
-            #             "on_site_teknisi": "",
-            #             "perbaikan": "",
-            #             "hasil_akhir": ""
-            #         }
-            #     },
-            #     "modem_fo": {
-            #         "optical_led_alarm": ""
-            #     },
-            #     "lc_signal_quality_checked_by_kop": {
-            #         "stu_160": "",
-            #         "stu_1088_2304": "",
-            #         "adsl_modem": ""
-            #     },
-            #     "lc_signal_quality_checked_by_avo_meter": {
-            #         "stu_1088_2304_tainet": {
-            #             "standard": "",
-            #             "existing": "",
-            #             "perbaikan": "",
-            #             "hasil_akhir": ""
-            #         },
-            #         "hrb_area": {
-            #             "standard": "",
-            #             "existing": "",
-            #             "perbaikan": "",
-            #             "hasil_akhir": ""
-            #         },
-            #         "adtran_express": {
-            #             "standard": "",
-            #             "existing": "",
-            #             "perbaikan": "",
-            #             "hasil_akhir": ""
-            #         }
-            #     }
-            # },
+            "indoor_area_checklist": {
+                "indikator_modem": {
+                    "power": {
+                        "standard": "",  # CHANGED: dari "ON (green)" ke ""
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "109_dcd_link_wan": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                },
+                "merek": {
+                    "td_txd_103": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "rd_rxd_104": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "rts_105": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "cts_106": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "alarm_led": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "front_panel_display": {
+                        "all_stu_modem": {
+                            "standard": "",  # CHANGED
+                            "nms_engineer": "",
+                            "on_site_teknisi": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        "tainet_scorpio": {
+                            "standard": "",  # CHANGED
+                            "nms_engineer": "",
+                            "on_site_teknisi": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    }
+                },
+                "modem_fo": {
+                    "optical_led_alarm": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                },
+                "lc_signal_quality_checked_by_kop": {
+                    "stu_160": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "stu_1088_2304": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "adsl_modem": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                },
+                "lc_signal_quality_checked_by_avo_meter": {
+                    "stu_1088_2304_tainet": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "hrb_area": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "adtran_express": {
+                        "standard": "",  # CHANGED
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                }
+            },
             # "line_checklist": {
             #     "site_area": {
             #         "parameter_kualitas": []

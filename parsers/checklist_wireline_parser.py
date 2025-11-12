@@ -169,6 +169,7 @@ class ChecklistWirelineParser(BaseParser):
         self._parse_data_remote(data["data_remote"])
         self._parse_global_checklist(data["global_checklist"])
         self._parse_data_perangkat(data["data_perangkat"])
+        self._parse_indoor_area_checklist(data["indoor_area_checklist"])
         
         return data
     
@@ -427,6 +428,688 @@ class ChecklistWirelineParser(BaseParser):
         suhu_pattern = r"Suhu\s*Ruangan\s*Perangkat\s*[：:]?\s*([\d\.]+)\s*[°℃C}]?"
         suhu_match = re.search(suhu_pattern, section_text, re.IGNORECASE)
         environment["suhu_ruangan_perangkat"] = f"{suhu_match.group(1).strip()}°" if suhu_match else ""
+
+    # ==================== INDOOR AREA CHECKLIST PARSER ====================
+
+    def _parse_indoor_area_checklist(self, indoor_area: dict):
+        """Parse bagian INDOOR AREA CHECKLIST"""
+        print("\n" + "="*60)
+        print("Parsing INDOOR AREA CHECKLIST")
+        print("="*60)
+        
+        indoor_section = self._extract_indoor_section()
+        
+        if not indoor_section:
+            print("✗ Section INDOOR AREA CHECKLIST tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        # Debug: Print section yang ditemukan
+        print(f"\n[DEBUG] INDOOR SECTION (first 500 chars):")
+        print(repr(indoor_section[:500]))
+        print("="*60)
+        
+        # Parse each subsection
+        self._parse_indikator_modem(indoor_area["indikator_modem"], indoor_section)
+        self._parse_merek_section(indoor_area["merek"], indoor_section)
+        self._parse_modem_fo(indoor_area["modem_fo"], indoor_section)
+        self._parse_lc_signal_kop(indoor_area["lc_signal_quality_checked_by_kop"], indoor_section)
+        self._parse_lc_signal_avo(indoor_area["lc_signal_quality_checked_by_avo_meter"], indoor_section)
+        
+        print(f"✓ INDOOR AREA CHECKLIST parsed")
+        print("="*60 + "\n")
+
+    def _extract_indoor_section(self) -> str:
+        """Extract INDOOR AREA CHECKLIST section - HANDLE KATA NEMPEL"""
+        
+        print("\n[DEBUG] Searching for INDOOR AREA CHECKLIST section...")
+        print(f"[DEBUG] Text length: {len(self.cleaned_text)} chars")
+        
+        # Check various keyword combinations
+        keywords_to_check = [
+            "INDOOR AREA CHECKLIST",
+            "INDOORAREACHECKLIST",  # Nempel
+            "NDOOR AREA CHECKLIST",  # OCR error: I → N
+            "NDOORAREACHECKLIST",    # Nempel + OCR error
+        ]
+        
+        for keyword in keywords_to_check:
+            if keyword.replace(" ", "") in self.cleaned_text.replace(" ", "").upper():
+                print(f"[DEBUG] ✓ Found keyword variation: '{keyword}'")
+                break
+        else:
+            print(f"[DEBUG] ✗ No INDOOR AREA CHECKLIST variation found")
+        
+        patterns = [
+            # Standard patterns
+            r'INDOOR\s+AREA\s+CHECKLIST.*?(?=OUTDOOR\s+AREA|LINE\s*CHECKLIST|KESIMPULAN|D\.\s*VERIFIKASI|$)',
+            
+            # Handle kata nempel (no spaces)
+            r'INDOORAREACHECKLIST.*?(?=OUTDOOR|LINE\s*CHECKLIST|KESIMPULAN|$)',
+            
+            # OCR error: INDOOR → NDOOR
+            r'NDOOR\s+AREA\s+CHECKLIST.*?(?=OUTDOOR|LINE\s*CHECKLIST|KESIMPULAN|$)',
+            
+            # OCR error + kata nempel
+            r'NDOORAREACHECKLIST.*?(?=OUTDOOR|LINE\s*CHECKLIST|KESIMPULAN|$)',
+            
+            # Flexible spacing (allow newlines)
+            r'(?:I|N)ND[OO0]R\s*AREA\s*CHECKLIST.*?(?=OUTDOOR|LINE\s*CHECKLIST|KESIMPULAN|$)',
+            
+            # Very flexible (last resort)
+            r'(?:I|N)ND[OO0]R.*?CHECKLIST.*?(?=OUTDOOR|LINE|KESIMPULAN|VERIFIKASI|$)',
+        ]
+        
+        for i, pattern in enumerate(patterns):
+            match = re.search(pattern, self.cleaned_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                section = match.group()
+                
+                # Validate: ensure it contains expected keywords
+                expected_keywords = ['POWER', 'MODEM', 'STANDARD', 'QUALITY', 'PARAMETER']
+                keyword_count = sum(1 for kw in expected_keywords if kw in section.upper())
+                
+                if keyword_count >= 2:
+                    print(f"[DEBUG] ✓ Pattern {i+1} matched! Contains {keyword_count}/5 expected keywords")
+                    print(f"[DEBUG] Section length: {len(section)} chars")
+                    print(f"[DEBUG] First 200 chars: {repr(section[:200])}")
+                    return section
+                else:
+                    print(f"[DEBUG] ⚠ Pattern {i+1} matched but only {keyword_count}/5 keywords found")
+        
+        print(f"[DEBUG] ✗ No valid pattern matched")
+        return ""
+
+    def _parse_indikator_modem(self, indikator_modem: dict, section_text: str):
+        """Parse Indikator Modem subsection"""
+        print("\n  [INDIKATOR MODEM]")
+        
+        # POWER
+        power_values = self._extract_quality_row_with_ocr(section_text, r"POWER")
+        if not power_values:
+            power_values = self._extract_quality_row(section_text, r"POWER")
+        indikator_modem["power"].update(power_values)
+        print(f"    ✓ POWER: {power_values}")
+        
+        # 109/DCD/LINK-WAN
+        dcd_values = self._extract_quality_row_with_ocr(section_text, r"109[\/]?DCD[\/]?LINK[-]?WAN")
+        if not dcd_values:
+            dcd_values = self._extract_quality_row(section_text, r"109[\/]?DCD[\/]?LINK[-]?WAN")
+        indikator_modem["109_dcd_link_wan"].update(dcd_values)
+        print(f"    ✓ 109/DCD/LINK-WAN: {dcd_values}")
+
+    def _parse_merek_section(self, merek: dict, section_text: str):
+        """Parse Merek subsection"""
+        print("\n  [MEREK]")
+        
+        # TD/TXD/103
+        td_values = self._extract_quality_row_with_ocr(section_text, r"TD[\/]?TXD[\/]?103")
+        if not td_values:
+            td_values = self._extract_quality_row(section_text, r"TD[\/]?TXD[\/]?103")
+        merek["td_txd_103"].update(td_values)
+        print(f"    ✓ TD/TXD/103: {td_values}")
+        
+        # RD/RXD/104
+        rd_values = self._extract_quality_row_with_ocr(section_text, r"RD[\/]?RXD[\/]?104")
+        if not rd_values:
+            rd_values = self._extract_quality_row(section_text, r"RD[\/]?RXD[\/]?104")
+        merek["rd_rxd_104"].update(rd_values)
+        print(f"    ✓ RD/RXD/104: {rd_values}")
+        
+        # RTS/105
+        rts_values = self._extract_quality_row_with_ocr(section_text, r"RTS[\/]?105")
+        if not rts_values:
+            rts_values = self._extract_quality_row(section_text, r"RTS[\/]?105")
+        merek["rts_105"].update(rts_values)
+        print(f"    ✓ RTS/105: {rts_values}")
+        
+        # CTS/106
+        cts_values = self._extract_quality_row_with_ocr(section_text, r"CTS[\/]?106")
+        if not cts_values:
+            cts_values = self._extract_quality_row(section_text, r"CTS[\/]?106")
+        merek["cts_106"].update(cts_values)
+        print(f"    ✓ CTS/106: {cts_values}")
+        
+        # Alarm LED
+        alarm_values = self._extract_quality_row_with_ocr(section_text, r"Alarm\s+LED")
+        if not alarm_values:
+            alarm_values = self._extract_quality_row(section_text, r"Alarm\s+LED")
+        merek["alarm_led"].update(alarm_values)
+        print(f"    ✓ Alarm LED: {alarm_values}")
+        
+        # Front Panel Display - All STU Modem
+        stu_values = self._extract_quality_row_with_ocr(section_text, r"All\s+STU\s+Modem")
+        if not stu_values:
+            stu_values = self._extract_quality_row(section_text, r"All\s+STU\s+Modem")
+        
+        # SPECIAL FIX: Multi-line value for "All STU Modem"
+        if not stu_values["standard"]:
+            manual_match = re.search(
+                r'All\s+STU\s+Modem\s+(Quality\s+A[^\n]*(?:\n\s*No\s+Counter\s+CRC\s+Error)?)',
+                section_text,
+                re.IGNORECASE | re.DOTALL
+            )
+            if manual_match:
+                stu_values["standard"] = re.sub(r'\s+', ' ', manual_match.group(1)).strip()
+        
+        merek["front_panel_display"]["all_stu_modem"].update(stu_values)
+        print(f"    ✓ All STU Modem: {stu_values}")
+        
+        # Front Panel Display - Tainet Scorpio - SPECIAL HANDLING
+        tainet_values = self._extract_quality_row_with_ocr(section_text, r"Tainet\s+Scorpio")
+        if not tainet_values:
+            tainet_values = self._extract_quality_row(section_text, r"Tainet\s+Scorpio")
+        
+        # SPECIAL FIX: Tainet Scorpio has specific column mapping
+        # Standard: "Connected xxx KBps"
+        # NMS/ENGINEER: (empty)
+        # ON SITE/TEKNISI: "Connected KBps"
+        
+        # Check if values were incorrectly split
+        if tainet_values["nms_engineer"] or tainet_values["on_site_teknisi"]:
+            # Reconstruct: combine nms_engineer + on_site_teknisi → on_site_teknisi
+            combined = []
+            if tainet_values["nms_engineer"]:
+                combined.append(tainet_values["nms_engineer"])
+            if tainet_values["on_site_teknisi"]:
+                combined.append(tainet_values["on_site_teknisi"])
+            
+            if combined:
+                tainet_values["on_site_teknisi"] = " ".join(combined)
+                tainet_values["nms_engineer"] = ""  # Clear NMS column
+        
+        merek["front_panel_display"]["tainet_scorpio"].update(tainet_values)
+        print(f"    ✓ Tainet Scorpio: {tainet_values}")
+
+    def _parse_modem_fo(self, modem_fo: dict, section_text: str):
+        """Parse Modem FO subsection"""
+        print("\n  [MODEM FO]")
+        
+        optical_values = self._extract_quality_row_with_ocr(section_text, r"Optical\s+LED\s+Alarm")
+        if not optical_values:
+            optical_values = self._extract_quality_row(section_text, r"Optical\s+LED\s+Alarm")
+        modem_fo["optical_led_alarm"].update(optical_values)
+        print(f"    ✓ Optical LED Alarm: {optical_values}")
+
+    def _parse_lc_signal_kop(self, lc_signal_kop: dict, section_text: str):
+        """Parse LC Signal Quality (Checked by Kop)"""
+        print("\n  [LC SIGNAL - KOP]")
+        
+        # STU 160
+        stu160_values = self._extract_quality_row_with_ocr(section_text, r"STU\s+160")
+        if not stu160_values:
+            stu160_values = self._extract_quality_row(section_text, r"STU\s+160")
+        lc_signal_kop["stu_160"].update(stu160_values)
+        print(f"    ✓ STU 160: {stu160_values}")
+        
+        # STU 1088/2304
+        stu1088_values = self._extract_quality_row_with_ocr(section_text, r"STU\s+1088[\/]?2304")
+        if not stu1088_values:
+            stu1088_values = self._extract_quality_row(section_text, r"STU\s+1088[\/]?2304")
+        lc_signal_kop["stu_1088_2304"].update(stu1088_values)
+        print(f"    ✓ STU 1088/2304: {stu1088_values}")
+        
+        # ADSL Modem
+        adsl_values = self._extract_quality_row_with_ocr(section_text, r"ADSL\s+Modem")
+        if not adsl_values:
+            adsl_values = self._extract_quality_row(section_text, r"ADSL\s+Modem")
+        lc_signal_kop["adsl_modem"].update(adsl_values)
+        print(f"    ✓ ADSL Modem: {adsl_values}")
+
+    def _parse_lc_signal_avo(self, lc_signal_avo: dict, section_text: str):
+        """Parse LC Signal Quality (Checked by AVO Meter)"""
+        print("\n  [LC SIGNAL - AVO METER]")
+        
+        # STU 1088/2304, Tainet - Try multiple patterns
+        patterns_to_try = [
+            r"STU\s+1088[\/]?2304[,\s]*Tainet",
+            r"STU\s+1088[\/]?2304[,\s]+Tainet",
+            r"1088[\/]?2304[,\s]*Tainet",
+        ]
+        
+        stu_tainet_values = None
+        for pattern in patterns_to_try:
+            stu_tainet_values = self._extract_quality_row_with_ocr(section_text, pattern)
+            if not stu_tainet_values:
+                stu_tainet_values = self._extract_quality_row(section_text, pattern)
+            
+            if stu_tainet_values and stu_tainet_values.get("standard"):
+                break
+        
+        # SPECIAL FIX: Manual extraction for "400-700 Ω (Tlkm Area)"
+        if not stu_tainet_values or not stu_tainet_values.get("standard"):
+            manual_match = re.search(
+                r'(400[-–]\s*700\s*[ΩΩ]\s*\([^)]*(?:Tlkm|Tlkma|Area)[^)]*\))',
+                section_text,
+                re.IGNORECASE
+            )
+            
+            if not manual_match:
+                manual_match = re.search(
+                    r'(400[-–]\s*700\s*[ΩΩ]\s*\([^)]*(?:Tlkm|Tlkma|Area))',
+                    section_text,
+                    re.IGNORECASE
+                )
+                
+                if manual_match:
+                    value = manual_match.group(1).strip()
+                    if not value.endswith(')'):
+                        value += ')'
+                    stu_tainet_values = {
+                        "standard": value,
+                        "nms_engineer": "Ω",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+            else:
+                stu_tainet_values = {
+                    "standard": manual_match.group(1).strip(),
+                    "nms_engineer": "Ω",
+                    "on_site_teknisi": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+        
+        if not stu_tainet_values:
+            stu_tainet_values = {
+                "standard": "",
+                "nms_engineer": "",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+        
+        lc_signal_avo["stu_1088_2304_tainet"].update(stu_tainet_values)
+        print(f"    ✓ STU 1088/2304 Tainet: {stu_tainet_values}")
+        
+        # HRB Area
+        hrb_values = self._extract_quality_row_with_ocr(section_text, r"HRB\s+Area")
+        if not hrb_values:
+            hrb_values = self._extract_quality_row(section_text, r"HRB\s+Area")
+        
+        # SPECIAL FIX: Extract full value "50-200 Ω (HRB Area)"
+        if hrb_values["standard"] and (hrb_values["standard"] == ')' or 'Ω' in hrb_values["standard"]):
+            manual_match = re.search(
+                r'(50[-–]\s*200\s*[ΩΩ]\s*(?:\([^)]*HRB[^)]*Area[^)]*\))?)',
+                section_text,
+                re.IGNORECASE
+            )
+            if manual_match:
+                hrb_values["standard"] = manual_match.group(1).strip()
+                hrb_values["nms_engineer"] = "Ω"
+        
+        lc_signal_avo["hrb_area"].update(hrb_values)
+        print(f"    ✓ HRB Area: {hrb_values}")
+        
+        # Adtran Express
+        adtran_values = self._extract_quality_row_with_ocr(section_text, r"Adtran\s+Express")
+        if not adtran_values:
+            adtran_values = self._extract_quality_row(section_text, r"Adtran\s+Express")
+        
+        # SPECIAL FIX: Extract full value "48-50 VDc (QUAD CES SHDSL)" - CLEAN NEWLINE
+        if adtran_values["standard"]:
+            # Step 1: Clean all whitespace (including newlines)
+            adtran_values["standard"] = re.sub(r'\s+', ' ', adtran_values["standard"]).strip()
+            
+            # Step 2: Try manual extraction untuk ensure complete value
+            manual_match = re.search(
+                r'(48[-–]50\s+VDc\s+\(QUAD\s+CES\s+SHDSL\))',
+                section_text.replace('\n', ' '),  # Remove newlines dari source text juga
+                re.IGNORECASE
+            )
+            if manual_match:
+                adtran_values["standard"] = manual_match.group(1).strip()
+            
+            # Step 3: Clear noise dari other columns
+            adtran_values["nms_engineer"] = ""
+            adtran_values["on_site_teknisi"] = ""
+            adtran_values["perbaikan"] = ""
+            adtran_values["hasil_akhir"] = ""
+        
+        lc_signal_avo["adtran_express"].update(adtran_values)
+        print(f"    ✓ Adtran Express: {adtran_values}")
+
+    def _extract_quality_row(self, section_text: str, row_label_pattern: str) -> dict:
+        """
+        Extract quality parameter row - SMART VERSION with noise filtering
+        
+        Returns:
+            dict dengan keys: standard, nms_engineer, on_site_teknisi, perbaikan, hasil_akhir
+        """
+        result = {
+            "standard": "",
+            "nms_engineer": "",
+            "on_site_teknisi": "",
+            "perbaikan": "",
+            "hasil_akhir": ""
+        }
+        
+        # Find row label
+        row_match = re.search(row_label_pattern, section_text, re.IGNORECASE)
+        
+        if not row_match:
+            print(f"      [TEXT EXTRACT] ✗ Pattern '{row_label_pattern}' not found")
+            return result
+        
+        label_text = row_match.group()
+        label_end = row_match.end()
+        
+        print(f"\n      [TEXT EXTRACT] Pattern: {row_label_pattern}")
+        print(f"      [TEXT EXTRACT] Found label: '{label_text}'")
+        
+        # Extract text after label
+        after_label = section_text[label_end:label_end + 400]
+        
+        # Use smart line-by-line extraction with noise filtering
+        result = self._extract_row_line_by_line(after_label)
+        
+        print(f"      [TEXT EXTRACT] ✓ Result: {result}")
+        
+        return result
+
+    def _extract_row_line_by_line(self, after_label_text: str) -> dict:
+        """
+        Extract row values line by line with SMART FILTERING
+        """
+        result = {
+            "standard": "",
+            "nms_engineer": "",
+            "on_site_teknisi": "",
+            "perbaikan": "",
+            "hasil_akhir": ""
+        }
+        
+        lines = after_label_text.split('\n')
+        
+        # ... existing code untuk collect values ...
+        
+        values = []
+        i = 0
+        
+        while i < min(len(lines), 20):
+            line = lines[i].strip()
+            
+            if not line or line in ['.', '..', '...', '-', '--', 'xxx', 'XXX', ' ']:
+                i += 1
+                continue
+            
+            if self._is_noise_text(line):
+                i += 1
+                continue
+            
+            if self._looks_like_next_row_label(line):
+                break
+            
+            combined_value = line
+            
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                
+                if (next_line and 
+                    next_line not in ['.', '..', '...', '-', '--', 'xxx', 'XXX'] and
+                    not self._is_noise_text(next_line) and
+                    not self._looks_like_next_row_label(next_line) and
+                    len(next_line) > 2 and
+                    not self._looks_like_separate_value(line, next_line)):
+                    
+                    combined_value = f"{line} {next_line}"
+                    i += 1
+            
+            values.append(combined_value)
+            i += 1
+            
+            if len(values) >= 5:
+                break
+        
+        print(f"      [LINE EXTRACT] Extracted values: {values}")
+        
+        # Map values to fields
+        field_keys = ["standard", "nms_engineer", "on_site_teknisi", "perbaikan", "hasil_akhir"]
+        
+        for idx, value in enumerate(values):
+            if idx < len(field_keys):
+                result[field_keys[idx]] = value
+        
+        # Clean placeholders
+        for key in result:
+            if result[key] in ['.', '..', '...', '-', '--', 'xxx', 'XXX']:
+                result[key] = ""
+            result[key] = result[key].strip()
+        
+        # ADDED: Post-processing - Clean newlines dari all values
+        for key in result:
+            if result[key]:
+                result[key] = re.sub(r'\s*\n\s*', ' ', result[key]).strip()
+        
+        return result
+
+    def _is_noise_text(self, text: str) -> bool:
+        """Check apakah text adalah noise yang harus di-skip"""
+        text_lower = text.lower().strip()
+        
+        noise_patterns = [
+            r'^merek\s*:',
+            r'^front\s+panel',
+            r'^\d+\.\s*$',
+            r'^lc\s+signal',
+            r'^quality\s*$',
+            r'^checked\s+by',
+            r'^kop\s*\)',
+            r'^\(checked',
+            r'^perangkat',
+            r'^indoor\s+area',
+            r'^outdoor\s+area',
+            r'^avo\s+meter\)',  # ADDED: Skip "AVO Meter)"
+            r'^\(avo\s+meter',   # ADDED: Skip "(AVO Meter"
+        ]
+        
+        for pattern in noise_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return False
+
+    def _looks_like_separate_value(self, current_line: str, next_line: str) -> bool:
+        """Check apakah next_line adalah value terpisah"""
+        current_lower = current_line.lower().strip()
+        next_lower = next_line.lower().strip()
+        
+        # Jika current ends dengan closing punctuation → separate
+        if current_line.endswith(')') or current_line.endswith('Ω'):
+            return True
+        
+        # Jika next mulai dengan angka → separate
+        if re.match(r'^\d+', next_line):
+            return True
+        
+        # Jika next adalah common keyword → separate
+        common_keywords = ['connected', 'green', 'on', 'off', 'blink', 'quality', 'sos', 'jangkrik', 'bersih']
+        if any(keyword in next_lower for keyword in common_keywords):
+            return True
+        
+        # Special case: "Quality A" + "No Counter" → combine
+        if 'quality' in current_lower and next_lower.startswith('no'):
+            return False
+        
+        return True
+
+    def _looks_like_next_row_label(self, text: str) -> bool:
+        """Check apakah text adalah label row berikutnya"""
+        text_lower = text.lower()
+        
+        row_label_indicators = [
+            r'\b(power|dcd|link|wan)\b',
+            r'\b(td|rd|rts|cts)[/]?(txd|rxd)?\b',
+            r'\balarm\s+led\b',
+            r'\bfront\s+panel\b',
+            r'\boptical\b',
+            r'\b(stu|adsl|modem|tainet|scorpio)\b',
+            r'\b(bivocom|hrb|adtran)\b',
+            r'\b(quality|parameter|standard)\b',
+            r'\b(indoor|outdoor|area)\b',
+            r'\b(signal|checked|by)\b',
+            r'^\d{3}[/]',
+        ]
+        
+        for pattern in row_label_indicators:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return False
+
+    def _extract_quality_row_with_ocr(self, section_text: str, row_label_pattern: str) -> dict:
+        """Extract quality row using OCR spatial data - FIXED VERSION"""
+        if not self.ocr_data:
+            print(f"      [OCR EXTRACT] OCR data not available, will use text-based fallback")
+            return None
+        
+        result = {
+            "standard": "",
+            "nms_engineer": "",
+            "on_site_teknisi": "",
+            "perbaikan": "",
+            "hasil_akhir": ""
+        }
+        
+        # Find row label in OCR data
+        label_item = None
+        label_idx = None
+        
+        for idx, ocr_item in enumerate(self.ocr_data):
+            text = ocr_item['text']
+            if re.search(row_label_pattern, text, re.IGNORECASE):
+                label_item = ocr_item
+                label_idx = idx
+                break
+        
+        if not label_item:
+            print(f"      [OCR EXTRACT] Label not found in OCR data, will use text-based fallback")
+            return None
+        
+        # Get label Y coordinate and X coordinate
+        bbox = label_item.get('bbox', [])
+        if bbox and len(bbox) > 0:
+            label_y = bbox[0][1]
+            label_x = bbox[0][0]
+        else:
+            label_y, label_x = label_item.get('position', (0, 0))
+        
+        print(f"\n      [OCR EXTRACT] Found label at Y={label_y}, X={label_x}")
+        
+        # Collect items on same row (Y distance < 25px) but AFTER label (X > label_x + 50)
+        row_items = []
+        
+        for i in range(label_idx + 1, min(label_idx + 15, len(self.ocr_data))):
+            item = self.ocr_data[i]
+            item_bbox = item.get('bbox', [])
+            
+            if item_bbox and len(item_bbox) > 0:
+                item_y = item_bbox[0][1]
+                item_x = item_bbox[0][0]
+            else:
+                item_y, item_x = item.get('position', (0, 0))
+            
+            y_distance = abs(float(item_y) - float(label_y))
+            
+            # If too far vertically, we've moved to next row
+            if y_distance > 25:
+                break
+            
+            text = item['text'].strip()
+            
+            # Skip empty or noise
+            if not text or text in ['|', '.', '..', '-']:
+                continue
+            
+            # ADDED: Skip text that looks like row/section labels (X < 200 usually labels)
+            if float(item_x) < 200 and self._is_likely_label(text):
+                print(f"        [SKIP LABEL] X={item_x:.0f} | '{text}'")
+                continue
+            
+            row_items.append({
+                'text': text,
+                'x': float(item_x),
+                'y': float(item_y)
+            })
+        
+        # Sort by X coordinate (left to right)
+        row_items.sort(key=lambda x: x['x'])
+        
+        print(f"      [OCR EXTRACT] Found {len(row_items)} items on row")
+        for item in row_items:
+            print(f"        X={item['x']:.0f} | '{item['text']}'")
+        
+        # SMART MAPPING: Group items yang X-nya dekat (< 50px) → combine them
+        grouped_items = []
+        i = 0
+        
+        while i < len(row_items):
+            current = row_items[i]
+            combined_text = current['text']
+            combined_x = current['x']
+            
+            # Check next items yang X-nya dekat (< 50px)
+            j = i + 1
+            while j < len(row_items):
+                next_item = row_items[j]
+                x_distance = abs(next_item['x'] - current['x'])
+                
+                if x_distance < 50:  # Same column (close X position)
+                    combined_text += f" {next_item['text']}"
+                    j += 1
+                else:
+                    break
+            
+            grouped_items.append({
+                'text': combined_text,
+                'x': combined_x
+            })
+            
+            i = j
+        
+        print(f"      [OCR EXTRACT] After grouping: {len(grouped_items)} items")
+        for item in grouped_items:
+            print(f"        X={item['x']:.0f} | '{item['text']}'")
+        
+        # Map to fields
+        field_keys = ["standard", "nms_engineer", "on_site_teknisi", "perbaikan", "hasil_akhir"]
+        
+        for idx, item in enumerate(grouped_items):
+            if idx < len(field_keys):
+                result[field_keys[idx]] = item['text']
+        
+        # Clean empty placeholders
+        for key in result:
+            value = result[key]
+            if value in ['.', '..', '...', '-', '--', 'xxx', 'XXX']:
+                result[key] = ""
+            result[key] = result[key].strip()
+        
+        print(f"      [OCR EXTRACT] ✓ Result: {result}")
+        
+        return result
+
+    def _is_likely_label(self, text: str) -> bool:
+        """Check apakah text kemungkinan adalah label (bukan value)"""
+        text_lower = text.lower().strip()
+        
+        # Common row/section labels
+        label_keywords = [
+            'modem', 'indikator', 'merek', 'quality', 'signal', 
+            'checked', 'kop', 'avo', 'meter', 'front', 'panel',
+            'display', 'lc signal', 'tainet', 'scorpio'
+        ]
+        
+        # Check if text is exactly a label keyword
+        if text_lower in label_keywords:
+            return True
+        
+        # Check if text contains label patterns
+        if any(keyword in text_lower for keyword in ['indikator', 'quality', 'checked by']):
+            return True
+        
+        return False
 
     # ==================== DATA PERANGKAT PARSER - FIXED VERSION ====================
     

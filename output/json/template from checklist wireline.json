@@ -180,167 +180,167 @@
                 "perbaikan": "",
                 "hasil_akhir": ""
             }
+        }
+    },
+    "line_checklist": {
+        "site_area": {
+            "parameter_kualitas": [
+                {
+                    "line_checklist": "Kabel RJ-11",
+                    "standard": "No Berkarat, No Bad Contact/Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "Phone Box",
+                    "standard": "No Berkarat, No Bad Contact/Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "KTB/DP Wall",
+                    "standard": "No Berkarat, No Bad Contact/Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "DP Telkom",
+                    "standard": "No Berkarat, No Bad Contact/Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "Sub Gedung",
+                    "standard": "No Berkarat, No Bad Contact/Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "MDF Gedung",
+                    "standard": "No Berkarat, No Bad Contact/Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "T-Line Gedung",
+                    "standard": "No Grounded, No Noised, Tdk Putus, Sedikit Terminasii, No Paralel Line Detected, Tahanan Loop : 200-400 Ω",
+                    "existing": "Ω",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+            ]
         },
-        "line_checklist": {
-            "site_area": {
-                "parameter_kualitas": [
-                    {
-                        "line_checklist": "Kabel RJ-11",
-                        "standard": "No Berkarat, No Bad Contact/Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "Phone Box",
-                        "standard": "No Berkarat, No Bad Contact/Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "KTB/DP Wall",
-                        "standard": "No Berkarat, No Bad Contact/Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "DP Telkom",
-                        "standard": "No Berkarat, No Bad Contact/Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "Sub Gedung",
-                        "standard": "No Berkarat, No Bad Contact/Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "MDF Gedung",
-                        "standard": "No Berkarat, No Bad Contact/Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "T-Line Gedung",
-                        "standard": "No Grounded, No Noised, Tdk Putus, Sedikit Terminasii, No Paralel Line Detected, Tahanan Loop : 200-400 Ω",
-                        "existing": "Ω",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    }
-                ]
-            },
-            "hrb_r_lintas": {
-                "parameter_kualitas": [
-                    {
-                        "line_checklist": "T-Line (TX, LC)",
-                        "standard": "No Grounded, No Noised, Tdk Putus, Tahanan Loop : 010-100 Ω",
-                        "existing": "Ω",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "Kabel Data",
-                        "standard": "OK, Tidak Kendor, Tdk Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "Port Sentral",
-                        "standard": "OK, Tidak Kendor, Tdk Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    }
-                ]
-            },
-            "line_fo": {
-                "parameter_kualitas": [
-                    {
-                        "line_checklist": "Cek Signal FO",
-                        "standard": "OK, Signal Balik, Tdk Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "Koneksi OTB",
-                        "standard": "OK, Tidak Kendor, Tdk Putus",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    }
-                ]
-            },
-            "tes_konektivitas": {
-                "parameter_kualitas": [
-                    {
-                        "line_checklist": "Bit Error Rate",
-                        "standard": "Durasi 15 Menit, 0 error",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    },
-                    {
-                        "line_checklist": "Ping",
-                        "standard": "100% reply, <50 ms",
-                        "existing": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    }
-                ]
-            }
+        "hrb_r_lintas": {
+            "parameter_kualitas": [
+                {
+                    "line_checklist": "T-Line (TX, LC)",
+                    "standard": "No Grounded, No Noised, Tdk Putus, Tahanan Loop : 010-100 Ω",
+                    "existing": "Ω",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "Kabel Data",
+                    "standard": "OK, Tidak Kendor, Tdk Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                },
+                {
+                    "line_checklist": "Port Sentral",
+                    "standard": "OK, Tidak Kendor, Tdk Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+            ]
         },
-        "data_perangkat": {
-            "existing": [
+        "line_fo": {
+            "parameter_kualitas": [
                 {
-                    "nama_barang": "PSU FORTI FG-50E/FG-30E",
-                    "no_reg": "B2WN0286208MA1443",
-                    "sn": ""
+                    "line_checklist": "Cek Signal FO",
+                    "standard": "OK, Signal Balik, Tdk Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
                 },
                 {
-                    "nama_barang": "FORTIGATE-50E HW AND WARRANTY",
-                    "no_reg": "B2WN0262020HA1346",
-                    "sn": ""
+                    "line_checklist": "Koneksi OTB",
+                    "standard": "OK, Tidak Kendor, Tdk Putus",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+            ]
+        },
+        "tes_konektivitas": {
+            "parameter_kualitas": [
+                {
+                    "line_checklist": "Bit Error Rate",
+                    "standard": "Durasi 15 Menit, 0 error",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
                 },
                 {
-                    "nama_barang": "ADAPTOR 12V 1A",
-                    "no_reg": "B2WN0150153MA0732",
-                    "sn": ""
-                },
-                {
-                    "nama_barang": "HUAAWEI Router B311As + Antena",
-                    "no_reg": "B2WN0150152MA0732",
-                    "sn": ""
-                }
-            ],
-            "tidak_terpakai": [
-                {
-                    "nama_barang": "",
-                    "no_reg": "",
-                    "sn": ""
-                }
-            ],
-            "cabut": [
-                {
-                    "nama_barang": "",
-                    "no_reg": "",
-                    "sn": ""
-                }
-            ],
-            "pengganti_atau_pasang_baru": [
-                {
-                    "nama_barang": "",
-                    "no_reg": "",
-                    "sn": ""
+                    "line_checklist": "Ping",
+                    "standard": "100% reply, <50 ms",
+                    "existing": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
                 }
             ]
         }
+    },
+    "data_perangkat": {
+        "existing": [
+            {
+                "nama_barang": "PSU FORTI FG-50E/FG-30E",
+                "no_reg": "B2WN0286208MA1443",
+                "sn": ""
+            },
+            {
+                "nama_barang": "FORTIGATE-50E HW AND WARRANTY",
+                "no_reg": "B2WN0262020HA1346",
+                "sn": ""
+            },
+            {
+                "nama_barang": "ADAPTOR 12V 1A",
+                "no_reg": "B2WN0150153MA0732",
+                "sn": ""
+            },
+            {
+                "nama_barang": "HUAAWEI Router B311As + Antena",
+                "no_reg": "B2WN0150152MA0732",
+                "sn": ""
+            }
+        ],
+        "tidak_terpakai": [
+            {
+                "nama_barang": "",
+                "no_reg": "",
+                "sn": ""
+            }
+        ],
+        "cabut": [
+            {
+                "nama_barang": "",
+                "no_reg": "",
+                "sn": ""
+            }
+        ],
+        "pengganti_atau_pasang_baru": [
+            {
+                "nama_barang": "",
+                "no_reg": "",
+                "sn": ""
+            }
+        ]
     }
 }

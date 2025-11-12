@@ -58,6 +58,132 @@
                     "suhu_ruangan_perangkat": "25°"
                 }
             },
+            "indoor_area_checklist": {
+                "indikator_modem": {
+                    "power": {
+                        "standard": "ON (Green)",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "109_dcd_link_wan": {
+                        "standard": "", 
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                },
+                "merek": {
+                    "td_txd_103": {
+                        "standard": "Blink",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "rd_rxd_104": {
+                        "standard": "Blink",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "rts_105": {
+                        "standard": "ON",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "cts_106": {
+                        "standard": "ON",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "alarm_led": {
+                        "standard": "ON",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "front_panel_display": {
+                        "all_stu_modem": {
+                            "standard": "Quality A",
+                            "nms_engineer": "",
+                            "on_site_teknisi": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        "tainet_scorpio": {
+                            "standard": "Connected xxx KBps",
+                            "nms_engineer": "",
+                            "on_site_teknisi": "KBps Connected",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    }
+                },
+                "modem_fo": {
+                    "optical_led_alarm": {
+                        "standard": "Green (ON)",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                },
+                "lc_signal_quality_checked_by_kop": {
+                    "stu_160": {
+                        "standard": "Jangkrik Keras",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "stu_1088_2304": {
+                        "standard": "SOS Keras",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "adsl_modem": {
+                        "standard": "Bersih, No Noise",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                },
+                "lc_signal_quality_checked_by_avo_meter": {
+                    "stu_1088_2304_tainet": {
+                        "standard": "400-700 Ω (Tlkm Area)",
+                        "nms_engineer": "Ω",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "hrb_area": {
+                        "standard": "50-200Ω (HRB Area)",
+                        "nms_engineer": "Ω",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    },
+                    "adtran_express": {
+                        "standard": "48-50 VDc (QUAD CES SHDSL)",
+                        "nms_engineer": "",
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                }
+            },
             "data_perangkat": {
                 "existing": [
                     {
