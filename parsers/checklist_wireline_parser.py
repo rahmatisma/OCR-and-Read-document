@@ -521,7 +521,7 @@ class ChecklistWirelineParser(BaseParser):
         return ""
 
     def _parse_indikator_modem(self, indikator_modem: dict, section_text: str):
-        """Parse Indikator Modem subsection"""
+        """Parse Indikator Modem subsection - COMPLETELY FIXED"""
         print("\n  [INDIKATOR MODEM]")
         
         # POWER
@@ -531,15 +531,55 @@ class ChecklistWirelineParser(BaseParser):
         indikator_modem["power"].update(power_values)
         print(f"    ✓ POWER: {power_values}")
         
-        # 109/DCD/LINK-WAN
+        # 109/DCD/LINK-WAN - CRITICAL FIX: Look in the cleaned text directly
         dcd_values = self._extract_quality_row_with_ocr(section_text, r"109[\/]?DCD[\/]?LINK[-]?WAN")
+        
+        # If OCR fails, try direct text extraction from section_text
+        if not dcd_values or not dcd_values.get("standard"):
+            # Strategy 1: Look for "109/DCD/LINK-WAN" followed by "ON" or "OFF" on next line
+            pattern1 = r'109[\/]?DCD[\/]?LINK[-]?WAN\s*\n\s*(ON|OFF)'
+            match = re.search(pattern1, section_text, re.IGNORECASE)
+            
+            if match:
+                dcd_values = {
+                    "standard": match.group(1).upper(),
+                    "nms_engineer": "",
+                    "on_site_teknisi": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+                print(f"    [MANUAL EXTRACT] Found 109/DCD value (newline): '{match.group(1)}'")
+            else:
+                # Strategy 2: Look for "Modem ON 109/DCD" pattern (for OCR text)
+                pattern2 = r'(?:Modem\s+)(\w+)\s+109[\/]?DCD[\/]?LINK[-]?WAN'
+                match = re.search(pattern2, section_text, re.IGNORECASE)
+                
+                if match:
+                    value = match.group(1).strip()
+                    if value.upper() in ['ON', 'OFF']:
+                        dcd_values = {
+                            "standard": value.upper(),
+                            "nms_engineer": "",
+                            "on_site_teknisi": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                        print(f"    [MANUAL EXTRACT] Found 109/DCD value (inline): '{value}'")
+        
         if not dcd_values:
-            dcd_values = self._extract_quality_row(section_text, r"109[\/]?DCD[\/]?LINK[-]?WAN")
+            dcd_values = {
+                "standard": "",
+                "nms_engineer": "",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+        
         indikator_modem["109_dcd_link_wan"].update(dcd_values)
         print(f"    ✓ 109/DCD/LINK-WAN: {dcd_values}")
 
     def _parse_merek_section(self, merek: dict, section_text: str):
-        """Parse Merek subsection"""
+        """Parse Merek subsection - FINAL CORRECT VERSION"""
         print("\n  [MEREK]")
         
         # TD/TXD/103
@@ -577,46 +617,109 @@ class ChecklistWirelineParser(BaseParser):
         merek["alarm_led"].update(alarm_values)
         print(f"    ✓ Alarm LED: {alarm_values}")
         
-        # Front Panel Display - All STU Modem
+        # Front Panel Display - All STU Modem - CRITICAL FIX: Multi-line value
         stu_values = self._extract_quality_row_with_ocr(section_text, r"All\s+STU\s+Modem")
-        if not stu_values:
-            stu_values = self._extract_quality_row(section_text, r"All\s+STU\s+Modem")
         
-        # SPECIAL FIX: Multi-line value for "All STU Modem"
-        if not stu_values["standard"]:
-            manual_match = re.search(
-                r'All\s+STU\s+Modem\s+(Quality\s+A[^\n]*(?:\n\s*No\s+Counter\s+CRC\s+Error)?)',
-                section_text,
-                re.IGNORECASE | re.DOTALL
-            )
-            if manual_match:
-                stu_values["standard"] = re.sub(r'\s+', ' ', manual_match.group(1)).strip()
+        # ALWAYS check for multi-line value in text
+        # From debug text: "All STU Modem Quality A No Counter CRC Error Tainet Scorpio"
+        manual_match = re.search(
+            r'All\s+STU\s+Modem\s+(Quality\s+A)\s*(No\s+Counter\s+CRC\s+Error)?',
+            section_text,
+            re.IGNORECASE
+        )
+        
+        if manual_match:
+            line1 = manual_match.group(1).strip()
+            line2 = manual_match.group(2).strip() if manual_match.group(2) else ""
+            
+            # If line2 exists, combine with SPACE (not newline)
+            if line2:
+                combined = f"{line1} {line2}"
+                stu_values = {
+                    "standard": combined,
+                    "nms_engineer": "",
+                    "on_site_teknisi": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+                print(f"    [MANUAL EXTRACT] All STU Modem multi-line: '{combined}'")
+            elif not stu_values or not stu_values.get("standard"):
+                stu_values = {
+                    "standard": line1,
+                    "nms_engineer": "",
+                    "on_site_teknisi": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+        
+        if not stu_values:
+            stu_values = {
+                "standard": "",
+                "nms_engineer": "",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
         
         merek["front_panel_display"]["all_stu_modem"].update(stu_values)
         print(f"    ✓ All STU Modem: {stu_values}")
         
-        # Front Panel Display - Tainet Scorpio - SPECIAL HANDLING
+        # Front Panel Display - Tainet Scorpio - CRITICAL FIX: Get "Connected KBps"
         tainet_values = self._extract_quality_row_with_ocr(section_text, r"Tainet\s+Scorpio")
-        if not tainet_values:
-            tainet_values = self._extract_quality_row(section_text, r"Tainet\s+Scorpio")
         
-        # SPECIAL FIX: Tainet Scorpio has specific column mapping
-        # Standard: "Connected xxx KBps"
-        # NMS/ENGINEER: (empty)
-        # ON SITE/TEKNISI: "Connected KBps"
-        
-        # Check if values were incorrectly split
-        if tainet_values["nms_engineer"] or tainet_values["on_site_teknisi"]:
-            # Reconstruct: combine nms_engineer + on_site_teknisi → on_site_teknisi
-            combined = []
-            if tainet_values["nms_engineer"]:
-                combined.append(tainet_values["nms_engineer"])
-            if tainet_values["on_site_teknisi"]:
-                combined.append(tainet_values["on_site_teknisi"])
+        # PROBLEM: Need to handle both OCR text and normal text formats
+        if not tainet_values or not tainet_values.get("on_site_teknisi") or "KBps" not in tainet_values.get("on_site_teknisi", ""):
+            # Pattern 1: For OCR text (inline format)
+            # "Tainet Scorpio Connected xxx KBps Connected KBps Modem FO"
+            manual_match = re.search(
+                r'Tainet\s+Scorpio\s+(Connected\s+xxx\s+KBps)\s+(Connected\s+KBps)',
+                section_text,
+                re.IGNORECASE
+            )
             
-            if combined:
-                tainet_values["on_site_teknisi"] = " ".join(combined)
-                tainet_values["nms_engineer"] = ""  # Clear NMS column
+            if manual_match:
+                tainet_values = {
+                    "standard": manual_match.group(1).strip(),
+                    "nms_engineer": "",
+                    "on_site_teknisi": manual_match.group(2).strip(),
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+                print(f"    [MANUAL EXTRACT OCR] Tainet Scorpio: standard='{manual_match.group(1)}', on_site='{manual_match.group(2)}'")
+            else:
+                # Pattern 2: For normal text (newline format)
+                # "Tainet Scorpio\nConnected xxx KBps\n \nConnected \nKBps"
+                manual_match = re.search(
+                    r'Tainet\s+Scorpio\s*\n\s*(Connected\s+xxx\s+KBps)\s*\n[^\n]*\n\s*(Connected)\s*\n\s*(KBps)',
+                    section_text,
+                    re.IGNORECASE
+                )
+                
+                if manual_match:
+                    on_site_value = f"{manual_match.group(2).strip()} {manual_match.group(3).strip()}"
+                    # Clean any remaining whitespace/newlines
+                    on_site_value = re.sub(r'\s+', ' ', on_site_value).strip()
+                    tainet_values = {
+                        "standard": manual_match.group(1).strip(),
+                        "nms_engineer": "",
+                        "on_site_teknisi": on_site_value,
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                    print(f"    [MANUAL EXTRACT TEXT] Tainet Scorpio: standard='{manual_match.group(1)}', on_site='{on_site_value}'")
+        
+        # CRITICAL: Clean any newlines in on_site_teknisi regardless of source
+        if tainet_values and tainet_values.get("on_site_teknisi"):
+            tainet_values["on_site_teknisi"] = re.sub(r'\s+', ' ', tainet_values["on_site_teknisi"]).strip()
+        
+        if not tainet_values:
+            tainet_values = {
+                "standard": "",
+                "nms_engineer": "",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
         
         merek["front_panel_display"]["tainet_scorpio"].update(tainet_values)
         print(f"    ✓ Tainet Scorpio: {tainet_values}")
@@ -657,62 +760,44 @@ class ChecklistWirelineParser(BaseParser):
         print(f"    ✓ ADSL Modem: {adsl_values}")
 
     def _parse_lc_signal_avo(self, lc_signal_avo: dict, section_text: str):
-        """Parse LC Signal Quality (Checked by AVO Meter)"""
+        """Parse LC Signal Quality (Checked by AVO Meter) - FINAL CORRECT VERSION"""
         print("\n  [LC SIGNAL - AVO METER]")
         
-        # STU 1088/2304, Tainet - Try multiple patterns
-        patterns_to_try = [
-            r"STU\s+1088[\/]?2304[,\s]*Tainet",
-            r"STU\s+1088[\/]?2304[,\s]+Tainet",
-            r"1088[\/]?2304[,\s]*Tainet",
-        ]
+        # Extract only the AVO Meter section
+        avo_section_match = re.search(
+            r'(?:Checked\s+by|by)\s+AVO\s+Meter\)(.*?)(?=OUTDOOR|LINE|KESIMPULAN|$)',
+            section_text,
+            re.IGNORECASE | re.DOTALL
+        )
         
-        stu_tainet_values = None
-        for pattern in patterns_to_try:
-            stu_tainet_values = self._extract_quality_row_with_ocr(section_text, pattern)
-            if not stu_tainet_values:
-                stu_tainet_values = self._extract_quality_row(section_text, pattern)
-            
-            if stu_tainet_values and stu_tainet_values.get("standard"):
-                break
+        if avo_section_match:
+            avo_section = avo_section_match.group(1)
+            print(f"      [AVO SECTION] Isolated AVO section ({len(avo_section)} chars)")
+        else:
+            avo_section = section_text
+            print(f"      [AVO SECTION] Using full section")
         
-        # SPECIAL FIX: Manual extraction for "400-700 Ω (Tlkm Area)"
-        if not stu_tainet_values or not stu_tainet_values.get("standard"):
-            manual_match = re.search(
-                r'(400[-–]\s*700\s*[ΩΩ]\s*\([^)]*(?:Tlkm|Tlkma|Area)[^)]*\))',
-                section_text,
-                re.IGNORECASE
-            )
-            
-            if not manual_match:
-                manual_match = re.search(
-                    r'(400[-–]\s*700\s*[ΩΩ]\s*\([^)]*(?:Tlkm|Tlkma|Area))',
-                    section_text,
-                    re.IGNORECASE
-                )
-                
-                if manual_match:
-                    value = manual_match.group(1).strip()
-                    if not value.endswith(')'):
-                        value += ')'
-                    stu_tainet_values = {
-                        "standard": value,
-                        "nms_engineer": "Ω",
-                        "on_site_teknisi": "",
-                        "perbaikan": "",
-                        "hasil_akhir": ""
-                    }
-            else:
-                stu_tainet_values = {
-                    "standard": manual_match.group(1).strip(),
-                    "nms_engineer": "Ω",
-                    "on_site_teknisi": "",
-                    "perbaikan": "",
-                    "hasil_akhir": ""
-                }
+        # STU 1088/2304 (SEPARATE ROW)
+        stu_values = None
         
-        if not stu_tainet_values:
-            stu_tainet_values = {
+        # Manual extraction for "400-700 Ω (Tlkm Area)"
+        manual_match = re.search(
+            r'(400[-–]\s*700\s*[ΩΩ]\s*\([^)]*(?:Tlkm|Tlkma|Area)[^)]*\))',
+            avo_section,
+            re.IGNORECASE
+        )
+        
+        if manual_match:
+            stu_values = {
+                "standard": manual_match.group(1).strip(),
+                "nms_engineer": "Ω",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+        
+        if not stu_values:
+            stu_values = {
                 "standard": "",
                 "nms_engineer": "",
                 "on_site_teknisi": "",
@@ -720,62 +805,112 @@ class ChecklistWirelineParser(BaseParser):
                 "hasil_akhir": ""
             }
         
-        lc_signal_avo["stu_1088_2304_tainet"].update(stu_tainet_values)
-        print(f"    ✓ STU 1088/2304 Tainet: {stu_tainet_values}")
+        lc_signal_avo["stu_1088_2304"].update(stu_values)
+        print(f"    ✓ STU 1088/2304: {stu_values}")
         
-        # HRB Area
-        hrb_values = self._extract_quality_row_with_ocr(section_text, r"HRB\s+Area")
-        if not hrb_values:
-            hrb_values = self._extract_quality_row(section_text, r"HRB\s+Area")
+        # Tainet (SEPARATE ROW)
+        tainet_values = self._extract_quality_row_with_ocr(avo_section, r"(?<!/)Tainet(?!\s+Scorpio)")
+        if not tainet_values:
+            tainet_values = self._extract_quality_row(avo_section, r"(?<!/)Tainet(?!\s+Scorpio)")
         
-        # SPECIAL FIX: Extract full value "50-200 Ω (HRB Area)"
-        if hrb_values["standard"] and (hrb_values["standard"] == ')' or 'Ω' in hrb_values["standard"]):
+        # CRITICAL FIX: Manual extraction for "50-200 Ω (HRB Area)" with better pattern
+        # Check if we got wrong value (just "Ω")
+        if not tainet_values or not tainet_values.get("standard") or tainet_values.get("standard") == "Ω":
+            # Try to find full value in text
             manual_match = re.search(
-                r'(50[-–]\s*200\s*[ΩΩ]\s*(?:\([^)]*HRB[^)]*Area[^)]*\))?)',
-                section_text,
+                r'(50[-–]\s*200\s*[ΩΩ]\s*\([^)]*(?:HRB|Area)[^)]*\))',
+                avo_section,
                 re.IGNORECASE
             )
+            
             if manual_match:
-                hrb_values["standard"] = manual_match.group(1).strip()
-                hrb_values["nms_engineer"] = "Ω"
+                tainet_values = {
+                    "standard": manual_match.group(1).strip(),
+                    "nms_engineer": "Ω",
+                    "on_site_teknisi": "",
+                    "perbaikan": "",
+                    "hasil_akhir": ""
+                }
+                print(f"    [MANUAL EXTRACT] Tainet: standard='{manual_match.group(1)}', nms='Ω'")
+            else:
+                # If still not found, try alternative pattern for text mode
+                # Pattern: "Tainet\n50–200 Ω (HRB Area)\nΩ"
+                alt_match = re.search(
+                    r'Tainet\s*\n\s*(50[-–]\s*200\s*[ΩΩ]\s*\([^)]*(?:HRB|Area)[^)]*\))\s*\n\s*([ΩΩ])',
+                    avo_section,
+                    re.IGNORECASE
+                )
+                
+                if alt_match:
+                    tainet_values = {
+                        "standard": alt_match.group(1).strip(),
+                        "nms_engineer": alt_match.group(2).strip(),
+                        "on_site_teknisi": "",
+                        "perbaikan": "",
+                        "hasil_akhir": ""
+                    }
+                    print(f"    [MANUAL EXTRACT ALT] Tainet: standard='{alt_match.group(1)}', nms='{alt_match.group(2)}'")
         
-        lc_signal_avo["hrb_area"].update(hrb_values)
-        print(f"    ✓ HRB Area: {hrb_values}")
+        if not tainet_values:
+            tainet_values = {
+                "standard": "",
+                "nms_engineer": "",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
         
-        # Adtran Express
-        adtran_values = self._extract_quality_row_with_ocr(section_text, r"Adtran\s+Express")
+        lc_signal_avo["tainet"].update(tainet_values)
+        print(f"    ✓ Tainet: {tainet_values}")
+        
+        # Adtran Express - CRITICAL FIX: NO Ω at all (neither standard nor NMS)
+        adtran_values = self._extract_quality_row_with_ocr(avo_section, r"Adtran\s+Express")
         if not adtran_values:
-            adtran_values = self._extract_quality_row(section_text, r"Adtran\s+Express")
+            adtran_values = self._extract_quality_row(avo_section, r"Adtran\s+Express")
         
-        # SPECIAL FIX: Extract full value "48-50 VDc (QUAD CES SHDSL)" - CLEAN NEWLINE
-        if adtran_values["standard"]:
-            # Step 1: Clean all whitespace (including newlines)
-            adtran_values["standard"] = re.sub(r'\s+', ' ', adtran_values["standard"]).strip()
-            
-            # Step 2: Try manual extraction untuk ensure complete value
-            manual_match = re.search(
-                r'(48[-–]50\s+VDc\s+\(QUAD\s+CES\s+SHDSL\))',
-                section_text.replace('\n', ' '),  # Remove newlines dari source text juga
-                re.IGNORECASE
-            )
-            if manual_match:
-                adtran_values["standard"] = manual_match.group(1).strip()
-            
-            # Step 3: Clear noise dari other columns
-            adtran_values["nms_engineer"] = ""
-            adtran_values["on_site_teknisi"] = ""
-            adtran_values["perbaikan"] = ""
-            adtran_values["hasil_akhir"] = ""
+        # Extract "48-50 VDc (QUAD CES SHDSL)" - WITHOUT Ω anywhere
+        manual_match = re.search(
+            r'(48[-–]50\s+VDc\s+\(QUAD\s+CES\s+SHDSL\))',
+            avo_section.replace('\n', ' '),
+            re.IGNORECASE
+        )
+        
+        if manual_match:
+            adtran_values = {
+                "standard": manual_match.group(1).strip(),  # NO Ω
+                "nms_engineer": "",                         # NO Ω in NMS either
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+            print(f"    [MANUAL EXTRACT] Adtran Express: standard='{manual_match.group(1)}' (no Ω anywhere)")
+        elif adtran_values and adtran_values.get("standard"):
+            # Clean and ensure NO Ω anywhere
+            standard = re.sub(r'\s+', ' ', adtran_values["standard"]).strip()
+            standard = standard.replace('Ω', '').strip()
+            adtran_values["standard"] = standard
+            adtran_values["nms_engineer"] = ""  # NO Ω in NMS
+        
+        if not adtran_values:
+            adtran_values = {
+                "standard": "",
+                "nms_engineer": "",
+                "on_site_teknisi": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+        
+        # FORCE: Ensure nms_engineer is empty (no Ω)
+        adtran_values["nms_engineer"] = ""
         
         lc_signal_avo["adtran_express"].update(adtran_values)
         print(f"    ✓ Adtran Express: {adtran_values}")
 
     def _extract_quality_row(self, section_text: str, row_label_pattern: str) -> dict:
         """
-        Extract quality parameter row - SMART VERSION with noise filtering
+        Extract quality parameter row - ENHANCED TEXT EXTRACTION
         
-        Returns:
-            dict dengan keys: standard, nms_engineer, on_site_teknisi, perbaikan, hasil_akhir
+        This is the fallback when OCR fails.
         """
         result = {
             "standard": "",
@@ -798,11 +933,27 @@ class ChecklistWirelineParser(BaseParser):
         print(f"\n      [TEXT EXTRACT] Pattern: {row_label_pattern}")
         print(f"      [TEXT EXTRACT] Found label: '{label_text}'")
         
-        # Extract text after label
+        # Extract text after label (up to 400 chars)
         after_label = section_text[label_end:label_end + 400]
         
-        # Use smart line-by-line extraction with noise filtering
-        result = self._extract_row_line_by_line(after_label)
+        # ENHANCED: Try to extract first meaningful value after label
+        # Remove leading whitespace/newlines
+        after_label = after_label.lstrip()
+        
+        # Split by newline and get first non-empty line
+        lines = after_label.split('\n')
+        
+        for line in lines[:5]:  # Check first 5 lines
+            line = line.strip()
+            
+            # Skip empty, noise, or next row labels
+            if not line or self._is_noise_text(line) or self._looks_like_next_row_label(line):
+                continue
+            
+            # Found a valid value - put it in standard
+            result["standard"] = line
+            print(f"      [TEXT EXTRACT] ✓ Found value: '{line}'")
+            break
         
         print(f"      [TEXT EXTRACT] ✓ Result: {result}")
         
@@ -959,7 +1110,14 @@ class ChecklistWirelineParser(BaseParser):
         return False
 
     def _extract_quality_row_with_ocr(self, section_text: str, row_label_pattern: str) -> dict:
-        """Extract quality row using OCR spatial data - FIXED VERSION"""
+        """
+        Extract quality row using OCR spatial data - COMPLETELY FIXED VERSION
+        
+        Key fixes:
+        1. Stricter Y-distance threshold (20px instead of 30px) to avoid next row contamination
+        2. Better duplicate detection (same X and same text)
+        3. Improved validation
+        """
         if not self.ocr_data:
             print(f"      [OCR EXTRACT] OCR data not available, will use text-based fallback")
             return None
@@ -987,7 +1145,7 @@ class ChecklistWirelineParser(BaseParser):
             print(f"      [OCR EXTRACT] Label not found in OCR data, will use text-based fallback")
             return None
         
-        # Get label Y coordinate and X coordinate
+        # Get label coordinates
         bbox = label_item.get('bbox', [])
         if bbox and len(bbox) > 0:
             label_y = bbox[0][1]
@@ -997,10 +1155,14 @@ class ChecklistWirelineParser(BaseParser):
         
         print(f"\n      [OCR EXTRACT] Found label at Y={label_y}, X={label_x}")
         
-        # Collect items on same row (Y distance < 25px) but AFTER label (X > label_x + 50)
-        row_items = []
+        # CRITICAL: Skip items in label column (X < 250)
+        LABEL_COLUMN_MAX_X = 250
         
-        for i in range(label_idx + 1, min(label_idx + 15, len(self.ocr_data))):
+        # Collect items on same row - STRICTER Y threshold (20px instead of 30px)
+        row_items = []
+        seen_items = set()  # Track seen (x, text) to avoid duplicates
+        
+        for i in range(label_idx + 1, min(label_idx + 20, len(self.ocr_data))):
             item = self.ocr_data[i]
             item_bbox = item.get('bbox', [])
             
@@ -1012,8 +1174,8 @@ class ChecklistWirelineParser(BaseParser):
             
             y_distance = abs(float(item_y) - float(label_y))
             
-            # If too far vertically, we've moved to next row
-            if y_distance > 25:
+            # STRICTER: If more than 20px away vertically, stop
+            if y_distance > 20:
                 break
             
             text = item['text'].strip()
@@ -1022,10 +1184,17 @@ class ChecklistWirelineParser(BaseParser):
             if not text or text in ['|', '.', '..', '-']:
                 continue
             
-            # ADDED: Skip text that looks like row/section labels (X < 200 usually labels)
-            if float(item_x) < 200 and self._is_likely_label(text):
+            # Skip if X position is in label column
+            if float(item_x) < LABEL_COLUMN_MAX_X:
                 print(f"        [SKIP LABEL] X={item_x:.0f} | '{text}'")
                 continue
+            
+            # CRITICAL: Check for duplicates (same X position and same text)
+            item_key = (round(float(item_x)), text)
+            if item_key in seen_items:
+                print(f"        [SKIP DUPLICATE] X={item_x:.0f} | '{text}'")
+                continue
+            seen_items.add(item_key)
             
             row_items.append({
                 'text': text,
@@ -1040,42 +1209,10 @@ class ChecklistWirelineParser(BaseParser):
         for item in row_items:
             print(f"        X={item['x']:.0f} | '{item['text']}'")
         
-        # SMART MAPPING: Group items yang X-nya dekat (< 50px) → combine them
-        grouped_items = []
-        i = 0
-        
-        while i < len(row_items):
-            current = row_items[i]
-            combined_text = current['text']
-            combined_x = current['x']
-            
-            # Check next items yang X-nya dekat (< 50px)
-            j = i + 1
-            while j < len(row_items):
-                next_item = row_items[j]
-                x_distance = abs(next_item['x'] - current['x'])
-                
-                if x_distance < 50:  # Same column (close X position)
-                    combined_text += f" {next_item['text']}"
-                    j += 1
-                else:
-                    break
-            
-            grouped_items.append({
-                'text': combined_text,
-                'x': combined_x
-            })
-            
-            i = j
-        
-        print(f"      [OCR EXTRACT] After grouping: {len(grouped_items)} items")
-        for item in grouped_items:
-            print(f"        X={item['x']:.0f} | '{item['text']}'")
-        
-        # Map to fields
+        # Map directly to fields (no grouping to avoid contamination)
         field_keys = ["standard", "nms_engineer", "on_site_teknisi", "perbaikan", "hasil_akhir"]
         
-        for idx, item in enumerate(grouped_items):
+        for idx, item in enumerate(row_items):
             if idx < len(field_keys):
                 result[field_keys[idx]] = item['text']
         
@@ -1085,6 +1222,11 @@ class ChecklistWirelineParser(BaseParser):
             if value in ['.', '..', '...', '-', '--', 'xxx', 'XXX']:
                 result[key] = ""
             result[key] = result[key].strip()
+        
+        # VALIDATION: If standard is empty, trigger fallback
+        if not result['standard']:
+            print(f"      [OCR EXTRACT] ⚠ Empty standard detected, triggering text-based fallback")
+            return None
         
         print(f"      [OCR EXTRACT] ✓ Result: {result}")
         

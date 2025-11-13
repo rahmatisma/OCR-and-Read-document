@@ -68,7 +68,7 @@
                         "hasil_akhir": ""
                     },
                     "109_dcd_link_wan": {
-                        "standard": "", 
+                        "standard": "ON",
                         "nms_engineer": "",
                         "on_site_teknisi": "",
                         "perbaikan": "",
@@ -113,7 +113,7 @@
                     },
                     "front_panel_display": {
                         "all_stu_modem": {
-                            "standard": "Quality A",
+                            "standard": "Quality A No Counter CRC Error",
                             "nms_engineer": "",
                             "on_site_teknisi": "",
                             "perbaikan": "",
@@ -122,7 +122,7 @@
                         "tainet_scorpio": {
                             "standard": "Connected xxx KBps",
                             "nms_engineer": "",
-                            "on_site_teknisi": "KBps Connected",
+                            "on_site_teknisi": "Connected KBps",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         }
@@ -161,14 +161,14 @@
                     }
                 },
                 "lc_signal_quality_checked_by_avo_meter": {
-                    "stu_1088_2304_tainet": {
+                    "stu_1088_2304": {
                         "standard": "400-700 Ω (Tlkm Area)",
                         "nms_engineer": "Ω",
                         "on_site_teknisi": "",
                         "perbaikan": "",
                         "hasil_akhir": ""
                     },
-                    "hrb_area": {
+                    "tainet": {
                         "standard": "50-200Ω (HRB Area)",
                         "nms_engineer": "Ω",
                         "on_site_teknisi": "",

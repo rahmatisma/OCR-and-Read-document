@@ -161,14 +161,14 @@
                     }
                 },
                 "lc_signal_quality_checked_by_avo_meter": {
-                    "stu_1088_2304_tainet": {
+                    "stu_1088_2304": {
                         "standard": "400–700 Ω (Tlkm Area)",
                         "nms_engineer": "Ω",
                         "on_site_teknisi": "",
                         "perbaikan": "",
                         "hasil_akhir": ""
                     },
-                    "hrb_area": {
+                    "tainet": {
                         "standard": "50–200 Ω (HRB Area)",
                         "nms_engineer": "Ω",
                         "on_site_teknisi": "",

@@ -360,14 +360,14 @@ class BaseParser(ABC):
                     }
                 },
                 "lc_signal_quality_checked_by_avo_meter": {
-                    "stu_1088_2304_tainet": {
+                    "stu_1088_2304": {
                         "standard": "",  # CHANGED
                         "nms_engineer": "",
                         "on_site_teknisi": "",
                         "perbaikan": "",
                         "hasil_akhir": ""
                     },
-                    "hrb_area": {
+                    "tainet": {
                         "standard": "",  # CHANGED
                         "nms_engineer": "",
                         "on_site_teknisi": "",
