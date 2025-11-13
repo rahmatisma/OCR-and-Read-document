@@ -235,7 +235,8 @@
         },
         "metadata": {
             "parser_used": "parse_checklist_wireless",
-            "detection_confidence": "high"
+            "detection_confidence": "high",
+            "ocr_data_available": true
         }
     }
 }

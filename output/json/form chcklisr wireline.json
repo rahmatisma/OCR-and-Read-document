@@ -184,6 +184,122 @@
                     }
                 }
             },
+            "line_checklist": {
+                "site_area": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "Kabel RJ-11",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Phone Box",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "KTB/DP Wall",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "DP Telkom",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Sub Gedung",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "MDF Gedung",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "T-Line Gedung",
+                            "standard": "No Grounded, No Noised,Tdk Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                },
+                "hrb_r_lintas": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "T-Line (TX,LC)",
+                            "standard": "No Grounded, No Noised,Tdk Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Kabel Data",
+                            "standard": "OK, Tidak Kendor, Tdk Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Port Sentral",
+                            "standard": "OK, Tidak Kendor, Tdk Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                },
+                "line_fo": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "Cek Signal FO",
+                            "standard": "OK, Signal Balik, Tidak Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Koneksi OTB",
+                            "standard": "OK, Tidak Kendor, Tdk Putus",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                },
+                "tes_konektivitas": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "Bit Error Rate",
+                            "standard": "Durasi 15 Menit, no error",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Ping",
+                            "standard": "100 % reply, < 50 ms",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                }
+            },
             "data_perangkat": {
                 "existing": [
                     {

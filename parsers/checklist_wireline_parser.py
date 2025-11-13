@@ -170,6 +170,11 @@ class ChecklistWirelineParser(BaseParser):
         self._parse_global_checklist(data["global_checklist"])
         self._parse_data_perangkat(data["data_perangkat"])
         self._parse_indoor_area_checklist(data["indoor_area_checklist"])
+
+        # TAMBAHKAN INI - Parse LINE CHECKLIST
+        line_checklist_text = self._extract_line_checklist_section()
+        if line_checklist_text:
+            self._parse_line_checklist_all(data["line_checklist"], line_checklist_text)
         
         return data
     
@@ -1252,6 +1257,319 @@ class ChecklistWirelineParser(BaseParser):
             return True
         
         return False
+
+    # ============================================================================
+    # 3. EXTRACT LINE CHECKLIST SECTION
+    # ============================================================================
+    def _extract_line_checklist_section(self) -> str:
+        """Extract section LINE CHECKLIST dari document"""
+        print("\n" + "="*80)
+        print("DEBUG: Extract LINE CHECKLIST")
+        print("="*80)
+        
+        patterns = [
+            r'LINE\s+CHECKLIST.*?(?=VERIFIKASI|DOKUMENTASI|$)',
+            r'LINECHECKLIST.*?(?=VERIFIKASI|DOKUMENTASI|$)',
+            r'LINE\s*CHECKLIST.*?(?=VERIFIKASI|DOKUMENTASI|$)',
+        ]
+        
+        for i, pattern in enumerate(patterns, 1):
+            match = re.search(pattern, self.cleaned_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                line_text = match.group()
+                
+                keywords = ["SITE AREA", "HRB", "LINE FO", "TES"]
+                keyword_count = sum(1 for kw in keywords if kw in line_text.upper())
+                
+                if keyword_count >= 2:
+                    print(f"✓ Pattern {i} matched! Length: {len(line_text)} chars")
+                    print("="*80 + "\n")
+                    return line_text
+        
+        print("[ERROR] LINE CHECKLIST section tidak ditemukan")
+        print("="*80 + "\n")
+        return ""
+
+
+    # ============================================================================
+    # 4. MASTER PARSER
+    # ============================================================================
+    def _parse_line_checklist_all(self, line_checklist: dict, line_text: str):
+        """Parse semua sub-section LINE CHECKLIST"""
+        print("\n" + "="*60)
+        print("Parsing LINE CHECKLIST")
+        print("="*60)
+        
+        self._parse_line_site_area(line_checklist["site_area"], line_text)
+        self._parse_line_hrb_r_lintas(line_checklist["hrb_r_lintas"], line_text)
+        self._parse_line_fo(line_checklist["line_fo"], line_text)
+        self._parse_line_tes_konektivitas(line_checklist["tes_konektivitas"], line_text)
+        
+        print("="*60 + "\n")
+
+
+    # ============================================================================
+    # 5. PARSE SITE AREA
+    # ============================================================================
+    def _parse_line_site_area(self, site_area: dict, line_text: str):
+        """Parse Site Area section"""
+        print("  → Parsing Site Area...")
+        
+        pattern = r'Site\s+Area.*?(?=HRB|Tes\s+Konektivitas|$)'
+        match = re.search(pattern, line_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Site Area tidak ditemukan")
+            return
+        
+        site_text = match.group()
+        
+        items = [
+            "Kabel RJ-11",
+            "Phone Box",
+            "KTB/DP Wall",
+            "DP Telkom",
+            "Sub Gedung",
+            "MDF Gedung",
+            "T-Line Gedung"
+        ]
+        
+        for item in items:
+            param = self._extract_line_parameter(site_text, item)
+            site_area["parameter_kualitas"].append(param)
+            print(f"    • {param['line_checklist']}: Std='{param['standard'][:40]}...'")
+        
+        print(f"    ✓ Site Area: {len(site_area['parameter_kualitas'])} items")
+
+
+    # ============================================================================
+    # 6. PARSE HRB/R.LINTAS
+    # ============================================================================
+    def _parse_line_hrb_r_lintas(self, hrb_data: dict, line_text: str):
+        """Parse HRB/R.Lintas section"""
+        print("  → Parsing HRB/R.Lintas...")
+        
+        pattern = r'HRB.*?(?=Line\s+FO|Tes\s+Konektivitas|$)'
+        match = re.search(pattern, line_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ HRB/R.Lintas tidak ditemukan")
+            return
+        
+        hrb_text = match.group()
+        
+        # Special handling untuk T-Line dengan (TX,LC)
+        items = [
+            ("T-Line (TX,LC)", r'T-Line'),
+            ("Kabel Data", r'Kabel\s+Data'),
+            ("Port Sentral", r'Port\s+Sentral')
+        ]
+        
+        for display_name, search_pattern in items:
+            param = self._extract_line_parameter(hrb_text, display_name, search_pattern)
+            hrb_data["parameter_kualitas"].append(param)
+            print(f"    • {param['line_checklist']}: Std='{param['standard'][:40]}...'")
+        
+        print(f"    ✓ HRB/R.Lintas: {len(hrb_data['parameter_kualitas'])} items")
+
+
+    # ============================================================================
+    # 7. PARSE LINE FO
+    # ============================================================================
+    def _parse_line_fo(self, line_fo: dict, line_text: str):
+        """Parse Line FO section"""
+        print("  → Parsing Line FO...")
+        
+        pattern = r'Line\s+FO.*?(?=Tes\s+Konektivitas|$)'
+        match = re.search(pattern, line_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Line FO tidak ditemukan")
+            return
+        
+        fo_text = match.group()
+        
+        items = [
+            "Cek Signal FO",
+            "Koneksi OTB"
+        ]
+        
+        for item in items:
+            param = self._extract_line_parameter(fo_text, item)
+            line_fo["parameter_kualitas"].append(param)
+            print(f"    • {param['line_checklist']}: Std='{param['standard'][:40]}...'")
+        
+        print(f"    ✓ Line FO: {len(line_fo['parameter_kualitas'])} items")
+
+
+    # ============================================================================
+    # 8. PARSE TES KONEKTIVITAS
+    # ============================================================================
+    def _parse_line_tes_konektivitas(self, tes_data: dict, line_text: str):
+        """Parse Tes Konektivitas section"""
+        print("  → Parsing Tes Konektivitas...")
+        
+        pattern = r'Tes\s+Konektivitas.*?(?=FORM\s+CHECKLIST|DATA\s+PERANGKAT|VERIFIKASI|$)'
+        match = re.search(pattern, line_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("    ✗ Tes Konektivitas tidak ditemukan")
+            return
+        
+        tes_text = match.group()
+        
+        items = [
+            "Bit Error Rate",
+            "Ping"
+        ]
+        
+        for item in items:
+            param = self._extract_line_parameter(tes_text, item)
+            tes_data["parameter_kualitas"].append(param)
+            print(f"    • {param['line_checklist']}: Std='{param['standard'][:40]}...'")
+        
+        print(f"    ✓ Tes Konektivitas: {len(tes_data['parameter_kualitas'])} items")
+
+
+    # ============================================================================
+    # 9. MAIN EXTRACTION LOGIC
+    # ============================================================================
+    def _extract_line_parameter(self, text: str, item_name: str, search_pattern: str = None) -> dict:
+        """
+        Extract single parameter
+        
+        Format vertikal:
+        Item Name
+        Value line 1 (STANDARD)
+        Value line 2 (continuation atau EXISTING jika simbol Ω)
+        ...
+        Next Item Name
+        """
+        if search_pattern is None:
+            search_pattern = re.escape(item_name)
+        
+        print(f"      DEBUG: Extracting '{item_name}'")
+        
+        # Regex extraction untuk text-based parsing
+        result = self._extract_line_param_regex(text, item_name, search_pattern)
+        return result
+
+
+    # ============================================================================
+    # 10. REGEX EXTRACTION CORE
+    # ============================================================================
+    def _extract_line_param_regex(self, text: str, item_name: str, search_pattern: str) -> dict:
+        """
+        Extract parameter dari format vertikal
+        
+        Strategy:
+        1. Cari item name
+        2. Ambil semua baris setelahnya sampai ketemu item/section berikutnya
+        3. Gabung semua jadi STANDARD, kecuali "Ω" sendirian = EXISTING
+        4. Skip "(TX,LC)" atau "(T:LC)" karena itu bagian dari item name
+        """
+        
+        # Pattern untuk stop di item berikutnya atau section header
+        next_stop = r'(?=Kabel\s+RJ|Phone\s+Box|KTB|DP\s+Telkom|Sub\s+Gedung|MDF\s+Gedung|T-Line\s+Gedung|T-Line\s*$|Kabel\s+Data|Port\s+Sentral|Cek\s+Signal|Koneksi\s+OTB|Bit\s+Error|^Ping\s*$|HRB/R\.Lintas|Line\s+FO|Tes\s+Konektivitas|FORM\s+CHECKLIST|DATA\s+PERANGKAT|VERIFIKASI)'
+        
+        pattern = rf'{search_pattern}\s*\n(.*?)(?:\n{next_stop}|$)'
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL | re.MULTILINE)
+        
+        if not match:
+            return {
+                "line_checklist": item_name,
+                "standard": "",
+                "existing": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+        
+        value_block = match.group(1).strip()
+        
+        # Stop jika ketemu section header di tengah
+        if re.search(r'(FORM\s+CHECKLIST|DATA\s+PERANGKAT|VERIFIKASI)', value_block, re.IGNORECASE):
+            value_block = re.split(r'(FORM\s+CHECKLIST|DATA\s+PERANGKAT|VERIFIKASI)', value_block, flags=re.IGNORECASE)[0].strip()
+        
+        if not value_block:
+            return {
+                "line_checklist": item_name,
+                "standard": "",
+                "existing": "",
+                "perbaikan": "",
+                "hasil_akhir": ""
+            }
+        
+        print(f"        → Raw block: '{value_block[:60]}...'")
+        
+        # Split by line
+        lines = [line.strip() for line in value_block.split('\n') if line.strip()]
+        
+        # Clean lines
+        cleaned_lines = []
+        for line in lines:
+            # Skip keywords
+            if line in ['STANDARD', 'EXISTING', 'PERBAIKAN', 'HASIL AKHIR', '|', '-', '_']:
+                continue
+            
+            # Skip section headers
+            if re.match(r'^(FORM|DATA|VERIFIKASI|HRB|Line|Tes)', line, re.IGNORECASE):
+                break
+            
+            # Skip item name suffix seperti (TX,LC) atau (T:LC)
+            if re.match(r'^\([A-Z:,]+\)$', line):
+                print(f"        → Skip suffix: '{line}'")
+                continue
+            
+            line = re.sub(r'^[:\s]+', '', line)
+            line = line.strip('|:.-_')
+            
+            if line:
+                cleaned_lines.append(line)
+        
+        # Strategy: Gabung semua jadi STANDARD, kecuali "Ω" = EXISTING
+        standard_parts = []
+        existing = ""
+        
+        for line in cleaned_lines:
+            if line.strip() == 'Ω':
+                existing = 'Ω'
+                print(f"        → Found Ω symbol (EXISTING)")
+            else:
+                standard_parts.append(line)
+        
+        standard = ' '.join(standard_parts)
+        standard = re.sub(r'\s+', ' ', standard).strip()
+        
+        print(f"        → Result: Std='{standard[:50]}...', Exist='{existing}'")
+        
+        return {
+            "line_checklist": item_name,
+            "standard": standard,
+            "existing": existing,
+            "perbaikan": "",
+            "hasil_akhir": ""
+        }
+
+
+    # ============================================================================
+    # HELPER METHOD (optional, jika butuh check item name)
+    # ============================================================================
+    def _is_line_item_name(self, text: str) -> bool:
+        """Check apakah text adalah nama item LINE CHECKLIST"""
+        line_items = [
+            "Kabel RJ", "Phone Box", "KTB", "DP Wall", "DP Telkom",
+            "Sub Gedung", "MDF Gedung", "T-Line", "Kabel Data",
+            "Port Sentral", "Cek Signal", "Koneksi OTB",
+            "Bit Error", "Ping"
+        ]
+        
+        text_lower = text.lower()
+        for item in line_items:
+            if item.lower() in text_lower:
+                return True
+        
+        return False
+
 
     # ==================== DATA PERANGKAT PARSER - FIXED VERSION ====================
     

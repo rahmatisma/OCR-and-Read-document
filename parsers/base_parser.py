@@ -383,20 +383,20 @@ class BaseParser(ABC):
                     }
                 }
             },
-            # "line_checklist": {
-            #     "site_area": {
-            #         "parameter_kualitas": []
-            #     },
-            #     "hrb_r_lintas": {
-            #         "parameter_kualitas": []
-            #     },
-            #     "line_fo": {
-            #         "parameter_kualitas": []
-            #     },
-            #     "tes_konektivitas": {
-            #         "parameter_kualitas": []
-            #     }
-            # },
+            "line_checklist": {
+                "site_area": {
+                    "parameter_kualitas": []
+                },
+                "hrb_r_lintas": {
+                    "parameter_kualitas": []
+                },
+                "line_fo": {
+                    "parameter_kualitas": []
+                },
+                "tes_konektivitas": {
+                    "parameter_kualitas": []
+                }
+            },
             "data_perangkat": {
                 "existing": [],
                 "tidak_terpakai": [],

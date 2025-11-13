@@ -237,7 +237,8 @@
         },
         "metadata": {
             "parser_used": "parse_spk_survey",
-            "detection_confidence": "high"
+            "detection_confidence": "high",
+            "ocr_data_available": false
         }
     }
 }

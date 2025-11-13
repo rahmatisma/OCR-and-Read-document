@@ -184,6 +184,107 @@
                     }
                 }
             },
+            "line_checklist": {
+                "site_area": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "Kabel RJ-11",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Phone Box",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "KTB/DP Wall",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "DP Telkom",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Sub Gedung",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "MDF Gedung",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "T-Line Gedung",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                },
+                "hrb_r_lintas": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "T-Line (TX,LC)",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Kabel Data",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Port Sentral",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                },
+                "line_fo": {
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "Cek Signal FO",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Koneksi OTB",
+                            "standard": "",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
+                },
+                "tes_konektivitas": {
+                    "parameter_kualitas": []
+                }
+            },
             "data_perangkat": {
                 "existing": [
                     {
