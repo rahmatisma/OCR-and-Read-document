@@ -62,7 +62,7 @@ class SPKAktivasiParser(BaseParser):
         Method ini mengkoordinasi semua section parser
         """
         # 1. Inisialisasi struktur data
-        data = self._init_data_structure()
+        data = self._init_data_structure_spk_aktivasi()
         
         # 2. Parse bagian-bagian sederhana (langsung di sini)
         self._parse_spk_section(data)

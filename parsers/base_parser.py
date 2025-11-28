@@ -79,7 +79,7 @@ class BaseParser(ABC):
         """
         return self.text_normalizer.clean(text)
     
-    def _init_data_structure(self) -> dict:
+    def _init_data_structure_spk_survey(self) -> dict:
         """
         Inisialisasi struktur data kosong
         Bisa di-override oleh parser turunan jika butuh struktur berbeda
@@ -104,6 +104,61 @@ class BaseParser(ABC):
             "data_splitter": {},
             "data_hh_eksisting": [],
             "data_hh_baru": [],
+            "berita_acara": {},
+            "pelaksanan_berita_acara": {},
+        }
+    
+    def _init_data_structure_spk_aktivasi(self) -> dict:
+        """
+        Inisialisasi struktur data kosong
+        Bisa di-override oleh parser turunan jika butuh struktur berbeda
+        
+        Returns:
+            Dictionary struktur data kosong
+        """
+        return {
+            "spk": {},
+            "pelanggan": {},
+            "jaringan": {},
+            "pelaksanaan": {},
+            "vendor": {},
+            "informasi_gedung": {},
+            "berita_acara": {},
+            "pelaksanan_berita_acara": {},
+        }
+    
+    def _init_data_structure_spk_dismantel(self) -> dict:
+        """
+        Inisialisasi struktur data kosong
+        Bisa di-override oleh parser turunan jika butuh struktur berbeda
+        
+        Returns:
+            Dictionary struktur data kosong
+        """
+        return {
+            "spk": {},
+            "pelanggan": {},
+            "jaringan": {},
+            "pelaksanaan": {},
+            "pekerja_cabut": {},
+            "berita_acara": {},
+            "pelaksanan_berita_acara": {},
+        }
+    
+    def _init_data_structure_spk_instalasi(self) -> dict:
+        """
+        Inisialisasi struktur data kosong
+        Bisa di-override oleh parser turunan jika butuh struktur berbeda
+        
+        Returns:
+            Dictionary struktur data kosong
+        """
+        return {
+            "spk": {},
+            "pelanggan": {},
+            "jaringan": {},
+            "pelaksanaan": {},
+            "vendor": {},
             "berita_acara": {},
             "pelaksanan_berita_acara": {},
         }

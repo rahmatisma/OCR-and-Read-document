@@ -46,23 +46,12 @@
                 "datang": "11/Sep/2025   15:05",
                 "selesai": "12/Sep/2025   03:16"
             },
-            "vendor": {},
             "pekerja_cabut": {
                 "pic_pelanggan": "rusdy",
                 "kontak_pic_pelanggan": "6289603298358",
                 "teknisi": "Muhammad Stanza AWB",
                 "nama_vendor": "AVARA WIRA BAKTI"
             },
-            "informasi_gedung": {},
-            "sarpen_ruang_server": {},
-            "lokasi_antena": {},
-            "perizinan_biaya_gedung": {},
-            "penempatan_perangkat": {},
-            "perizinan_biaya_kawasan": {},
-            "kawasan_umum": {},
-            "data_splitter": {},
-            "data_hh_eksisting": [],
-            "data_hh_baru": [],
             "berita_acara": {
                 "judul_spk": "BERITA ACARA",
                 "tipe_spk": "dismantle",
