@@ -231,8 +231,8 @@
                         },
                         {
                             "line_checklist": "T-Line Gedung",
-                            "standard": "No Grounded, No Noised,Tdk Putus",
-                            "existing": "",
+                            "standard": "No Grounded, No Noised,Tdk Putus Sedikit Terminasi No Paralel Line Detected Tahanan Loop : 200-400 Ω",
+                            "existing": "Ω",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         }
@@ -242,8 +242,8 @@
                     "parameter_kualitas": [
                         {
                             "line_checklist": "T-Line (TX,LC)",
-                            "standard": "No Grounded, No Noised,Tdk Putus",
-                            "existing": "",
+                            "standard": "No Grounded, No Noised,Tdk Putus Tahanan Loop : 010-100 Ω",
+                            "existing": "Ω",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },

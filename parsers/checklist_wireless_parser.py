@@ -354,6 +354,14 @@ class ChecklistWirelessParser(BaseParser):
                 if indoor_count >= 2:
                     print(f"✓ Pattern {i} matched! Length: {len(indoor_text)} chars")
                     print(f"  Preview: {indoor_text[:100]}...")
+                    
+                    # DEBUG: Print FULL indoor text
+                    print("\n" + "="*80)
+                    print("DEBUG: FULL INDOOR AREA CHECKLIST TEXT")
+                    print("="*80)
+                    print(indoor_text)
+                    print("="*80 + "\n")
+                    
                     print("="*80 + "\n")
                     return indoor_text
                 else:
@@ -365,16 +373,32 @@ class ChecklistWirelessParser(BaseParser):
 
 
     def _parse_sarana_penunjang(self, sarana_data: dict, indoor_text: str):
-        """
+        """""
         Parse section SARANA PENUNJANG
-        
-        Args:
-            sarana_data: Dictionary untuk menyimpan hasil parsing
-            indoor_text: Text dari indoor section
         """
         print("\n" + "="*60)
         print("STEP 2: Parsing SARANA PENUNJANG")
         print("="*60)
+        
+        # Extract sub-section SARANA PENUNJANG sampai PERANGKAT MODEM
+        pattern = r'SARANA\s*PENUNJANG.*?(?=PERANGKAT\s*MODEM|$)'
+        match = re.search(pattern, indoor_text, re.IGNORECASE | re.DOTALL)
+        
+        if not match:
+            print("✗ Section SARANA PENUNJANG tidak ditemukan")
+            print("="*60 + "\n")
+            return
+        
+        sarana_text = match.group()
+        print(f"✓ Section ditemukan, length: {len(sarana_text)} chars")
+        
+        # DEBUG: Print full sarana_text
+        print(f"\n[DEBUG] Full SARANA PENUNJANG text:")
+        print(f"'{sarana_text}'")
+        print("\n")
+        
+        # Parse komponen
+        sarana_data["merk_ups"] = self._extract_merk_ups(sarana_text)
         
         # Extract sub-section SARANA PENUNJANG sampai PERANGKAT MODEM
         pattern = r'SARANA\s*PENUNJANG.*?(?=PERANGKAT\s*MODEM|$)'
@@ -670,58 +694,142 @@ class ChecklistWirelessParser(BaseParser):
     def _extract_param_ground_bar(self, text: str) -> dict:
         """
         Extract: Terpasang ground bar dan terhubung ke MDP pertanahan
-        FIX: Improved pattern untuk ambil Ya/Ya yang benar
+        
+        Flexible approach berdasarkan analisis OCR:
+        OCR membaca tabel dalam urutan: UPS VAC VAC Ya VAC Terpasang... Ya IT VAC...
+        
+        Ya pertama (setelah UPS VAC VAC) = EXISTING
+        Ya kedua (setelah MDP) = STANDARD
         """
-        # Strategy 1: Cari pattern "pertanahan" diikuti 2 "Ya"
-        # Atau "MDP pertanahan Ya Ya"
-        pattern1 = r'(?:MDP\s+)?pertanahan\s+(Ya|Tidak)\s+(Ya|Tidak)'
-        match1 = re.search(pattern1, text, re.IGNORECASE)
         
-        if match1:
-            return {
-                "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
-                "standard": match1.group(1),
-                "existing": match1.group(2)
-            }
+        # Strategy 1: Cari keyword "Terpasang ground bar"
+        ground_bar_match = re.search(r'Terpasang\s+ground\s+bar', text, re.IGNORECASE)
         
-        # Strategy 2: Cari "ground bar" lalu ambil Ya terdekat setelahnya
-        pattern2 = r'ground\s+bar.*?pertanahan.*?(Ya|Tidak).*?(Ya|Tidak)'
-        match2 = re.search(pattern2, text, re.IGNORECASE | re.DOTALL)
-        
-        if match2:
-            return {
-                "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
-                "standard": match2.group(1),
-                "existing": match2.group(2)
-            }
-        
-        # Strategy 3: Fallback - ambil 2 "Ya" terakhir di section SARANA
-        # (sebelum PERANGKATMODEM)
-        # Tapi harus pastikan bukan dari parameter lain
-        pattern3 = r'VAC\s+Terpasang.*?pertanahan\s+(Ya|Tidak)\s+(Ya|Tidak)'
-        match3 = re.search(pattern3, text, re.IGNORECASE | re.DOTALL)
-        
-        if match3:
-            return {
-                "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
-                "standard": match3.group(1),
-                "existing": match3.group(2)
-            }
-        
-        # Strategy 4: Cari semua "Ya" di section, ambil 2 yang terakhir
-        # HANYA jika setelah keyword "pertanahan"
-        pertanahan_pos = text.lower().find('pertanahan')
-        if pertanahan_pos != -1:
-            after_pertanahan = text[pertanahan_pos:pertanahan_pos+100]
-            ya_matches = re.findall(r'(Ya|Tidak)', after_pertanahan, re.IGNORECASE)
+        if ground_bar_match:
+            # Posisi keyword
+            keyword_pos = ground_bar_match.start()
             
-            if len(ya_matches) >= 2:
+            # EXISTING: Cari Ya/Tidak SEBELUM keyword (dalam radius 50 char)
+            # Tapi skip yang terlalu dekat dengan "VAC" atau "UPS"
+            before_text = text[max(0, keyword_pos - 50):keyword_pos]
+            
+            # Ambil semua Ya/Tidak di before_text
+            before_matches = []
+            for match in re.finditer(r'(Ya|Tidak)', before_text, re.IGNORECASE):
+                # Check apakah dekat VAC (dalam 5 char sebelum/sesudah)
+                ctx_start = max(0, match.start() - 5)
+                ctx_end = min(len(before_text), match.end() + 5)
+                context = before_text[ctx_start:ctx_end]
+                
+                # Hanya ambil jika TIDAK dekat VAC
+                if 'VAC' not in context.upper():
+                    before_matches.append(match.group(1))
+            
+            # EXISTING = Ya/Tidak terakhir sebelum keyword (paling dekat)
+            existing = before_matches[-1] if before_matches else ""
+            
+            # STANDARD: Cari Ya/Tidak SETELAH "MDP" (dalam section ini)
+            # Ambil text dari keyword sampai 100 char
+            after_text = text[keyword_pos:keyword_pos + 100]
+            
+            # Cari "MDP" lalu ambil Ya/Tidak setelahnya
+            mdp_in_section = re.search(r'MDP\s+(.{0,30}?)(Ya|Tidak)', after_text, re.IGNORECASE | re.DOTALL)
+            standard = mdp_in_section.group(2) if mdp_in_section else ""
+            
+            if existing and standard:
                 return {
                     "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
-                    "standard": ya_matches[0],
-                    "existing": ya_matches[1]
+                    "standard": standard,
+                    "existing": existing
                 }
         
+        # Strategy 2: Jika Strategy 1 gagal, cari berdasarkan keyword "MDP"
+        mdp_match = re.search(r'MDP', text, re.IGNORECASE)
+        
+        if mdp_match:
+            mdp_pos = mdp_match.start()
+            
+            # STANDARD: Ya/Tidak setelah MDP
+            after_mdp = text[mdp_pos:]
+            std_match = re.search(r'MDP\s+(.{0,30}?)(Ya|Tidak)', after_mdp, re.IGNORECASE | re.DOTALL)
+            standard = std_match.group(2) if std_match else ""
+            
+            # EXISTING: Ya/Tidak sebelum MDP (dalam 100 char)
+            # Skip yang dekat VAC
+            before_mdp = text[max(0, mdp_pos - 100):mdp_pos]
+            
+            existing_matches = []
+            for match in re.finditer(r'(Ya|Tidak)', before_mdp, re.IGNORECASE):
+                ctx_start = max(0, match.start() - 5)
+                ctx_end = min(len(before_mdp), match.end() + 5)
+                context = before_mdp[ctx_start:ctx_end]
+                
+                if 'VAC' not in context.upper():
+                    existing_matches.append(match.group(1))
+            
+            existing = existing_matches[-1] if existing_matches else ""
+            
+            if existing and standard:
+                return {
+                    "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
+                    "standard": standard,
+                    "existing": existing
+                }
+        
+        # Strategy 3: Cari berdasarkan keyword "pertanahan"
+        pertanahan_match = re.search(r'pertanahan', text, re.IGNORECASE)
+        
+        if pertanahan_match:
+            pert_pos = pertanahan_match.start()
+            
+            # Ambil text dari 150 char sebelum "pertanahan"
+            context_text = text[max(0, pert_pos - 150):pert_pos]
+            
+            # Cari "MDP Ya" untuk STANDARD
+            mdp_ya = re.search(r'MDP\s+(.{0,20}?)(Ya|Tidak)', context_text, re.IGNORECASE | re.DOTALL)
+            standard = mdp_ya.group(2) if mdp_ya else ""
+            
+            # Cari Ya sebelum "Terpasang ground bar" untuk EXISTING
+            ground_in_context = re.search(r'(Ya|Tidak)\s+.{0,30}?Terpasang\s+ground\s+bar', context_text, re.IGNORECASE | re.DOTALL)
+            existing = ground_in_context.group(1) if ground_in_context else ""
+            
+            if existing and standard:
+                return {
+                    "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
+                    "standard": standard,
+                    "existing": existing
+                }
+        
+        # Strategy 4: Brute force - ambil semua Ya/Tidak setelah "Suhu Ruangan"
+        suhu_match = re.search(r'Suhu\s+Ruangan.*?C', text, re.IGNORECASE)
+        
+        if suhu_match:
+            after_suhu = text[suhu_match.end():]
+            
+            # Filter Ya/Tidak yang reasonable (tidak dekat VAC)
+            all_ya = []
+            for match in re.finditer(r'(Ya|Tidak)', after_suhu, re.IGNORECASE):
+                # Check batas: stop jika ketemu "PERANGKAT"
+                if match.start() > after_suhu.upper().find('PERANGKAT'):
+                    break
+                
+                ctx_start = max(0, match.start() - 5)
+                ctx_end = min(len(after_suhu), match.end() + 5)
+                context = after_suhu[ctx_start:ctx_end]
+                
+                if 'VAC' not in context.upper():
+                    all_ya.append(match.group(1))
+            
+            # Ambil 2 Ya terakhir (kemungkinan untuk Ground Bar)
+            if len(all_ya) >= 2:
+                # Ya terakhir biasanya STANDARD, Ya sebelum terakhir biasanya EXISTING
+                return {
+                    "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
+                    "standard": all_ya[-1],  # Ya terakhir
+                    "existing": all_ya[-2]   # Ya sebelum terakhir
+                }
+        
+        # Final fallback
         return {
             "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
             "standard": "",
@@ -1801,12 +1909,12 @@ class ChecklistWirelessParser(BaseParser):
         data_perangkat["existing"] = self._parse_perangkat_existing(perangkat_text)
         data_perangkat["tidak_terpakai"] = self._parse_perangkat_tidak_terpakai(perangkat_text)
         data_perangkat["cabut"] = self._parse_perangkat_cabut(perangkat_text)
-        data_perangkat["pengganti_pasang_baru"] = self._parse_perangkat_pengganti(perangkat_text)
+        data_perangkat["pengganti_atau_pasang_baru"] = self._parse_perangkat_pengganti(perangkat_text)
         
         print(f"✓ EXISTING: {len(data_perangkat['existing'])} items")
         print(f"✓ TIDAK TERPAKAI: {len(data_perangkat['tidak_terpakai'])} items")
         print(f"✓ CABUT: {len(data_perangkat['cabut'])} items")
-        print(f"✓ PENGGANTI/PASANG BARU: {len(data_perangkat['pengganti_pasang_baru'])} items")
+        print(f"✓ PENGGANTI/PASANG BARU: {len(data_perangkat['pengganti_atau_pasang_baru'])} items")
         print("="*60 + "\n")
 
 
@@ -1908,10 +2016,10 @@ class ChecklistWirelessParser(BaseParser):
         """
         Extract items dari section berdasarkan No. Reg pattern
         
-        Strategy FINAL FIX v2:
+        Strategy FINAL FIX v3:
         1. Find all No.Reg positions
         2. Untuk setiap No.Reg, ambil nama barang dari text sebelumnya
-        3. Handle kata yang terpotong (seperti WARRANTY yang jadi baris terpisah)
+        3. Smart detection untuk continuation word (bukan hardcode brand)
         
         Args:
             text: Text dari section
@@ -1960,25 +2068,24 @@ class ChecklistWirelessParser(BaseParser):
             # Clean dan extract nama barang
             nama_barang = self._extract_nama_barang_before_noreg(nama_text_raw)
             
-            # === HANDLE KATA TERPOTONG (seperti WARRANTY) ===
-            # Jika nama barang dimulai dengan kata UPPERCASE pendek (1-2 kata),
-            # kemungkinan itu lanjutan dari item sebelumnya
-            if i > 0 and len(items) > 0:
+            # === SMART CONTINUATION WORD DETECTION ===
+            if i > 0 and len(items) > 0 and nama_barang:
                 words = nama_barang.split()
                 
-                # Cek apakah kata pertama adalah continuation word (uppercase, pendek)
-                # seperti: WARRANTY, AND, DENGAN, dll
                 if len(words) >= 2:
                     first_word = words[0]
+                    prev_item_name = items[-1]["nama_barang"]
+                    prev_words = prev_item_name.split()
                     
-                    # Jika kata pertama uppercase dan pendek (< 12 chars)
-                    # DAN item sebelumnya tidak berakhir dengan kata tersebut
-                    # MAKA: pindahkan ke item sebelumnya
-                    if (first_word.isupper() and 
-                        len(first_word) <= 12 and 
-                        not items[-1]["nama_barang"].endswith(first_word)):
-                        
-                        # Tambahkan kata pertama ke item sebelumnya
+                    # Cek apakah first_word adalah continuation
+                    is_continuation = self._is_continuation_word(
+                        first_word, 
+                        prev_words, 
+                        prev_item_name
+                    )
+                    
+                    if is_continuation:
+                        # Pindahkan kata pertama ke item sebelumnya
                         items[-1]["nama_barang"] += " " + first_word
                         
                         # Sisa kata jadi nama barang item ini
@@ -2085,3 +2192,74 @@ class ChecklistWirelessParser(BaseParser):
             return ""
         
         return text
+    
+    def _is_continuation_word(self, word: str, prev_words: list, prev_full_name: str) -> bool:
+        """
+        Smart detection: apakah word adalah continuation dari item sebelumnya?
+        
+        Rules (fleksibel, tidak hardcode):
+        1. Jika item sebelumnya berakhir dengan kata sambung → continuation
+        2. Jika item sebelumnya sudah lengkap (punya angka+unit/kata benda) → bukan continuation
+        3. Jika word uppercase dan pendek, dan item sebelumnya pendek → continuation
+        
+        Args:
+            word: Kata yang dicek (first word dari nama barang berikutnya)
+            prev_words: List kata dari item sebelumnya
+            prev_full_name: Nama lengkap item sebelumnya
+            
+        Returns:
+            True jika word adalah continuation, False jika bukan
+        """
+        # Rule 1: Item sebelumnya berakhir dengan kata sambung
+        # Kata sambung umum: AND, HW, WITH, FOR, OF, TO, IN, ON, BY
+        connector_words = ['AND', 'HW', 'WITH', 'FOR', 'OF', 'TO', 'IN', 'ON', 'BY', '&', '+']
+        
+        if prev_words:
+            last_word = prev_words[-1].upper()
+            if last_word in connector_words:
+                return True  # Jelas continuation
+        
+        # Rule 2: Item sebelumnya sudah lengkap (ada angka + unit atau kata benda lengkap)
+        # Pattern lengkap: "ADAPTOR 12V 1A", "PSU FORTI FG-50E", "Router B311As"
+        # Pattern tidak lengkap: "FORTIGATE-50E HW AND"
+        
+        # Cek apakah prev item punya pattern lengkap:
+        # - Ada angka diikuti huruf (seperti 12V, 1A, 50E)
+        # - Atau ada kata benda umum (ADAPTOR, PSU, ROUTER, MODEM, SWITCH, dll)
+        
+        complete_patterns = [
+            r'\d+[A-Z]+',  # 12V, 1A, 50E, dll
+            r'[A-Z]+-\d+[A-Z]',  # FG-50E, B311As-23, dll
+        ]
+        
+        for pattern in complete_patterns:
+            if re.search(pattern, prev_full_name):
+                # Ada pattern lengkap, kemungkinan sudah complete
+                # Cek apakah tidak berakhir dengan connector word
+                if prev_words and prev_words[-1].upper() not in connector_words:
+                    return False  # Sudah lengkap, word berikutnya bukan continuation
+        
+        # Rule 3: Word uppercase dan pendek (< 12 char), dan prev item juga pendek (< 4 kata)
+        # Ini untuk handle kasus seperti "FORTIGATE-50E HW AND" + "WARRANTY"
+        if (word.isupper() and 
+            len(word) <= 12 and 
+            len(prev_words) <= 4):
+            
+            # Tapi jangan salah tangkap brand name atau product name
+            # Brand/product name biasanya:
+            # - Lebih panjang (>= 5 char)
+            # - Atau memiliki angka di dalamnya (seperti B311As)
+            # - Atau item sebelumnya sudah ada pattern lengkap
+            
+            # Jika word >= 5 char dan tidak ada di prev_full_name → kemungkinan brand baru
+            if len(word) >= 5 and word not in prev_full_name.upper():
+                # Check: apakah ini brand/product pattern?
+                # Brand biasanya: huruf+angka (HUAAWEI, B311As) atau CamelCase
+                if re.search(r'[A-Z]+\d+|[A-Z][a-z]+[A-Z]', word):
+                    return False  # Kemungkinan brand/product name, bukan continuation
+            
+            # Jika sampai sini, kemungkinan continuation
+            return True
+        
+        # Default: jika ragu, anggap bukan continuation (lebih safe)
+        return False

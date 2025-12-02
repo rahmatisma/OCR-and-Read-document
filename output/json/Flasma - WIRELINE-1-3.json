@@ -189,50 +189,50 @@
                     "parameter_kualitas": [
                         {
                             "line_checklist": "Kabel RJ-11",
-                            "standard": "",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "Phone Box",
-                            "standard": "",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "KTB/DP Wall",
-                            "standard": "",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "DP Telkom",
-                            "standard": "",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "Sub Gedung",
-                            "standard": "",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "MDF Gedung",
-                            "standard": "",
+                            "standard": "No Berkarat, No Bad Contact/Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "T-Line Gedung",
-                            "standard": "",
-                            "existing": "",
+                            "standard": "No Grounded, No Noised. Tdk Putus Sedikit Terminasi No Paralel Line Detected Tahanan Loop: 200-400 Ω",
+                            "existing": "Ω",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         }
@@ -242,21 +242,21 @@
                     "parameter_kualitas": [
                         {
                             "line_checklist": "T-Line (TX,LC)",
-                            "standard": "",
-                            "existing": "",
+                            "standard": "No Grounded, No Noised, Tdk Putus Tahanan Loop: 010-100 Ω",
+                            "existing": "Ω",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "Kabel Data",
-                            "standard": "",
+                            "standard": "OK, Tidak Kendor, Tdk Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "Port Sentral",
-                            "standard": "",
+                            "standard": "OK, Tidak Kendor, Tdk Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
@@ -267,14 +267,14 @@
                     "parameter_kualitas": [
                         {
                             "line_checklist": "Cek Signal FO",
-                            "standard": "",
+                            "standard": "OK, Signal Balik, Tidak Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
                         },
                         {
                             "line_checklist": "Koneksi OTB",
-                            "standard": "",
+                            "standard": "OK, Tidak Kendor, Tdk Putus",
                             "existing": "",
                             "perbaikan": "",
                             "hasil_akhir": ""
@@ -282,13 +282,28 @@
                     ]
                 },
                 "tes_konektivitas": {
-                    "parameter_kualitas": []
+                    "parameter_kualitas": [
+                        {
+                            "line_checklist": "Bit Error Rate",
+                            "standard": "Durasi 15 Menit, no error",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        },
+                        {
+                            "line_checklist": "Ping",
+                            "standard": "100%reply, < 50 ms",
+                            "existing": "",
+                            "perbaikan": "",
+                            "hasil_akhir": ""
+                        }
+                    ]
                 }
             },
             "data_perangkat": {
                 "existing": [
                     {
-                        "nama_barang": "BIVOCOM INDUSTRIAL 4G",
+                        "nama_barang": "BIVOCOM INDUSTRIAL 4G ROUTER 5 PORTS, DUAL SIM, WIFI,DUAL MODUL",
                         "no_reg": "B2WS0200137MA0606",
                         "sn": ""
                     }

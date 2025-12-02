@@ -73,8 +73,8 @@
                         },
                         {
                             "quality_parameter": "Terpasang ground bar dan terhubung ke MDP pertanahan",
-                            "standard": "",
-                            "existing": ""
+                            "standard": "Ya",
+                            "existing": "Ya"
                         }
                     ]
                 },
@@ -217,20 +217,19 @@
                         "sn": ""
                     },
                     {
-                        "nama_barang": "ADAPTOR 12V 1A HUAAWEI",
+                        "nama_barang": "ADAPTOR 12V 1A",
                         "no_reg": "B2WN0150153MA0732",
                         "sn": ""
                     },
                     {
-                        "nama_barang": "Router B311As + Antena",
+                        "nama_barang": "HUAAWEI Router B311As + Antena",
                         "no_reg": "B2WN0150152MA0732",
                         "sn": ""
                     }
                 ],
                 "tidak_terpakai": [],
                 "cabut": [],
-                "pengganti_atau_pasang_baru": [],
-                "pengganti_pasang_baru": []
+                "pengganti_atau_pasang_baru": []
             }
         },
         "metadata": {
