@@ -1,7 +1,7 @@
 # readers/ocr/processor.py
 """
 Processor OCR untuk ekstraksi teks dan gambar dari PDF
-Fixed: Return structured OCR data untuk coordinate-based parsing
+Updated: Support OCR-based image extraction
 """
 
 import os
@@ -53,30 +53,24 @@ def process_page_ocr(page, enhance=False, return_structured=False, return_data=F
         
         # 3. Jalankan OCR
         if return_data or return_structured:
-            # Return structured data untuk coordinate-based parsing
             result = run_ocr(img_np, enhance_image=enhance, return_structured=True)
             
             print(f"[DEBUG] OCR returned {len(result['lines'])} items")
             
-            # Print sample untuk debugging
             if result['lines']:
                 print(f"[DEBUG] Sample OCR items (first 5):")
                 for i, item in enumerate(result['lines'][:5]):
                     text_preview = item['text'][:50] + "..." if len(item['text']) > 50 else item['text']
                     print(f"  [{i}] '{text_preview}' (score={item['score']:.2f}, bbox={item.get('bbox', 'N/A')})")
             
-            # ========== NEW: Return format untuk parser ==========
             if return_data:
                 return {
                     'text': result['text'],
-                    'data': result['lines']  # lines sudah ada bbox dan position
+                    'data': result['lines']
                 }
-            # =====================================================
             
-            # Backward compatibility untuk return_structured
             return result['text'], result['lines']
         else:
-            # Return text only (backward compatible)
             text = run_ocr(img_np, enhance_image=enhance)
             return text.strip()
 
@@ -92,13 +86,14 @@ def process_page_ocr(page, enhance=False, return_structured=False, return_data=F
         return ""
 
 
-def process_pdf_with_images(pdf_path, doc_type, output_dir="output/images"):
+def process_pdf_with_images(pdf_path, doc_type, ocr_data=None, output_dir="output/images"):
     """
     Jalankan pipeline lengkap ekstraksi gambar dokumentasi.
     
     Args:
         pdf_path: Path ke file PDF
-        doc_type: Tipe dokumen dari dispatcher (contoh: "spk_survey", "spk_instalasi")
+        doc_type: Tipe dokumen dari dispatcher
+        ocr_data: OCR data dengan koordinat (untuk PDF scan) - NEW!
         output_dir: Direktori output untuk gambar
         
     Returns:
@@ -110,70 +105,47 @@ def process_pdf_with_images(pdf_path, doc_type, output_dir="output/images"):
     """
     print(f"[INFO] Mengekstrak gambar dari PDF: {pdf_path}")
     print(f"[INFO] Tipe dokumen: {doc_type}")
+    
+    # 🆕 Check apakah PDF scan (ada OCR data) atau native
+    is_scanned = ocr_data is not None and len(ocr_data) > 0
+    print(f"[INFO] PDF Type: {'SCAN (menggunakan OCR data)' if is_scanned else 'NATIVE (menggunakan text layer)'}")
 
     try:
         ensure_dir(output_dir)
         
-        # Ekstrak gambar berdasarkan label sesuai doc_type
+        # 🆕 Pass OCR data ke image extractor
         results = extract_and_classify_images(
             pdf_path=pdf_path, 
             doc_type=doc_type, 
-            output_dir=output_dir
+            output_dir=output_dir,
+            ocr_data=ocr_data  # ← NEW: Pass OCR coordinates
         )
         
         return results
 
     except Exception as e:
         print(f"[ERROR] Gagal mengekstrak gambar PDF: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 
-# ===== UTILITY FUNCTIONS =====
+# ===== UTILITY FUNCTIONS (unchanged) =====
 
 def extract_page_text_with_ocr(page, use_ocr_always=False, enhance=False):
-    """
-    Extract teks dari halaman PDF dengan fallback ke OCR.
-    
-    Args:
-        page: PyMuPDF page object
-        use_ocr_always: Force OCR meskipun ada text layer
-        enhance: Apply preprocessing untuk OCR
-    
-    Returns:
-        Tuple: (text, ocr_lines)
-            - text: string teks
-            - ocr_lines: list OCR data (empty jika tidak pakai OCR)
-    """
-    # Cek apakah halaman punya text layer
+    """Extract teks dari halaman PDF dengan fallback ke OCR."""
     page_text = page.get_text("text").strip()
     
     if page_text and not use_ocr_always:
-        # Ada text layer, tidak perlu OCR
         print(f"[INFO] Halaman {page.number + 1}: Menggunakan text layer")
         return page_text, []
     else:
-        # Tidak ada text layer atau force OCR
         print(f"[INFO] Halaman {page.number + 1}: Menjalankan OCR...")
         return process_page_ocr(page, enhance=enhance, return_structured=True)
 
 
 def process_pdf_pages_with_ocr(pdf_path, use_ocr_always=False, enhance=False):
-    """
-    Process semua halaman PDF dengan OCR support.
-    
-    Args:
-        pdf_path: Path ke file PDF
-        use_ocr_always: Force OCR untuk semua halaman
-        enhance: Apply preprocessing
-    
-    Returns:
-        Dict dengan format:
-        {
-            'all_text': str,           # Gabungan semua text
-            'page_texts': [str, ...],  # Text per halaman
-            'ocr_data': [[{}, ...], ...] # OCR data per halaman (bisa kosong)
-        }
-    """
+    """Process semua halaman PDF dengan OCR support."""
     try:
         doc = fitz.open(pdf_path)
         all_text_parts = []
@@ -182,8 +154,6 @@ def process_pdf_pages_with_ocr(pdf_path, use_ocr_always=False, enhance=False):
         
         for page_num in range(len(doc)):
             page = doc[page_num]
-            
-            # Extract text dengan OCR support
             page_text, ocr_lines = extract_page_text_with_ocr(
                 page, 
                 use_ocr_always=use_ocr_always, 

@@ -56,7 +56,7 @@ if __name__ == "__main__":
         elif dokument == "2":
             file_path = "input/pdf/form chcklisr wireline.pdf"
         elif dokument == "3":
-            file_path = "input/pdf/Flasma - WIRELINE-1-3.pdf"
+            file_path = "input/pdf/Flasma - WIRELINE.pdf"
         else:
             print("Kaga ada dokument kaya gitu kocakkkk")
             exit()

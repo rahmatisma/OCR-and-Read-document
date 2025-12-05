@@ -161,7 +161,6 @@ def get_available_spk_types() -> list:
         "spk_dismantle",
         "spk_aktivasi",
         "checklist_wireline",
-        "checklist_wireless",
         "maintenance_remote_wireless"
     ]
 

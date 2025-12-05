@@ -41,20 +41,20 @@ class LabelConfig:
     
     # Label untuk Checklist Wireline
     CHECKLIST_WIRELINE = [
-        "Dokumentasi foto wireline",
-        "Foto ODP/ODC"
+        "Guidance",
+        "Log"
     ]
-    
-    # Label untuk Checklist Wireless
+
+    # Label untuk Checklist Wireline
     CHECKLIST_WIRELESS = [
-        "Dokumentasi foto wireless",
-        "Foto tower/pole"
+        "Guidance",
+        "Log"
     ]
     
     # Label untuk Maintenance Remote Wireless
     MAINTENANCE_REMOTE_WIRELESS = [
-        "Dokumentasi foto maintenance",
-        "Foto before maintenance"
+        "Guidance",
+        "Log"
     ]
     
     @classmethod
@@ -78,7 +78,7 @@ class LabelConfig:
             "SPK_DISMANTLE": cls.SPK_DISMANTLE,
             "SPK_AKTIVASI": cls.SPK_AKTIVASI,
             "CHECKLIST_WIRELINE": cls.CHECKLIST_WIRELINE,
-            "CHECKLIST_WIRELESS": cls.CHECKLIST_WIRELESS,
+            "CHECKLIST_WIRELINE": cls.CHECKLIST_WIRELESS,
             "MAINTENANCE_REMOTE_WIRELESS": cls.MAINTENANCE_REMOTE_WIRELESS,
         }
         
