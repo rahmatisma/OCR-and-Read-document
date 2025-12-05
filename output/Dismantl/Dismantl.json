@@ -2,19 +2,19 @@
     "dokumentasi": [
         {
             "jenis": "HASIL PEKERJAAN CABUT",
-            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal2.jpg"
+            "patch_foto": "output\\Dismantl\\images\\hasil_pekerjaan_cabut_hal2.jpg"
         },
         {
             "jenis": "HASIL PEKERJAAN CABUT",
-            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal3.jpg"
+            "patch_foto": "output\\Dismantl\\images\\hasil_pekerjaan_cabut_hal3.jpg"
         },
         {
             "jenis": "HASIL PEKERJAAN CABUT",
-            "patch_foto": "output/images\\hasil_pekerjaan_cabut_hal4.jpg"
+            "patch_foto": "output\\Dismantl\\images\\hasil_pekerjaan_cabut_hal4.jpg"
         },
         {
             "jenis": "DISMANTLE ITEMS",
-            "patch_foto": "output/images\\dismantle_items_hal5.jpg"
+            "patch_foto": "output\\Dismantl\\images\\dismantle_items_hal5.jpg"
         }
     ],
     "parsed": {

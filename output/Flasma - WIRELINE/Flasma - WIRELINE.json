@@ -2,27 +2,27 @@
     "dokumentasi": [
         {
             "jenis": "Guidance",
-            "patch_foto": "output/images\\guidance_hal4.jpg"
+            "patch_foto": "output\\Flasma - WIRELINE\\images\\guidance_hal4.jpg"
         },
         {
             "jenis": "Guidance",
-            "patch_foto": "output/images\\guidance_hal5.jpg"
+            "patch_foto": "output\\Flasma - WIRELINE\\images\\guidance_hal5.jpg"
         },
         {
             "jenis": "Guidance",
-            "patch_foto": "output/images\\guidance_hal6.jpg"
+            "patch_foto": "output\\Flasma - WIRELINE\\images\\guidance_hal6.jpg"
         },
         {
             "jenis": "Log",
-            "patch_foto": "output/images\\log_hal7.jpg"
+            "patch_foto": "output\\Flasma - WIRELINE\\images\\log_hal7.jpg"
         },
         {
             "jenis": "Log",
-            "patch_foto": "output/images\\log_hal8.jpg"
+            "patch_foto": "output\\Flasma - WIRELINE\\images\\log_hal8.jpg"
         },
         {
             "jenis": "Log",
-            "patch_foto": "output/images\\log_hal9.jpg"
+            "patch_foto": "output\\Flasma - WIRELINE\\images\\log_hal9.jpg"
         }
     ],
     "parsed": {

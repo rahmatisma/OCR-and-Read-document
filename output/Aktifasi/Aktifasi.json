@@ -2,19 +2,19 @@
     "dokumentasi": [
         {
             "jenis": "HASIL AKTIVASI",
-            "patch_foto": "output/images\\hasil_aktivasi_hal2.jpg"
+            "patch_foto": "output\\Aktifasi\\images\\hasil_aktivasi_hal2.jpg"
         },
         {
             "jenis": "DOKUMENTASI FOTO",
-            "patch_foto": "output/images\\dokumentasi_foto_hal3.jpg"
+            "patch_foto": "output\\Aktifasi\\images\\dokumentasi_foto_hal3.jpg"
         },
         {
             "jenis": "DOKUMENTASI FOTO",
-            "patch_foto": "output/images\\dokumentasi_foto_hal4.jpg"
+            "patch_foto": "output\\Aktifasi\\images\\dokumentasi_foto_hal4.jpg"
         },
         {
             "jenis": "LIST ITEM",
-            "patch_foto": "output/images\\list_item_hal7.jpg"
+            "patch_foto": "output\\Aktifasi\\images\\list_item_hal7.jpg"
         }
     ],
     "parsed": {

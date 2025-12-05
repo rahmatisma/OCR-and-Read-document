@@ -9,7 +9,7 @@ from readers.ocr.processor import process_pdf_with_images, process_page_ocr
 from dispatcher import dispatch_parser
 
 
-def read_pdf(pdf_path: str, debug: bool = False) -> dict:
+def read_pdf(pdf_path: str, debug: bool = False, output_dir: str = None) -> dict:
     """
     Membaca dokumen PDF dengan alur:
     1. Ekstrak teks per halaman (OCR jika perlu) + SIMPAN OCR DATA
@@ -17,6 +17,11 @@ def read_pdf(pdf_path: str, debug: bool = False) -> dict:
     3. Ekstrak gambar dokumentasi sesuai jenis dokumen
     4. Parse dokumen sesuai template
     5. Gabungkan hasil
+    
+    Args:
+        pdf_path: Path ke file PDF
+        debug: Mode debug untuk output tambahan
+        output_dir: Direktori output untuk gambar (NEW!)
     """
     print(f"[INFO] Membaca dokumen PDF: {pdf_path}")
     doc = fitz.open(pdf_path)
@@ -61,12 +66,23 @@ def read_pdf(pdf_path: str, debug: bool = False) -> dict:
     dokumentasi_images = []
     
     if doc_type != "unknown":
-        # 🆕 PASS OCR_DATA ke image extraction
-        dokumentasi_images = process_pdf_with_images(
-            pdf_path=pdf_path, 
-            doc_type=doc_type,
-            ocr_data=ocr_data  # ← NEW: Pass OCR data untuk PDF scan
-        )
+        # 🆕 Pass output_dir ke process_pdf_with_images
+        if output_dir:
+            print(f"[INFO] Output gambar akan disimpan di: {output_dir}")
+            dokumentasi_images = process_pdf_with_images(
+                pdf_path=pdf_path, 
+                doc_type=doc_type,
+                ocr_data=ocr_data,
+                output_dir=output_dir  # ← NEW: Pass output_dir
+            )
+        else:
+            # Fallback ke default jika tidak ada output_dir
+            print(f"[WARNING] output_dir tidak diberikan, menggunakan default 'output/images'")
+            dokumentasi_images = process_pdf_with_images(
+                pdf_path=pdf_path, 
+                doc_type=doc_type,
+                ocr_data=ocr_data
+            )
     else:
         print("[WARNING] Skip ekstraksi gambar karena doc_type unknown")
 
@@ -88,7 +104,7 @@ def read_pdf(pdf_path: str, debug: bool = False) -> dict:
         }
 
     # Tambahkan di pdf_reader.py setelah loop OCR
-    if ocr_data:
+    if ocr_data and debug:
         print("\n[DEBUG] Sample OCR data format:")
         for i, item in enumerate(ocr_data[:3]):  # Print 3 item pertama
             print(f"  Item {i}:")
@@ -98,5 +114,6 @@ def read_pdf(pdf_path: str, debug: bool = False) -> dict:
             if 'bbox' in item and item['bbox']:
                 print(f"    - bbox[0]: {item['bbox'][0]} (type: {type(item['bbox'][0])})")
             print()
+    
     print(f"[INFO] ✓ Proses selesai! Total dokumentasi: {len(dokumentasi_images)}")
     return result

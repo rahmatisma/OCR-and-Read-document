@@ -2,27 +2,27 @@
     "dokumentasi": [
         {
             "jenis": "HASIL INSTALASI",
-            "patch_foto": "output/images\\hasil_instalasi_hal2.jpg"
+            "patch_foto": "output\\instalasi\\images\\hasil_instalasi_hal2.jpg"
         },
         {
             "jenis": "PHOTO INSTALASI ETHERNET",
-            "patch_foto": "output/images\\photo_instalasi_ethernet_hal3.jpg"
+            "patch_foto": "output\\instalasi\\images\\photo_instalasi_ethernet_hal3.jpg"
         },
         {
             "jenis": "PHOTO INSTALASI ETHERNET",
-            "patch_foto": "output/images\\photo_instalasi_ethernet_hal4.jpg"
+            "patch_foto": "output\\instalasi\\images\\photo_instalasi_ethernet_hal4.jpg"
         },
         {
             "jenis": "FOTO LAIN-LAIN",
-            "patch_foto": "output/images\\foto_lain-lain_hal6.jpg"
+            "patch_foto": "output\\instalasi\\images\\foto_lain-lain_hal6.jpg"
         },
         {
             "jenis": "LIST ITEM",
-            "patch_foto": "output/images\\list_item_hal8.jpg"
+            "patch_foto": "output\\instalasi\\images\\list_item_hal8.jpg"
         },
         {
             "jenis": "LIST ITEM",
-            "patch_foto": "output/images\\list_item_hal9.jpg"
+            "patch_foto": "output\\instalasi\\images\\list_item_hal9.jpg"
         }
     ],
     "parsed": {
