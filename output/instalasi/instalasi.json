@@ -91,6 +91,13 @@
                 "permintaan_pelanggan": "03/Mar/2021   15:00",
                 "datang": "03/Mar/2021   15:22",
                 "selesai": "03/Mar/2021   15:40"
+            },
+            "informasi_gedung": {
+                "alamat": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+                "kontak_person": "TUQINO",
+                "bagian___jabatan": null,
+                "telpon___fax": "0215728563",
+                "email": null
             }
         },
         "metadata": {

@@ -51,12 +51,6 @@ class LabelConfig:
         "Log"
     ]
     
-    # Label untuk Maintenance Remote Wireless
-    MAINTENANCE_REMOTE_WIRELESS = [
-        "Guidance",
-        "Log"
-    ]
-    
     @classmethod
     def get_labels(cls, doc_type: str) -> list:
         """
@@ -78,8 +72,7 @@ class LabelConfig:
             "SPK_DISMANTLE": cls.SPK_DISMANTLE,
             "SPK_AKTIVASI": cls.SPK_AKTIVASI,
             "CHECKLIST_WIRELINE": cls.CHECKLIST_WIRELINE,
-            "CHECKLIST_WIRELINE": cls.CHECKLIST_WIRELESS,
-            "MAINTENANCE_REMOTE_WIRELESS": cls.MAINTENANCE_REMOTE_WIRELESS,
+            "CHECKLIST_WIRELESS": cls.CHECKLIST_WIRELESS,
         }
         
         labels = mapping.get(normalized_type, [])

@@ -1,5 +1,22 @@
 {
-    "dokumentasi": [],
+    "dokumentasi": [
+        {
+            "jenis": "Guidance",
+            "patch_foto": "output\\form checklist maintenance remote wireless\\images\\guidance_hal3.jpg"
+        },
+        {
+            "jenis": "Guidance",
+            "patch_foto": "output\\form checklist maintenance remote wireless\\images\\guidance_hal4.jpg"
+        },
+        {
+            "jenis": "Guidance",
+            "patch_foto": "output\\form checklist maintenance remote wireless\\images\\guidance_hal5.jpg"
+        },
+        {
+            "jenis": "Log",
+            "patch_foto": "output\\form checklist maintenance remote wireless\\images\\log_hal6.jpg"
+        }
+    ],
     "parsed": {
         "document_type": "checklist_wireless",
         "jenis_spk": "checklist_wireless",

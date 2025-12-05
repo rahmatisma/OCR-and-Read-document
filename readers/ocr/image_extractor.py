@@ -152,7 +152,7 @@ def find_label_from_ocr(ocr_data, page_number, label, exclude_keywords=None):
     
     Args:
         ocr_data: List of OCR items dengan format:
-                  [{'text': str, 'bbox': [...], 'page_number': int, ...}, ...]
+                    [{'text': str, 'bbox': [...], 'page_number': int, ...}, ...]
         page_number: Nomor halaman yang dicari (1-indexed)
         label: Label text yang dicari
         exclude_keywords: Keywords untuk exclude
@@ -287,11 +287,19 @@ def get_exclude_keywords_for_label(label):
     return exclude_map.get(label.lower(), [])
 
 
-def crop_from_label(page, label_rect):
-    """Crop dari bawah label sampai akhir halaman."""
+def crop_from_label(page, label_rect, top_margin=15):
+    """
+    Crop dari ATAS label (bukan bawah) sampai akhir halaman.
+    
+    Args:
+        page: PyMuPDF page object
+        label_rect: Rectangle koordinat label
+        top_margin: Jarak ke atas dari label (default 50px untuk include area di atas label)
+    """
+    # Mulai crop dari ATAS label (y0) dikurangi margin, bukan dari bawah (y1)
     crop_box = fitz.Rect(
         0,
-        label_rect.y1 + 30,
+        max(0, label_rect.y0 - top_margin),  # ← Mulai dari ATAS label - margin
         page.rect.width,
         page.rect.height
     )
