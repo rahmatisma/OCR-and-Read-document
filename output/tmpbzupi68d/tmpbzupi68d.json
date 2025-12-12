@@ -1,0 +1,243 @@
+{
+    "dokumentasi": [
+        {
+            "jenis": "Dokumentasi foto",
+            "patch_foto": "output\\tmpbzupi68d\\images\\dokumentasi_foto_hal5.jpg"
+        },
+        {
+            "jenis": "Dokumentasi foto",
+            "patch_foto": "output\\tmpbzupi68d\\images\\dokumentasi_foto_hal6.jpg"
+        },
+        {
+            "jenis": "Foto penempatan perangkat di lokasi pelanggan",
+            "patch_foto": "output\\tmpbzupi68d\\images\\foto_penempatan_perangkat_di_lokasi_pelanggan_hal7.jpg"
+        },
+        {
+            "jenis": "Foto jalur kabel dalam gedung",
+            "patch_foto": "output\\tmpbzupi68d\\images\\foto_jalur_kabel_dalam_gedung_hal8.jpg"
+        },
+        {
+            "jenis": "Plan jalur dalam gedung",
+            "patch_foto": "output\\tmpbzupi68d\\images\\plan_jalur_dalam_gedung_hal9.jpg"
+        },
+        {
+            "jenis": "Data jalur kabel",
+            "patch_foto": "output\\tmpbzupi68d\\images\\data_jalur_kabel_hal10.jpg"
+        },
+        {
+            "jenis": "Foto splitter",
+            "patch_foto": "output\\tmpbzupi68d\\images\\foto_splitter_hal11.jpg"
+        },
+        {
+            "jenis": "Foto splitter",
+            "patch_foto": "output\\tmpbzupi68d\\images\\foto_splitter_hal12.jpg"
+        },
+        {
+            "jenis": "Foto hh eksisting yang dipakai",
+            "patch_foto": "output\\tmpbzupi68d\\images\\foto_hh_eksisting_yang_dipakai_hal13.jpg"
+        },
+        {
+            "jenis": "Foto lokasi hh baru",
+            "patch_foto": "output\\tmpbzupi68d\\images\\foto_lokasi_hh_baru_hal14.jpg"
+        }
+    ],
+    "parsed": {
+        "document_type": "spk_survey",
+        "jenis_spk": "survey",
+        "data": {
+            "spk": {
+                "judul_spk": "SURAT PERINTAH KERJA",
+                "tipe_spk": "spk survey",
+                "no_spk": "215164/WO-LA/2023",
+                "tanggal_spk": "09/Nov/2023",
+                "no_fps": null
+            },
+            "pelanggan": {
+                "nama_pelanggan": "MULTIMEDIA LINK TECHNOLOGY",
+                "lokasi_pelanggan": "JL. GRIYA ALAM SENTOSA",
+                "kontak_person": "ARIS",
+                "telepon": "085219876108"
+            },
+            "jaringan": {
+                "no_jaringan": "2023390898",
+                "jasa": "LA_METRO_ETHERNET",
+                "manage_router": null,
+                "opsi_router": null,
+                "ip_lan": null,
+                "tgl_rfs_la": "-",
+                "tgl_rfs_plg": "01-Dec-2023",
+                "media_akses": "FO",
+                "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01)",
+                "kecepatan": "Downstream / Upstream 1000 Mbps"
+            },
+            "pelaksanaan": {
+                "permintaan_pelanggan": "09/Nov/2023   11:00",
+                "datang": "11/Nov/2023   17:13",
+                "selesai": "13/Nov/2023   10:02"
+            },
+            "vendor": {
+                "latitude": "-6.39541",
+                "longitude": "106.88371",
+                "pic_pelanggan": ".",
+                "kontak_pic_pelanggan": "0",
+                "teknisi": "Firman Gustomi",
+                "nama_vendor": "DS3"
+            },
+            "informasi_gedung": {
+                "alamat": "JL. GRIYA ALAM SENTOSA,",
+                "status_gedung": "Milik Sendiri",
+                "kondisi_gedung": "Sudah Siap",
+                "pemilik_bangunan": null,
+                "kontak_person": null,
+                "bagian___jabatan": null,
+                "telpon___fax": null,
+                "email": null,
+                "jumlah_lantai_gedung": null,
+                "pelanggan_fo": "FO",
+                "penempatan_antena": "Tidak Perlu Izin",
+                "sewa_space_antena": "Ada",
+                "sewa_shaft_kabel": "Ada",
+                "biaya_ikg": "Ada",
+                "penanggungjawab_sewa": "Lintasarta"
+            },
+            "sarpen_ruang_server": {
+                "power_line___listrik": null,
+                "ketersediaan_power_outlet_untuk_otb,_modem,_dan_router": "Ada",
+                "info_kelistrikan_pln_p_n": null,
+                "info_kelistrikan_pln_p_g": null,
+                "info_kelistrikan_pln_n_g": null,
+                "grounding_listrik": "Ada",
+                "ups": "Tersedia/Ada",
+                "ruangan_ber_ac": "Ada",
+                "suhu_ruangan": "lebih kecil 20°C",
+                "1_lantai": null,
+                "2_ruang": "Ada rak khusus",
+                "perangkat_pelanggan": "Sudah Ada"
+            },
+            "lokasi_antena": {
+                "lokasi_antena": "Atap dak betok",
+                "detail_lokasi_antena": null,
+                "space_tersedia": "x meter",
+                "akses_di_lokasi_perlu_alat_bantu": "Tidak,",
+                "penangkal_petir": "Tidak",
+                "tinggi_penangkal_petir": null,
+                "jarak_ke_lokasi_antena": null,
+                "tindak_lanjut": null,
+                "tower___pole": "Tidak",
+                "pemilik_tower___pole": null
+            },
+            "perizinan_biaya_gedung": {
+                "pic_bm": null,
+                "kontak_pic_bm": null,
+                "material_dan_infrastruktur": "Lintas Arta",
+                "panjang_kabel_dalam_gedung": null,
+                "pelaksana_penarikan_kabel_dalam_gedung": null,
+                "waktu_pelaksanaan_penarikan_kabel": null,
+                "supervisi": null,
+                "deposit_kerja": null,
+                "ikg_instalasi_kabel_gedung": null,
+                "biaya_sewa": null,
+                "biaya_lain…": null,
+                "info_lain___lain_jika_ada": null
+            },
+            "penempatan_perangkat": {
+                "lokasi_penempatan_modem_dan_router": null,
+                "kesiapan_ruang_server": "Siap",
+                "ketersedian_rak_server": "Ada",
+                "space_modem_dan_router": "Ada",
+                "diizinkan_foto_ruang_server_pelanggan": "Ya"
+            },
+            "perizinan_biaya_kawasan": {
+                "melewati_kawasan_private": "Ya",
+                "nama_kawasan": null,
+                "pic_kawasan": null,
+                "kontak_pic_kawasan": null,
+                "panjang_kabel_dalam_kawasan": null,
+                "pelaksana_penarikan_kabel_dalam_kawasan": null,
+                "deposit_kerja": null,
+                "supervisi": null,
+                "biaya_penarikan_kabel_dalam_kawasan": null,
+                "biaya_sewa": null,
+                "biaya_lain…": null,
+                "info_lain___lain_jika_ada": null
+            },
+            "kawasan_umum": {
+                "nama_kawasan_umum___pu_yang_dilewati": null,
+                "panjang_jalur_outdoor_di_kawasan_umum": null
+            },
+            "data_splitter": {
+                "lokasi_splitter": null,
+                "id_splitter": null,
+                "kapasitas_splitter": null,
+                "jumlah_port_kosong": null,
+                "list_port_kosong_dan_redaman": null,
+                "nama_node_jika_tidak_ada_splitter": null,
+                "list_port_kosong": null,
+                "arah_akses": "Diarahkan ke splitter / handhole splitter"
+            },
+            "data_hh_eksisting": {
+                "hh_1": {
+                    "kondisi_hh_1": null,
+                    "lokasi_hh_1": null,
+                    "longitude_dan_latitude_hh_1": null,
+                    "ketersediaan_closure_1": null,
+                    "kapasitas_closure_1": null,
+                    "kondisi_closure_1": null
+                },
+                "hh_2": {
+                    "kondisi_hh_2": null,
+                    "lokasi_hh_2": null,
+                    "longitude_dan_latitude_hh_2": null,
+                    "ketersediaan_closure_2": null,
+                    "kapasitas_closure_2": null,
+                    "kondisi_closure_2": null
+                }
+            },
+            "data_hh_baru": {
+                "hh_1": {
+                    "lokasi_hh_1": null,
+                    "longitude_dan_latitude_hh_1": null,
+                    "kebutuhan_penambahan_closure_1": null,
+                    "kapasitas_closure_1": null
+                },
+                "hh_2": {
+                    "lokasi_hh_2": null,
+                    "longitude_dan_latitude_hh_2": null,
+                    "kebutuhan_penambahan_closure_2": null,
+                    "kapasitas_closure_2": null
+                }
+            },
+            "berita_acara": {
+                "judul_spk": "BERITA ACARA",
+                "tipe_spk": "survey",
+                "nomor_spk": "215164/WO-LA/2023",
+                "tanggal": "09/Nov/2023",
+                "nama_pelanggan": "MULTIMEDIA LINK TECHNOLOGY",
+                "no_jaringan": "2023390898",
+                "no_fps": null,
+                "jasa": "LA_METRO_ETHERNET",
+                "manage_router": null,
+                "opsi_router": null,
+                "ip_lan": null,
+                "tgl_rfs_la": "-",
+                "tgl_rfs_pelanggan": "01-Dec-2023",
+                "lokasi_pelanggan": "JL. GRIYA ALAM SENTOSA",
+                "media_akses": "FO",
+                "pop": "1. JKTRMCSR01 - 446285 (ADPKRMC01)",
+                "kecepatan": "Downstream / Upstream 1000 Mbps",
+                "kontak_person": null,
+                "telepon": null
+            },
+            "pelaksanan_berita_acara": {
+                "permintaan_pealanggan": "09/Nov/2023   11:00",
+                "datang": "11/Nov/2023   17:13",
+                "selesai": "13/Nov/2023   10:02"
+            }
+        },
+        "metadata": {
+            "parser_used": "parse_spk_survey",
+            "detection_confidence": "high",
+            "ocr_data_available": false
+        }
+    }
+}

@@ -1,0 +1,109 @@
+{
+    "dokumentasi": [
+        {
+            "jenis": "HASIL INSTALASI",
+            "patch_foto": "output\\tmp78nbdy3l\\images\\hasil_instalasi_hal2.jpg"
+        },
+        {
+            "jenis": "PHOTO INSTALASI ETHERNET",
+            "patch_foto": "output\\tmp78nbdy3l\\images\\photo_instalasi_ethernet_hal3.jpg"
+        },
+        {
+            "jenis": "PHOTO INSTALASI ETHERNET",
+            "patch_foto": "output\\tmp78nbdy3l\\images\\photo_instalasi_ethernet_hal4.jpg"
+        },
+        {
+            "jenis": "FOTO LAIN-LAIN",
+            "patch_foto": "output\\tmp78nbdy3l\\images\\foto_lain-lain_hal6.jpg"
+        },
+        {
+            "jenis": "LIST ITEM",
+            "patch_foto": "output\\tmp78nbdy3l\\images\\list_item_hal8.jpg"
+        },
+        {
+            "jenis": "LIST ITEM",
+            "patch_foto": "output\\tmp78nbdy3l\\images\\list_item_hal9.jpg"
+        }
+    ],
+    "parsed": {
+        "document_type": "spk_instalasi",
+        "jenis_spk": "instalasi",
+        "data": {
+            "spk": {
+                "judul_spk": "SURAT PERINTAH KERJA",
+                "tipe_spk": "spk instalasi",
+                "no_spk": "065752/WO-LA/2021",
+                "tanggal_spk": "03/Mar/2021"
+            },
+            "pelanggan": {
+                "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+                "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+                "kontak_person": null,
+                "telepon": null
+            },
+            "jaringan": {
+                "no_jaringan": "2021242440",
+                "jasa": "LA_IPVPN",
+                "manage_router": null,
+                "opsi_router": null,
+                "ip_lan": null,
+                "tgl_rfs_la": null,
+                "tgl_rfs_plg": null,
+                "kode_jaringan": null,
+                "no_fmb": null,
+                "jenis_instalasi": "ETHERNET",
+                "kecepatan": "Downstream / Upstream TSEL 3GB"
+            },
+            "pelaksanaan": {
+                "permintaan_pelanggan": "03/Mar/2021   15:00",
+                "datang": "03/Mar/2021   15:22",
+                "selesai": "03/Mar/2021   15:40"
+            },
+            "vendor": {
+                "latitude": "-6.24854",
+                "longitude": "106.98937",
+                "pic_pelanggan": "tio",
+                "kontak_pic_pelanggan": "085808894952",
+                "teknisi": "TAUFIQ RAMDAN",
+                "nama_vendor": "DIKTA TEKNOLOGI"
+            },
+            "berita_acara": {
+                "judul_spk": "BERITA ACARA",
+                "tipe_spk": "instalasi",
+                "nomor_spk": "065752/WO-LA/2021",
+                "tanggal": "03/Mar/2021",
+                "nama_pelanggan": "BANK NEGARA INDONESIA 1946 (PERSERO)",
+                "no_jaringan": "2021242440",
+                "no_fps": null,
+                "jasa": "LA_IPVPN",
+                "manage_router": null,
+                "opsi_router": null,
+                "ip_lan": null,
+                "tgl_rfs_la": null,
+                "tgl_rfs_pelanggan": null,
+                "lokasi_pelanggan": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+                "jenis_instalasi": "ETHERNET",
+                "kecepatan": "Downstream / Upstream TSEL 3GB",
+                "kontak_person": "TUQINO",
+                "telepon": "0215728563"
+            },
+            "pelaksanan_berita_acara": {
+                "permintaan_pelanggan": "03/Mar/2021   15:00",
+                "datang": "03/Mar/2021   15:22",
+                "selesai": "03/Mar/2021   15:40"
+            },
+            "informasi_gedung": {
+                "alamat": "JL. CUT NYAK DIEN, KALIMALANG UJUNG",
+                "kontak_person": "TUQINO",
+                "bagian___jabatan": null,
+                "telpon___fax": "0215728563",
+                "email": null
+            }
+        },
+        "metadata": {
+            "parser_used": "parse_spk_instalasi",
+            "detection_confidence": "high",
+            "ocr_data_available": false
+        }
+    }
+}

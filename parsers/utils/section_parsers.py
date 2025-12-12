@@ -366,13 +366,6 @@ class LokasiAntenaParser:
             if re.fullmatch(re.escape(lbl), line, re.IGNORECASE):
                 return lbl
         return None
-"""
-Section Parsers Part 2 - Tambahkan ini ke file section_parsers.py yang sudah ada
-"""
-import re
-from typing import Optional, Dict, List
-from .text_utils import TextNormalizer, KeyNormalizer
-
 
 class PerizinanBiayaGedungParser:
     """Parser khusus untuk PERIZINAN DAN BIAYA GEDUNG"""

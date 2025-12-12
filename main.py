@@ -63,35 +63,35 @@ def pengecekan_file(file_path: str):
     return result
 
 
-if __name__ == "__main__":
-    cek = True
-    while cek == True:
-        # Ganti path sesuai file input kamu
-        dokument = input("Masukan dokument : ")  # survey / instalasi / dismantle
-        if dokument == "survey":
-            file_path = "input/pdf/Survey 1.pdf"
-        elif dokument == "instalasi":
-            file_path = "input/pdf/instalasi.pdf"
-        elif dokument == "dismantle":
-            file_path = "input/pdf/Dismantl.pdf"
-        elif dokument == "aktivasi":
-            file_path = "input/pdf/Aktifasi.pdf"
-        elif dokument == "1":
-            file_path = "input/pdf/form checklist maintenance remote wireless.pdf"
-        elif dokument == "2":
-            file_path = "input/pdf/form chcklisr wireline.pdf"
-        elif dokument == "3":
-            file_path = "input/pdf/Flasma - WIRELINE.pdf"
-        else:
-            print("Kaga ada dokument kaya gitu kocakkkk")
-            exit()
+# if __name__ == "__main__":
+#     cek = True
+#     while cek == True:
+#         # Ganti path sesuai file input kamu
+#         dokument = input("Masukan dokument : ")  # survey / instalasi / dismantle
+#         if dokument == "survey":
+#             file_path = "input/pdf/Survey 1.pdf"
+#         elif dokument == "instalasi":
+#             file_path = "input/pdf/instalasi.pdf"
+#         elif dokument == "dismantle":
+#             file_path = "input/pdf/Dismantl.pdf"
+#         elif dokument == "aktivasi":
+#             file_path = "input/pdf/Aktifasi.pdf"
+#         elif dokument == "1":
+#             file_path = "input/pdf/form checklist maintenance remote wireless.pdf"
+#         elif dokument == "2":
+#             file_path = "input/pdf/form chcklisr wireline.pdf"
+#         elif dokument == "3":
+#             file_path = "input/pdf/Flasma - WIRELINE.pdf"
+#         else:
+#             print("Kaga ada dokument kaya gitu kocakkkk")
+#             exit()
         
-        try:
-            pengecekan_file(file_path)
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            import traceback
-            traceback.print_exc()
+#         try:
+#             pengecekan_file(file_path)
+#         except Exception as e:
+#             print(f"❌ Error: {e}")
+#             import traceback
+#             traceback.print_exc()
         
-        if input("Mau input lagi? (y/n) ") != "y":
-            cek = False
+#         if input("Mau input lagi? (y/n) ") != "y":
+#             cek = False
