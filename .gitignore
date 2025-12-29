@@ -1,0 +1,12 @@
+# Python (WAJIB)
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Output hasil program (WAJIB)
+output/
+
+# File OS
+.DS_Store
+Thumbs.db
