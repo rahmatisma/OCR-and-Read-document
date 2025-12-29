@@ -1843,24 +1843,24 @@ class ChecklistWirelessParser(BaseParser):
     def _extract_data_perangkat_section(self) -> str:
         """
         Extract text dari section C. DATA PERANGKAT
-        
-        Returns:
-            String berisi text dari DATA PERANGKAT sampai section berikutnya atau akhir
         """
         print("\n" + "="*80)
         print("DEBUG: Extract C. DATA PERANGKAT")
         print("="*80)
         
-        # Pattern yang handle text tanpa spasi dari OCR
+        # Pattern yang lebih greedy - ambil sampai section D atau DOKUMENTASI
         patterns = [
-            # Pattern 1: Ada spasi normal
-            r'(?:C\.\s*)?DATA\s+PERANGKAT.*?(?=(?:D\.\s*)?VERIFIKASI|DOKUMENTASI|$)',
+            # Pattern 1: Sampai section D. VERIFIKASI
+            r'C\.?\s*DATA\s+PERANGKAT.*?(?=D\.?\s*VERIFIKASI)',
             
-            # Pattern 2: Tanpa spasi (C.DATAPERANGKAT)
-            r'(?:C\.)?DATAPERANGKAT.*?(?=(?:D\.)?VERIFIKASI|DOKUMENTASI|$)',
+            # Pattern 2: Sampai DOKUMENTASI (kadang D. VERIFIKASI tidak ada)
+            r'C\.?\s*DATA\s+PERANGKAT.*?(?=DOKUMENTASI)',
             
-            # Pattern 3: Mixed
-            r'(?:C\.\s*)?DATA\s*PERANGKAT.*?(?=(?:D\.\s*)?VERIFIKASI|DOKUMENTASI|$)',
+            # Pattern 3: Tanpa spasi
+            r'C\.?DATAPERANGKAT.*?(?=D\.?VERIFIKASI|DOKUMENTASI)',
+            
+            # Pattern 4: Sampai akhir dokumen jika tidak ada pembatas
+            r'C\.?\s*DATA\s+PERANGKAT.*',
         ]
         
         for i, pattern in enumerate(patterns, 1):
@@ -1868,21 +1868,20 @@ class ChecklistWirelessParser(BaseParser):
             if match:
                 perangkat_text = match.group()
                 
-                # Validasi: pastikan ini section data perangkat (ada keyword EXISTING, CABUT, etc)
-                perangkat_keywords = ["EXISTING", "CABUT", "TIDAK TERPAKAI", "PENGGANTI"]
-                keyword_count = sum(1 for kw in perangkat_keywords if kw in perangkat_text.upper())
+                # Validasi: pastikan ada No.Reg (B2WN)
+                noreg_count = len(re.findall(r'B2WN[A-Z0-9]{10,}', perangkat_text, re.IGNORECASE))
                 
-                print(f"Pattern {i}: Perangkat keywords={keyword_count}")
+                print(f"Pattern {i}: Ditemukan {noreg_count} No.Reg")
                 
-                if keyword_count >= 2:
+                if noreg_count > 0:
                     print(f"✓ Pattern {i} matched! Length: {len(perangkat_text)} chars")
-                    print(f"  Preview: {perangkat_text[:100]}...")
+                    print(f"  Preview: {perangkat_text[:200]}...")
                     print("="*80 + "\n")
                     return perangkat_text
                 else:
-                    print(f"✗ Pattern {i} matched tapi keyword tidak cukup")
+                    print(f"✗ Pattern {i} matched tapi tidak ada No.Reg")
         
-        print("[ERROR] Data Perangkat section tidak ditemukan")
+        print("[ERROR] Data Perangkat section tidak ditemukan atau kosong")
         print("="*80 + "\n")
         return ""
 
@@ -1921,27 +1920,30 @@ class ChecklistWirelessParser(BaseParser):
     def _parse_perangkat_existing(self, text: str) -> list:
         """
         Parse sub-section EXISTING
-        
-        Strategy baru untuk handle 2-column layout:
-        - OCR membaca: "EXISTING TIDAK TERPAKAI Nama... PSU... FORTIGATE... CABUT PENGGANTI"
-        - Semua item B2WN sebelum kata "CABUT" = EXISTING (karena layout tabel, item ada di bawah EXISTING)
-        - Item setelah "CABUT" diabaikan (masuk section lain)
         """
         print("  → Parsing EXISTING...")
         
-        pattern = r'C\.?DATAPERANGKAT.*?(?=CABUT)'
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        # FIX: Pattern yang handle ada/tanpa spasi
+        patterns = [
+            r'C\.?\s*DATA\s+PERANGKAT.*?(?=CABUT)',  # Ada spasi
+            r'C\.?DATAPERANGKAT.*?(?=CABUT)',        # Tanpa spasi
+        ]
         
-        if not match:
+        existing_text = None
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+            if match:
+                existing_text = match.group()
+                break
+        
+        if not existing_text:
             print("    ✗ Section untuk EXISTING tidak ditemukan")
             return []
-        
-        existing_text = match.group()
         
         print(f"    DEBUG: EXISTING text length = {len(existing_text)}")
         print(f"    DEBUG RAW TEXT:")
         print("="*60)
-        print(existing_text)  # ← TAMBAHKAN INI
+        print(existing_text)
         print("="*60)
 
         return self._extract_items_by_noreg(existing_text, "EXISTING")
@@ -1950,29 +1952,27 @@ class ChecklistWirelessParser(BaseParser):
     def _parse_perangkat_tidak_terpakai(self, text: str) -> list:
         """
         Parse sub-section TIDAK TERPAKAI
-        
-        Strategy: Karena layout 2 kolom, kolom TIDAK TERPAKAI ada di sebelah kanan EXISTING.
-        Dalam OCR horizontal, text "TIDAK TERPAKAI" muncul, tapi items-nya (B2WN) 
-        sebenarnya ada di kolom kiri (EXISTING).
-        
-        Jadi: Cari B2WN yang muncul SETELAH kata "CABUT" dan SEBELUM kata "PENGGANTI"
-        Karena row berikutnya adalah CABUT | PENGGANTI
         """
         print("  → Parsing TIDAK TERPAKAI...")
         
         # Extract section antara CABUT dan PENGGANTI
-        # Jika ada B2WN di sini, berarti ada item di kolom TIDAK TERPAKAI
-        pattern = r'CABUT.*?(?=PENGGANTI|$)'
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        patterns = [
+            r'CABUT.*?(?=PENGGANTI|PASANG\s+BARU|$)',
+            r'CABUT.*?(?=PENGGANTI.*?PASANG.*?BARU|$)',
+        ]
         
-        if not match:
+        cabut_section = None
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+            if match:
+                cabut_section = match.group()
+                break
+        
+        if not cabut_section:
             print("    ✗ Section untuk TIDAK TERPAKAI tidak ditemukan")
             return []
         
-        cabut_section = match.group()
-        
         # Cek apakah ada B2WN di section ini
-        # Kalau tidak ada, berarti TIDAK TERPAKAI kosong
         if not re.search(r'B2WN[A-Z0-9]{10,}', cabut_section, re.IGNORECASE):
             print("    ✓ TIDAK TERPAKAI: Tidak ada item (kosong)")
             return []
@@ -1985,14 +1985,22 @@ class ChecklistWirelessParser(BaseParser):
         print("  → Parsing CABUT...")
         
         # Extract section CABUT sampai PENGGANTI
-        pattern = r'CABUT.*?(?=PENGGANTI|$)'
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        patterns = [
+            r'CABUT.*?(?=PENGGANTI|PASANG\s+BARU|$)',
+            r'CABUT.*?(?=PENGGANTI.*?PASANG.*?BARU|$)',
+        ]
         
-        if not match:
+        cabut_text = None
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+            if match:
+                cabut_text = match.group()
+                break
+        
+        if not cabut_text:
             print("    ✗ Section CABUT tidak ditemukan")
             return []
         
-        cabut_text = match.group()
         return self._extract_items_by_noreg(cabut_text, "CABUT")
 
 
@@ -2001,32 +2009,34 @@ class ChecklistWirelessParser(BaseParser):
         print("  → Parsing PENGGANTI/PASANG BARU...")
         
         # Extract section PENGGANTI sampai akhir
-        pattern = r'PENGGANTI.*?$'
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        patterns = [
+            r'PENGGANTI.*?$',
+            r'PASANG\s+BARU.*?$',
+            r'PENGGANTI.*?PASANG\s+BARU.*?$',
+        ]
         
-        if not match:
+        pengganti_text = None
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+            if match:
+                pengganti_text = match.group()
+                break
+        
+        if not pengganti_text:
             print("    ✗ Section PENGGANTI tidak ditemukan")
             return []
         
-        pengganti_text = match.group()
         return self._extract_items_by_noreg(pengganti_text, "PENGGANTI")
 
 
     def _extract_items_by_noreg(self, text: str, section_name: str) -> list:
         """
-        Extract items dari section berdasarkan No. Reg pattern
+        Extract items dari section berdasarkan No.Reg pattern
         
-        Strategy FINAL FIX v3:
-        1. Find all No.Reg positions
-        2. Untuk setiap No.Reg, ambil nama barang dari text sebelumnya
-        3. Smart detection untuk continuation word (bukan hardcode brand)
-        
-        Args:
-            text: Text dari section
-            section_name: Nama section untuk logging
-            
-        Returns:
-            List of items [{"nama_barang": "...", "no_reg": "...", "sn": "..."}]
+        Strategy FINAL v4:
+        1. Untuk setiap No.Reg, ambil text SEBELUM dan SESUDAH
+        2. Text sebelum = nama barang utama
+        3. Text sesudah (sampai No.Reg berikutnya atau boundary) = kemungkinan lanjutan nama
         """
         items = []
         
@@ -2047,28 +2057,37 @@ class ChecklistWirelessParser(BaseParser):
             noreg_start = match.start()
             noreg_end = match.end()
             
-            # === EXTRACT NAMA BARANG ===
-            # Tentukan start position untuk extract nama
+            # === EXTRACT NAMA BARANG (SEBELUM No.Reg) ===
             if i == 0:
-                # Item pertama: start dari awal text (atau setelah header jika ada)
                 nama_start = 0
-                
-                # Cari header terakhir sebelum No.Reg pertama
                 header_pattern = r'(Nama\s+Barang|No\.?\s*Reg|S/N|EXISTING|TIDAK\s+TERPAKAI|CABUT|PENGGANTI)'
                 headers = list(re.finditer(header_pattern, text[:noreg_start], re.IGNORECASE))
                 if headers:
                     nama_start = headers[-1].end()
             else:
-                # Item selanjutnya: start dari SETELAH No.Reg sebelumnya
                 nama_start = noreg_matches[i-1].end()
             
-            # Extract text untuk nama barang
             nama_text_raw = text[nama_start:noreg_start]
-            
-            # Clean dan extract nama barang
             nama_barang = self._extract_nama_barang_before_noreg(nama_text_raw)
             
-            # === SMART CONTINUATION WORD DETECTION ===
+            # === EXTRACT LANJUTAN NAMA (SETELAH No.Reg) ===
+            # Ambil text setelah No.Reg sampai batas tertentu
+            if i < len(noreg_matches) - 1:
+                # Ada No.Reg berikutnya - stop di sana
+                next_noreg_start = noreg_matches[i+1].start()
+                text_after = text[noreg_end:next_noreg_start]
+            else:
+                # No.Reg terakhir - ambil sampai boundary atau max 50 chars
+                text_after = text[noreg_end:noreg_end+50]
+            
+            # Extract lanjutan yang valid
+            continuation = self._extract_continuation_after_noreg(text_after)
+            
+            if continuation:
+                nama_barang = nama_barang + ' ' + continuation
+                print(f"      ℹ Added continuation: '{continuation}'")
+            
+            # === SMART CONTINUATION WORD DETECTION (untuk item sebelumnya) ===
             if i > 0 and len(items) > 0 and nama_barang:
                 words = nama_barang.split()
                 
@@ -2077,7 +2096,6 @@ class ChecklistWirelessParser(BaseParser):
                     prev_item_name = items[-1]["nama_barang"]
                     prev_words = prev_item_name.split()
                     
-                    # Cek apakah first_word adalah continuation
                     is_continuation = self._is_continuation_word(
                         first_word, 
                         prev_words, 
@@ -2085,26 +2103,19 @@ class ChecklistWirelessParser(BaseParser):
                     )
                     
                     if is_continuation:
-                        # Pindahkan kata pertama ke item sebelumnya
                         items[-1]["nama_barang"] += " " + first_word
-                        
-                        # Sisa kata jadi nama barang item ini
                         nama_barang = ' '.join(words[1:])
-                        
                         print(f"      ⚠ Detected continuation word: '{first_word}' moved to previous item")
             
-            # Skip jika nama barang kosong atau invalid
+            # Validasi
             if not nama_barang or len(nama_barang) < 3:
                 print(f"      ⚠ Skipping invalid item: empty nama_barang")
                 continue
             
-            # S/N - kosong untuk layout 2 kolom
-            sn = ""
-            
             item = {
-                "nama_barang": nama_barang,
+                "nama_barang": nama_barang.strip(),
                 "no_reg": no_reg,
-                "sn": sn
+                "sn": ""
             }
             
             items.append(item)
@@ -2117,6 +2128,150 @@ class ChecklistWirelessParser(BaseParser):
         
         return items
 
+
+    def _extract_continuation_after_noreg(self, text: str) -> str:
+        """
+        Extract lanjutan nama barang yang mungkin ada SETELAH No.Reg
+        
+        NON-HARDCODE VERSION - Gunakan pattern recognition
+        
+        Strategy:
+        1. Analisis struktur kata untuk deteksi "new item" vs "continuation"
+        2. Gunakan context dari kata sebelum dan sesudah
+        3. Maksimal 2 kata, total 15 char (ini reasonable limit, bukan hardcode)
+        
+        Heuristics untuk deteksi "New Item" (STOP):
+        - Kata yang panjang (≥8 char) DAN uppercase semua → likely brand/product
+        - Kata dengan pattern angka-huruf → likely product code
+        - Kata yang diikuti kata lain yang membentuk "noun phrase" lengkap
+        
+        Heuristics untuk deteksi "Continuation" (CONTINUE):
+        - Kata pendek (≤5 char) → likely descriptor (Antena, Kit, dll)
+        - Kata dengan symbol (+, &, /) → likely connector
+        - Kata tunggal tanpa angka → likely simple descriptor
+        """
+        text = text.strip()
+        text = re.sub(r'\s+', ' ', text)
+        
+        if not text:
+            return ""
+        
+        # Section headers pattern (ini reasonable constant, bukan hardcode data)
+        section_pattern = r'(CABUT|PENGGANTI|PASANG\s+BARU|TIDAK\s+TERPAKAI|EXISTING|Nama\s+Barang|No\.?\s*Reg|S/N)'
+        
+        words = []
+        text_parts = text.split()
+        
+        for i, word in enumerate(text_parts):
+            # Stop jika ketemu section header
+            if re.match(section_pattern, word, re.IGNORECASE):
+                break
+            
+            # Stop jika ketemu No.Reg lain
+            if re.match(r'B2WN[A-Z0-9]+', word, re.IGNORECASE):
+                break
+            
+            # Skip word yang terlalu pendek (noise)
+            if len(word) <= 1:
+                continue
+            
+            # ========================================
+            # HEURISTIC 1: Deteksi "New Item Starter"
+            # ========================================
+            if len(words) == 0:  # Kata pertama setelah No.Reg
+                # Pattern 1a: Kata panjang + uppercase semua + ada kata berikutnya
+                # Contoh: "WARRANTY ADAPTOR", "FORTIGATE ROUTER", "ADAPTOR 12V"
+                if (len(word) >= 6 and 
+                    word.isupper() and 
+                    i + 1 < len(text_parts)):
+                    
+                    next_word = text_parts[i + 1]
+                    
+                    # Cek: apakah next_word membentuk "noun phrase"?
+                    # Noun phrase indicators:
+                    # - Next word juga panjang + uppercase (ADAPTOR POWER)
+                    # - Next word ada angka (ADAPTOR 12V)
+                    # - Next word adalah kata benda umum yang standalone
+                    
+                    forms_noun_phrase = (
+                        len(next_word) >= 5 and next_word.isupper()  # WARRANTY ADAPTOR
+                        or re.search(r'\d+[A-Z]*', next_word)  # ADAPTOR 12V
+                        or re.match(section_pattern, next_word, re.IGNORECASE)  # Keyword
+                    )
+                    
+                    if forms_noun_phrase:
+                        # Ini kemungkinan besar NEW ITEM, bukan continuation
+                        # Contoh: "WARRANTY ADAPTOR" atau "ADAPTOR 12V"
+                        break
+                
+                # Pattern 1b: Kata dengan product code pattern
+                # Contoh: "FG-50E", "B311As", "WRT-1900"
+                if re.search(r'[A-Z]+-?\d+[A-Z]?', word, re.IGNORECASE):
+                    # Ini product code → kemungkinan NEW ITEM
+                    break
+                
+                # Pattern 1c: Brand name pattern (huruf-angka mixed)
+                # Contoh: "HUAAWEI", "B311As", "FG50E"
+                if re.search(r'[A-Z]{3,}\d+|[A-Z]+\d+[A-Z]+', word, re.IGNORECASE):
+                    # Mixed alphanumeric → likely brand/product
+                    break
+            
+            # ========================================
+            # HEURISTIC 2: Deteksi "Continuation"
+            # ========================================
+            # Kata yang kemungkinan besar CONTINUATION:
+            # - Pendek (≤ 5 char) → "Kit", "HW", "Antena"
+            # - Punya connector symbol → "+ Antena", "& Cable"
+            # - Kata descriptor tunggal tanpa angka
+            
+            is_likely_continuation = (
+                len(word) <= 5  # Kata pendek
+                or word in ['+', '&', '/', '-']  # Symbol connector
+                or (i > 0 and text_parts[i-1] in ['+', '&'])  # Setelah connector
+            )
+            
+            # ========================================
+            # DECISION: Ambil atau Skip?
+            # ========================================
+            if len(words) >= 2:
+                # Sudah 2 kata → stop
+                break
+            
+            if len(''.join(words)) + len(word) > 15:
+                # Total char > 15 → stop
+                break
+            
+            # Ambil word jika:
+            # - Likely continuation, ATAU
+            # - Kata pertama dan tidak ada indikasi "new item"
+            if is_likely_continuation or len(words) == 0:
+                words.append(word)
+            else:
+                # Tidak likely continuation → stop
+                break
+        
+        # ========================================
+        # FINAL VALIDATION
+        # ========================================
+        result = ' '.join(words)
+        
+        # Validasi: Jika hasilnya terlihat seperti "noun phrase" lengkap
+        # Contoh: "WARRANTY ADAPTOR" → ini terlalu lengkap untuk continuation
+        if len(words) >= 2:
+            # Check: apakah kedua kata membentuk noun phrase?
+            # Pattern: [ADJECTIVE/NOUN] + [NOUN with number/long word]
+            first_word = words[0]
+            second_word = words[1] if len(words) > 1 else ""
+            
+            if (len(first_word) >= 6 and 
+                len(second_word) >= 6 and
+                first_word.isupper() and 
+                second_word.isupper()):
+                # Contoh: "WARRANTY ADAPTOR" → terlalu lengkap
+                # Kemungkinan ini NEW ITEM yang salah terdeteksi
+                return ""  # Return kosong, biarkan jadi item terpisah
+        
+        return result
 
     def _extract_nama_barang_before_noreg(self, text: str) -> str:
         """
@@ -2197,10 +2352,11 @@ class ChecklistWirelessParser(BaseParser):
         """
         Smart detection: apakah word adalah continuation dari item sebelumnya?
         
-        Rules (fleksibel, tidak hardcode):
-        1. Jika item sebelumnya berakhir dengan kata sambung → continuation
-        2. Jika item sebelumnya sudah lengkap (punya angka+unit/kata benda) → bukan continuation
-        3. Jika word uppercase dan pendek, dan item sebelumnya pendek → continuation
+        Rules (STRICT VERSION - v2):
+        1. ✅ Jika item sebelumnya berakhir dengan kata sambung eksplisit → continuation
+        2. ✅ Jika word adalah common adjective/preposition → continuation
+        3. ❌ Jika word adalah product/brand name pattern → BUKAN continuation
+        4. ❌ Jika item sebelumnya sudah lengkap → BUKAN continuation
         
         Args:
             word: Kata yang dicek (first word dari nama barang berikutnya)
@@ -2210,56 +2366,92 @@ class ChecklistWirelessParser(BaseParser):
         Returns:
             True jika word adalah continuation, False jika bukan
         """
-        # Rule 1: Item sebelumnya berakhir dengan kata sambung
-        # Kata sambung umum: AND, HW, WITH, FOR, OF, TO, IN, ON, BY
-        connector_words = ['AND', 'HW', 'WITH', 'FOR', 'OF', 'TO', 'IN', 'ON', 'BY', '&', '+']
+        if not prev_words:
+            return False
         
-        if prev_words:
-            last_word = prev_words[-1].upper()
-            if last_word in connector_words:
-                return True  # Jelas continuation
+        # ============================================================
+        # RULE 1: Item sebelumnya berakhir dengan connector word EKSPLISIT
+        # ============================================================
+        connector_words = {'AND', 'HW', 'WITH', 'FOR', 'OF', 'TO', 'IN', 'ON', 'BY', '&', '+', 'OR'}
+        last_word = prev_words[-1].upper()
         
-        # Rule 2: Item sebelumnya sudah lengkap (ada angka + unit atau kata benda lengkap)
-        # Pattern lengkap: "ADAPTOR 12V 1A", "PSU FORTI FG-50E", "Router B311As"
-        # Pattern tidak lengkap: "FORTIGATE-50E HW AND"
+        if last_word in connector_words:
+            return True  # Jelas continuation (e.g., "HW AND" → "WARRANTY")
         
-        # Cek apakah prev item punya pattern lengkap:
-        # - Ada angka diikuti huruf (seperti 12V, 1A, 50E)
-        # - Atau ada kata benda umum (ADAPTOR, PSU, ROUTER, MODEM, SWITCH, dll)
+        # ============================================================
+        # RULE 2: Word adalah common adjective/preposition/descriptive word
+        # ============================================================
+        # Kata-kata ini BIASANYA lanjutan dari item sebelumnya
+        common_continuations = {
+            'WARRANTY', 'HARDWARE', 'SOFTWARE', 'ADAPTER', 'CABLE', 
+            'POWER', 'SUPPLY', 'MODULE', 'UNIT', 'KIT', 'SET',
+            'BLACK', 'WHITE', 'MINI', 'STANDARD', 'ORIGINAL'
+        }
+        
+        if word.upper() in common_continuations:
+            # Double check: apakah prev item pendek dan belum lengkap?
+            if len(prev_words) <= 4:
+                return True
+        
+        # ============================================================
+        # RULE 3: STRICT CHECK - Detect product/brand name patterns
+        # ============================================================
+        # Product/brand patterns yang PASTI BUKAN continuation:
+        # - Mengandung angka dengan huruf (FORTIGATE-50E, B311As, FG-30E)
+        # - Format CamelCase atau mixed case (FortiGate, iPhone)
+        # - Panjang >= 8 karakter dan unik (HUAAWEI, ADAPTOR)
+        
+        # Pattern 3a: Product code dengan angka (paling umum)
+        if re.search(r'[A-Z]+-?\d+[A-Z]?', word, re.IGNORECASE):
+            # e.g., FORTIGATE-50E, FG-30E, B311As, WRT-1900
+            return False  # Ini product name, BUKAN continuation
+        
+        # Pattern 3b: Brand name yang panjang dan unique
+        if len(word) >= 8:
+            # e.g., FORTIGATE, HUAAWEI, ADAPTOR (as standalone item)
+            # Cek: apakah kata ini sudah ada di prev_full_name?
+            if word.upper() not in prev_full_name.upper():
+                return False  # New brand/product, bukan continuation
+        
+        # Pattern 3c: Mixed case atau CamelCase (jarang di continuation)
+        if re.search(r'[a-z][A-Z]|[A-Z][a-z]+[A-Z]', word):
+            # e.g., FortiGate, iPhone, MacBook
+            return False
+        
+        # ============================================================
+        # RULE 4: Item sebelumnya sudah lengkap (ada unit atau product code)
+        # ============================================================
+        # Pattern lengkap:
+        # - "PSU FORTI FG-50E/FG-30E" → ada product code
+        # - "ADAPTOR 12V 1A" → ada unit measurement
+        # - "Router B311As + Antena" → ada product code + kata benda
         
         complete_patterns = [
-            r'\d+[A-Z]+',  # 12V, 1A, 50E, dll
-            r'[A-Z]+-\d+[A-Z]',  # FG-50E, B311As-23, dll
+            r'\d+[A-Z]+',          # 12V, 1A, 50E
+            r'[A-Z]+-\d+',         # FG-50E, WRT-1900
+            r'/[A-Z]+-\d+',        # /FG-30E
+            r'\+\s*[A-Z]+',        # + Antena, + Kit
         ]
         
         for pattern in complete_patterns:
             if re.search(pattern, prev_full_name):
-                # Ada pattern lengkap, kemungkinan sudah complete
-                # Cek apakah tidak berakhir dengan connector word
-                if prev_words and prev_words[-1].upper() not in connector_words:
+                # Item sebelumnya sudah lengkap
+                # Cek: apakah tidak berakhir dengan connector?
+                if last_word not in connector_words:
                     return False  # Sudah lengkap, word berikutnya bukan continuation
         
-        # Rule 3: Word uppercase dan pendek (< 12 char), dan prev item juga pendek (< 4 kata)
-        # Ini untuk handle kasus seperti "FORTIGATE-50E HW AND" + "WARRANTY"
-        if (word.isupper() and 
-            len(word) <= 12 and 
-            len(prev_words) <= 4):
-            
-            # Tapi jangan salah tangkap brand name atau product name
-            # Brand/product name biasanya:
-            # - Lebih panjang (>= 5 char)
-            # - Atau memiliki angka di dalamnya (seperti B311As)
-            # - Atau item sebelumnya sudah ada pattern lengkap
-            
-            # Jika word >= 5 char dan tidak ada di prev_full_name → kemungkinan brand baru
-            if len(word) >= 5 and word not in prev_full_name.upper():
-                # Check: apakah ini brand/product pattern?
-                # Brand biasanya: huruf+angka (HUAAWEI, B311As) atau CamelCase
-                if re.search(r'[A-Z]+\d+|[A-Z][a-z]+[A-Z]', word):
-                    return False  # Kemungkinan brand/product name, bukan continuation
-            
-            # Jika sampai sini, kemungkinan continuation
+        # ============================================================
+        # RULE 5 (Fallback): Jika ragu, DEFAULT = False (lebih safe)
+        # ============================================================
+        # Hanya return True jika:
+        # - Word sangat pendek (≤ 3 char) seperti "HW", "1A"
+        # - DAN prev item sangat pendek (≤ 2 kata)
+        # - DAN prev berakhir dengan incomplete pattern
+        
+        if len(word) <= 3 and len(prev_words) <= 2:
+            # Kemungkinan continuation dari item sangat pendek
+            # e.g., "PSU" + "HW" atau "AC" + "12V"
             return True
         
-        # Default: jika ragu, anggap bukan continuation (lebih safe)
+        # Default: anggap BUKAN continuation (lebih aman)
         return False

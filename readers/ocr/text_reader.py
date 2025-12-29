@@ -224,7 +224,7 @@ def run_ocr(image_input, enhance_image=False, return_structured=False):
             img_np = preprocess_image(img_np, enhance=True)
 
         # Jalankan OCR dengan API baru (predict)
-        result = ocr_model.predict(img_np)
+        result = ocr_model.ocr(img_np)
         
         # Debug: print struktur result
         # print(f"[DEBUG] Result type: {type(result)}")
