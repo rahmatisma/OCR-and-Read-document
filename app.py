@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 import tempfile
 import uuid
 import requests
@@ -12,7 +12,7 @@ app = Flask(__name__)
 # ============================================
 OLLAMA_BASE_URL = "http://localhost:11434"
 EMBEDDING_MODEL = "nomic-embed-text"
-CHAT_MODEL = "llama3.2:3b"  # atau "dolphin-llama3:8b" untuk production
+CHAT_MODEL = "llama3.2:3b"
 
 # ============================================
 # ENDPOINT EXISTING (PDF Processing)
@@ -25,18 +25,15 @@ def process_pdf():
         return jsonify({"error": "File not provided"}), 400
 
     try:
-        # simpan sementara
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             file.save(tmp.name)
             pdf_path = tmp.name
 
-        # jalankan pipeline (harus return dict!)
         result = pengecekan_file(pdf_path)
 
         if not isinstance(result, dict):
             return jsonify({"error": "pengecekan_file must return JSON(dict)"}), 500
 
-        # generate nama output
         json_filename = f"{uuid.uuid4()}.json"
 
         return jsonify({
@@ -55,22 +52,7 @@ def process_pdf():
 
 @app.route('/generate-embedding', methods=['POST'])
 def generate_embedding():
-    """
-    Generate embedding dari text menggunakan Ollama
-    
-    Request Body:
-    {
-        "text": "Text yang ingin di-embed",
-        "model": "nomic-embed-text"  // optional
-    }
-    
-    Response:
-    {
-        "embedding": [0.123, -0.456, ...],
-        "model": "nomic-embed-text",
-        "dimension": 384
-    }
-    """
+    """Generate embedding dari text menggunakan Ollama"""
     try:
         data = request.get_json()
         
@@ -80,7 +62,6 @@ def generate_embedding():
         text = data['text']
         model = data.get('model', EMBEDDING_MODEL)
         
-        # Call Ollama API untuk generate embedding
         response = requests.post(
             f"{OLLAMA_BASE_URL}/api/embeddings",
             json={
@@ -105,38 +86,13 @@ def generate_embedding():
             "dimension": len(embedding)
         })
     
-    except requests.exceptions.RequestException as e:
-        return jsonify({
-            "error": "Failed to connect to Ollama",
-            "details": str(e)
-        }), 500
-    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """
-    Chat dengan Ollama menggunakan context dari RAG + Conversation History
-    
-    Request Body:
-    {
-        "query": "Pertanyaan user",
-        "context": "Context dari similarity search",
-        "conversation_history": [  // ✅ NEW
-            {"role": "user", "content": "..."},
-            {"role": "assistant", "content": "..."}
-        ],
-        "model": "llama3.2:3b"  // optional
-    }
-    
-    Response:
-    {
-        "answer": "Jawaban dari chatbot",
-        "model": "llama3.2:3b"
-    }
-    """
+    """Chat dengan Ollama (NON-STREAMING) - untuk RAG mode"""
     try:
         data = request.get_json()
         
@@ -145,30 +101,18 @@ def chat():
         
         query = data['query']
         context = data.get('context', '')
-        conversation_history = data.get('conversation_history', [])  # ✅ NEW
+        conversation_history = data.get('conversation_history', [])
         model = data.get('model', CHAT_MODEL)
         
-        # ✅ Build prompt dengan context + conversation history
         prompt = build_rag_prompt(query, context, conversation_history)
         
-        # ✅ Log request info
         print("=" * 60)
-        print("📨 CHAT REQUEST")
+        print("📨 CHAT REQUEST (NON-STREAMING)")
         print("=" * 60)
         print(f"Query: {query}")
         print(f"Has Context: {len(context) > 0}")
-        print(f"Context Length: {len(context)} chars")
-        print(f"Has History: {len(conversation_history) > 0}")
-        print(f"History Length: {len(conversation_history)} messages")
-        if conversation_history:
-            print("\n📜 Recent History:")
-            for i, msg in enumerate(conversation_history[-3:]):  # Show last 3
-                role = msg.get('role', 'unknown')
-                content = msg.get('content', '')[:50]  # First 50 chars
-                print(f"  [{i+1}] {role.upper()}: {content}...")
         print("=" * 60)
         
-        # Call Ollama API
         response = requests.post(
             f"{OLLAMA_BASE_URL}/api/generate",
             json={
@@ -178,15 +122,13 @@ def chat():
                 "options": {
                     "temperature": 0.7,
                     "top_p": 0.9,
-                    "num_predict": 512,  # Max tokens untuk response
+                    "num_predict": 512,
                 }
             },
             timeout=300
         )
         
         if response.status_code != 200:
-            print(f"❌ Ollama API Error: {response.status_code}")
-            print(f"Response: {response.text}")
             return jsonify({
                 "error": "Ollama API error",
                 "details": response.text
@@ -195,10 +137,8 @@ def chat():
         result = response.json()
         answer = result.get('response', '').strip()
         
-        # ✅ Log response info
         print("✅ CHAT RESPONSE GENERATED")
         print(f"Answer Length: {len(answer)} chars")
-        print(f"Model Used: {model}")
         print("=" * 60)
         print()
         
@@ -207,41 +147,143 @@ def chat():
             "model": model
         })
     
-    except requests.exceptions.Timeout:
-        print("❌ Ollama request timeout")
-        return jsonify({
-            "error": "Request timeout",
-            "details": "Ollama took too long to respond"
-        }), 504
-    
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Ollama connection error: {str(e)}")
-        return jsonify({
-            "error": "Failed to connect to Ollama",
-            "details": str(e)
-        }), 500
-    
     except Exception as e:
         print(f"❌ Chat error: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+# ============================================
+# ✨ NEW: STREAMING CHAT ENDPOINT
+# ============================================
+
+@app.route('/chat-stream', methods=['POST'])
+def chat_stream():
+    """
+    🔥 STREAMING chat dengan Ollama - Real-time token by token
+    
+    Request Body:
+    {
+        "query": "Pertanyaan user",
+        "context": "Context dari RAG (optional)",
+        "conversation_history": [...],  // optional
+        "model": "llama3.2:3b"  // optional
+    }
+    
+    Response: Server-Sent Events (SSE)
+    data: {"token": "H"}
+    data: {"token": "a"}
+    data: {"token": "l"}
+    data: {"token": "o"}
+    data: {"done": true}
+    """
+    
+    def generate():
+        try:
+            data = request.get_json()
+            
+            if not data or 'query' not in data:
+                yield f"data: {json.dumps({'error': 'Query is required'})}\n\n"
+                return
+            
+            query = data['query']
+            context = data.get('context', '')
+            conversation_history = data.get('conversation_history', [])
+            model = data.get('model', CHAT_MODEL)
+            
+            # Build prompt
+            prompt = build_rag_prompt(query, context, conversation_history)
+            
+            print("=" * 60)
+            print("🌊 STREAMING CHAT REQUEST")
+            print("=" * 60)
+            print(f"Query: {query}")
+            print(f"Has Context: {len(context) > 0}")
+            print(f"Has History: {len(conversation_history) > 0}")
+            print("=" * 60)
+            
+            # ✅ Call Ollama dengan stream=True
+            response = requests.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": True,  # 🔥 Enable streaming
+                    "options": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "num_predict": 512,
+                    }
+                },
+                stream=True,  # 🔥 Important: stream response
+                timeout=300
+            )
+            
+            if response.status_code != 200:
+                error_msg = f"Ollama API error: {response.status_code}"
+                print(f"❌ {error_msg}")
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                return
+            
+            # ✅ Stream setiap token dari Ollama
+            full_response = ""
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        chunk = json.loads(line)
+                        
+                        # Ollama mengirim response per token
+                        if 'response' in chunk:
+                            token = chunk['response']
+                            full_response += token
+                            
+                            # 🔥 Kirim token langsung ke client
+                            yield f"data: {json.dumps({'token': token})}\n\n"
+                        
+                        # Check jika streaming selesai
+                        if chunk.get('done', False):
+                            print(f"✅ STREAMING COMPLETED")
+                            print(f"Total Length: {len(full_response)} chars")
+                            print("=" * 60)
+                            print()
+                            
+                            # Kirim signal selesai
+                            yield f"data: {json.dumps({'done': True})}\n\n"
+                            break
+                    
+                    except json.JSONDecodeError:
+                        # Skip invalid JSON
+                        continue
+        
+        except requests.exceptions.Timeout:
+            print("❌ Ollama request timeout")
+            yield f"data: {json.dumps({'error': 'Request timeout'})}\n\n"
+        
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Ollama connection error: {str(e)}")
+            yield f"data: {json.dumps({'error': f'Connection error: {str(e)}'})}\n\n"
+        
+        except Exception as e:
+            print(f"❌ Streaming error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    # ✅ Return streaming response dengan SSE
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',  # Disable nginx buffering
+            'Connection': 'keep-alive'
+        }
+    )
 
 
 @app.route('/health', methods=['GET'])
 def health():
-    """
-    Health check endpoint
-    
-    Response:
-    {
-        "status": "online",
-        "ollama_status": "online",
-        "available_models": ["llama3.2:3b", "nomic-embed-text"]
-    }
-    """
+    """Health check endpoint"""
     try:
-        # Check Ollama connection
         response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
         
         if response.status_code == 200:
@@ -271,24 +313,11 @@ def health():
 # ============================================
 
 def build_rag_prompt(query: str, context: str, conversation_history: list = None) -> str:
-    """
-    Build prompt untuk RAG chatbot dengan conversation history
+    """Build prompt untuk RAG chatbot dengan conversation history"""
     
-    Args:
-        query: Pertanyaan user saat ini
-        context: Context dari RAG similarity search
-        conversation_history: List of previous messages (optional)
-    
-    Returns:
-        Complete prompt string untuk Ollama
-    """
-    
-    # ✅ Build conversation history section
     history_text = ""
     if conversation_history and len(conversation_history) > 0:
-        history_text = "\n\n=== RIWAYAT PERCAKAPAN (untuk memahami konteks) ===\n"
-        
-        # Ambil maksimal 10 messages terakhir (5 pairs) agar prompt tidak terlalu panjang
+        history_text = "\n\n=== RIWAYAT PERCAKAPAN ===\n"
         recent_history = conversation_history[-10:] if len(conversation_history) > 10 else conversation_history
         
         for msg in recent_history:
@@ -302,29 +331,23 @@ def build_rag_prompt(query: str, context: str, conversation_history: list = None
         
         history_text += "\n" + "=" * 60 + "\n"
     
-    # ✅ Build complete prompt
-    prompt = f"""Anda adalah asisten AI yang membantu menjawab pertanyaan tentang data SPK (Surat Perintah Kerja) dan jaringan telekomunikasi.
+    prompt = f"""Anda adalah asisten AI yang membantu menjawab pertanyaan tentang data SPK dan jaringan telekomunikasi.
 
-INSTRUKSI PENTING:
-1. Jawab pertanyaan HANYA berdasarkan CONTEXT yang diberikan di bawah
-2. PERHATIKAN riwayat percakapan untuk memahami konteks dan referensi seperti "nya", "itu", "tersebut", "dia", "ini"
-3. Jika user bertanya dengan kata ganti (nya, itu, dll), rujuk ke entitas yang dibahas di riwayat percakapan sebelumnya
-4. Jika informasi tidak ada di context atau riwayat, katakan "Informasi tidak tersedia dalam database"
-5. Jawab dalam Bahasa Indonesia yang natural, jelas, dan to-the-point
-6. Jika ada data teknis (nomor jaringan/nojar, nomor SPK, nama pelanggan, POP, vendor, teknisi, lokasi), sebutkan dengan jelas dan spesifik
-7. Berikan jawaban yang langsung menjawab pertanyaan, tidak perlu penjelasan panjang lebar
-8. Format jawaban dengan rapi, gunakan line break jika diperlukan untuk readability
-9. JANGAN membuat asumsi atau menambahkan informasi yang tidak ada di context
+INSTRUKSI:
+1. Jawab berdasarkan CONTEXT yang diberikan
+2. Perhatikan riwayat percakapan untuk konteks
+3. Jawab dalam Bahasa Indonesia yang natural
+4. Sebutkan data teknis dengan jelas (nojar, SPK, pelanggan, POP, vendor, teknisi)
+5. Format jawaban dengan rapi
 {history_text}
 
-=== CONTEXT DATA (Sumber informasi utama) ===
+=== CONTEXT DATA ===
 {context}
 {"=" * 60}
 
-PERTANYAAN USER SAAT INI:
-{query}
+PERTANYAAN: {query}
 
-JAWABAN (dalam Bahasa Indonesia, berdasarkan context dan riwayat percakapan):"""
+JAWABAN:"""
     
     return prompt
 
@@ -339,21 +362,19 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"📍 Server URL: http://localhost:5000")
     print(f"🤖 Ollama URL: {OLLAMA_BASE_URL}")
-    print(f"📊 Embedding Model: {EMBEDDING_MODEL}")
-    print(f"💬 Chat Model: {CHAT_MODEL}")
     print("=" * 60)
     print("\n📋 Available Endpoints:")
-    print("  POST /process-pdf          - Process PDF document")
-    print("  POST /generate-embedding   - Generate text embedding")
-    print("  POST /chat                 - Chat with RAG context + conversation memory")
+    print("  POST /process-pdf          - Process PDF")
+    print("  POST /generate-embedding   - Generate embedding")
+    print("  POST /chat                 - Chat (NON-streaming)")
+    print("  POST /chat-stream          - 🔥 Chat STREAMING (NEW)")
     print("  GET  /health              - Health check")
     print("=" * 60)
-    print("\n✨ NEW FEATURES:")
-    print("  ✅ Conversation memory support")
-    print("  ✅ Context-aware responses")
-    print("  ✅ Enhanced prompt engineering")
-    print("  ✅ Better error handling")
+    print("\n✨ STREAMING FEATURES:")
+    print("  🌊 Real-time token streaming")
+    print("  ⚡ No waiting for complete response")
+    print("  🎯 Server-Sent Events (SSE)")
     print("=" * 60)
     print()
     
-    app.run(port=5000, debug=True)
+    app.run(port=5000, debug=True, threaded=True)
