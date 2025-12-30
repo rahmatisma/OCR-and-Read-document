@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
+from validate_first_page import validate_first_page
 import tempfile
 import uuid
 import requests
 import json
+import os
 from main import pengecekan_file
 
 app = Flask(__name__)
@@ -15,26 +17,64 @@ EMBEDDING_MODEL = "nomic-embed-text"
 CHAT_MODEL = "llama3.2:3b"
 
 # ============================================
-# ENDPOINT EXISTING (PDF Processing)
+# ENDPOINT: PROCESS PDF (UPDATED)
 # ============================================
 @app.route('/process-pdf', methods=['POST'])
 def process_pdf():
-    """Endpoint existing untuk process PDF"""
+    """
+    Endpoint untuk process PDF dengan Laravel storage path
+    
+    Form Data:
+        - file: PDF file (required)
+        - laravel_storage_path: Path ke storage/app/public Laravel (optional)
+    
+    Response:
+        {
+            "message": "processed ok",
+            "filename": "uuid.json",
+            "data": {
+                "dokumentasi": [...],
+                "parsed": {...}
+            }
+        }
+    """
     file = request.files.get("file")
+    laravel_storage_path = request.form.get("laravel_storage_path")
+    
     if not file:
         return jsonify({"error": "File not provided"}), 400
 
     try:
+        # Simpan file temporary
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             file.save(tmp.name)
             pdf_path = tmp.name
 
-        result = pengecekan_file(pdf_path)
+        print(f"\n{'='*60}")
+        print(f"📄 Processing PDF: {file.filename}")
+        if laravel_storage_path:
+            print(f"📁 Laravel Storage Path: {laravel_storage_path}")
+            
+            # Validasi path exists
+            if not os.path.exists(laravel_storage_path):
+                print(f"⚠️  WARNING: Laravel storage path tidak ditemukan!")
+                print(f"   Path: {laravel_storage_path}")
+                print(f"   Akan menggunakan folder 'output' default")
+                laravel_storage_path = None
+        print(f"{'='*60}\n")
+
+        # Panggil pengecekan_file dengan laravel_storage_path
+        result = pengecekan_file(pdf_path, laravel_storage_path=laravel_storage_path)
 
         if not isinstance(result, dict):
             return jsonify({"error": "pengecekan_file must return JSON(dict)"}), 500
 
         json_filename = f"{uuid.uuid4()}.json"
+
+        print(f"\n{'='*60}")
+        print(f"✅ Processing completed!")
+        print(f"📊 Total dokumentasi: {len(result.get('dokumentasi', []))}")
+        print(f"{'='*60}\n")
 
         return jsonify({
             "message": "processed ok",
@@ -43,11 +83,112 @@ def process_pdf():
         })
 
     except Exception as e:
+        print(f"\n{'='*60}")
+        print(f"❌ Error processing PDF: {str(e)}")
+        print(f"{'='*60}\n")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+    
+    finally:
+        # Cleanup temporary file
+        try:
+            if 'pdf_path' in locals():
+                os.unlink(pdf_path)
+                print(f"🗑️  Temporary PDF deleted")
+        except:
+            pass
 
 
 # ============================================
-# RAG ENDPOINTS
+# ENDPOINT: VALIDATE FIRST PAGE
+# ============================================
+@app.route('/validate-first-page', methods=['POST'])
+def validate_first_page_endpoint():
+    """
+    🔍 Endpoint untuk validasi cepat halaman pertama PDF.
+    Digunakan sebelum full processing untuk deteksi jenis dokumen.
+    
+    Request:
+        - file: PDF file (multipart/form-data)
+        - expected_category: 'spk' atau 'checklist' (optional)
+    
+    Response:
+        {
+            "success": true/false,
+            "document_type": "spk_survey" / "checklist_wireless" / "unknown",
+            "confidence": "high" / "medium" / "low",
+            "message": "...",
+            "is_valid_for_category": true/false
+        }
+    """
+    file = request.files.get("file")
+    expected_category = request.form.get("expected_category")
+    
+    if not file:
+        return jsonify({"error": "File not provided"}), 400
+
+    try:
+        # Simpan file temporary
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            file.save(tmp.name)
+            pdf_path = tmp.name
+
+        print(f"[INFO] 🔍 Validating first page: {file.filename}")
+        if expected_category:
+            print(f"[INFO] Expected category: {expected_category}")
+
+        # Jalankan validasi
+        result = validate_first_page(pdf_path)
+
+        # Jika expected_category diberikan, cek kesesuaian
+        if expected_category:
+            document_type = result.get('document_type', 'unknown')
+            
+            spk_types = ['spk_survey', 'spk_instalasi', 'spk_dismantle', 'spk_aktivasi']
+            checklist_types = ['checklist_wireline', 'checklist_wireless']
+            
+            if expected_category == 'spk':
+                is_valid = document_type in spk_types
+            elif expected_category == 'checklist':
+                is_valid = document_type in checklist_types
+            else:
+                is_valid = False
+            
+            result['is_valid_for_category'] = is_valid
+            
+            if not is_valid and result['success']:
+                if expected_category == 'spk' and document_type in checklist_types:
+                    result['message'] = f"Dokumen ini adalah Form Checklist ({document_type}), bukan SPK!"
+                elif expected_category == 'checklist' and document_type in spk_types:
+                    result['message'] = f"Dokumen ini adalah SPK ({document_type}), bukan Form Checklist!"
+
+        print(f"[INFO] ✅ Validation result: {result}")
+
+        return jsonify(result), 200 if result['success'] else 400
+
+    except Exception as e:
+        print(f"[ERROR] Validation failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "message": "Terjadi kesalahan saat validasi dokumen"
+        }), 500
+
+    finally:
+        # Cleanup temporary file
+        try:
+            if 'pdf_path' in locals():
+                os.unlink(pdf_path)
+        except:
+            pass
+
+
+# ============================================
+# RAG ENDPOINTS (unchanged)
 # ============================================
 
 @app.route('/generate-embedding', methods=['POST'])
@@ -152,30 +293,9 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
-# ============================================
-# ✨ NEW: STREAMING CHAT ENDPOINT
-# ============================================
-
 @app.route('/chat-stream', methods=['POST'])
 def chat_stream():
-    """
-    🔥 STREAMING chat dengan Ollama - Real-time token by token
-    
-    Request Body:
-    {
-        "query": "Pertanyaan user",
-        "context": "Context dari RAG (optional)",
-        "conversation_history": [...],  // optional
-        "model": "llama3.2:3b"  // optional
-    }
-    
-    Response: Server-Sent Events (SSE)
-    data: {"token": "H"}
-    data: {"token": "a"}
-    data: {"token": "l"}
-    data: {"token": "o"}
-    data: {"done": true}
-    """
+    """🔥 STREAMING chat dengan Ollama - Real-time token by token"""
     
     def generate():
         try:
@@ -190,7 +310,6 @@ def chat_stream():
             conversation_history = data.get('conversation_history', [])
             model = data.get('model', CHAT_MODEL)
             
-            # Build prompt
             prompt = build_rag_prompt(query, context, conversation_history)
             
             print("=" * 60)
@@ -198,23 +317,21 @@ def chat_stream():
             print("=" * 60)
             print(f"Query: {query}")
             print(f"Has Context: {len(context) > 0}")
-            print(f"Has History: {len(conversation_history) > 0}")
             print("=" * 60)
             
-            # ✅ Call Ollama dengan stream=True
             response = requests.post(
                 f"{OLLAMA_BASE_URL}/api/generate",
                 json={
                     "model": model,
                     "prompt": prompt,
-                    "stream": True,  # 🔥 Enable streaming
+                    "stream": True,
                     "options": {
                         "temperature": 0.7,
                         "top_p": 0.9,
                         "num_predict": 512,
                     }
                 },
-                stream=True,  # 🔥 Important: stream response
+                stream=True,
                 timeout=300
             )
             
@@ -224,57 +341,37 @@ def chat_stream():
                 yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 return
             
-            # ✅ Stream setiap token dari Ollama
             full_response = ""
             for line in response.iter_lines():
                 if line:
                     try:
                         chunk = json.loads(line)
                         
-                        # Ollama mengirim response per token
                         if 'response' in chunk:
                             token = chunk['response']
                             full_response += token
-                            
-                            # 🔥 Kirim token langsung ke client
                             yield f"data: {json.dumps({'token': token})}\n\n"
                         
-                        # Check jika streaming selesai
                         if chunk.get('done', False):
                             print(f"✅ STREAMING COMPLETED")
                             print(f"Total Length: {len(full_response)} chars")
                             print("=" * 60)
-                            print()
-                            
-                            # Kirim signal selesai
                             yield f"data: {json.dumps({'done': True})}\n\n"
                             break
                     
                     except json.JSONDecodeError:
-                        # Skip invalid JSON
                         continue
-        
-        except requests.exceptions.Timeout:
-            print("❌ Ollama request timeout")
-            yield f"data: {json.dumps({'error': 'Request timeout'})}\n\n"
-        
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Ollama connection error: {str(e)}")
-            yield f"data: {json.dumps({'error': f'Connection error: {str(e)}'})}\n\n"
         
         except Exception as e:
             print(f"❌ Streaming error: {str(e)}")
-            import traceback
-            traceback.print_exc()
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
     
-    # ✅ Return streaming response dengan SSE
     return Response(
         stream_with_context(generate()),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',  # Disable nginx buffering
+            'X-Accel-Buffering': 'no',
             'Connection': 'keep-alive'
         }
     )
@@ -307,10 +404,6 @@ def health():
         "chat_model": CHAT_MODEL
     })
 
-
-# ============================================
-# HELPER FUNCTIONS
-# ============================================
 
 def build_rag_prompt(query: str, context: str, conversation_history: list = None) -> str:
     """Build prompt untuk RAG chatbot dengan conversation history"""
@@ -352,10 +445,6 @@ JAWABAN:"""
     return prompt
 
 
-# ============================================
-# RUN APP
-# ============================================
-
 if __name__ == "__main__":
     print("=" * 60)
     print("🚀 Flask API Server Starting...")
@@ -364,16 +453,17 @@ if __name__ == "__main__":
     print(f"🤖 Ollama URL: {OLLAMA_BASE_URL}")
     print("=" * 60)
     print("\n📋 Available Endpoints:")
-    print("  POST /process-pdf          - Process PDF")
+    print("  POST /process-pdf          - Process PDF (✨ UPDATED)")
+    print("  POST /validate-first-page  - Validate PDF (QUICK)")
     print("  POST /generate-embedding   - Generate embedding")
     print("  POST /chat                 - Chat (NON-streaming)")
-    print("  POST /chat-stream          - 🔥 Chat STREAMING (NEW)")
+    print("  POST /chat-stream          - Chat STREAMING")
     print("  GET  /health              - Health check")
     print("=" * 60)
-    print("\n✨ STREAMING FEATURES:")
-    print("  🌊 Real-time token streaming")
-    print("  ⚡ No waiting for complete response")
-    print("  🎯 Server-Sent Events (SSE)")
+    print("\n✨ NEW FEATURES:")
+    print("  📁 Support Laravel storage path")
+    print("  🗂️  Organized folder structure by document type")
+    print("  🔄 Automatic path conversion to relative")
     print("=" * 60)
     print()
     
