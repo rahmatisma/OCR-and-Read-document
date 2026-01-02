@@ -444,6 +444,90 @@ JAWABAN:"""
     
     return prompt
 
+@app.route('/evaluate-pdf', methods=['POST'])
+def evaluate_pdf():
+    """
+    Endpoint untuk evaluasi PDF dengan ground truth
+    
+    Form Data:
+        - file: PDF file
+        - ground_truth_name: nama file ground truth (tanpa .json)
+    
+    Response:
+        {
+            "processing_result": {...},
+            "evaluation": {
+                "accuracy": 85.5,
+                "total_fields": 8,
+                "correct": 7,
+                "incorrect": 1,
+                "details": {...}
+            }
+        }
+    """
+    file = request.files.get("file")
+    gt_name = request.form.get("ground_truth_name")
+    
+    if not file:
+        return jsonify({"error": "File not provided"}), 400
+    
+    if not gt_name:
+        return jsonify({"error": "Ground truth name not provided"}), 400
+
+    try:
+        # Simpan file temporary
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            file.save(tmp.name)
+            pdf_path = tmp.name
+
+        print(f"\n{'='*60}")
+        print(f"🧪 EVALUATION MODE")
+        print(f"📄 PDF: {file.filename}")
+        print(f"📋 Ground Truth: {gt_name}")
+        print(f"{'='*60}\n")
+
+        # Process PDF
+        result = pengecekan_file(pdf_path)
+        
+        # Load ground truth
+        from main import load_ground_truth, calculate_field_accuracy
+        
+        ground_truth = load_ground_truth(gt_name)
+        
+        if not ground_truth:
+            return jsonify({
+                "error": f"Ground truth file '{gt_name}_ground_truth.json' not found"
+            }), 404
+        
+        # Evaluate
+        evaluation = calculate_field_accuracy(ground_truth, result)
+        
+        print(f"\n{'='*60}")
+        print(f"📊 EVALUATION RESULTS")
+        print(f"{'='*60}")
+        print(f"✅ Correct: {evaluation['correct']}/{evaluation['total_fields']}")
+        print(f"📈 Accuracy: {evaluation['accuracy']}%")
+        print(f"{'='*60}\n")
+
+        return jsonify({
+            "message": "Evaluation completed",
+            "processing_result": result,
+            "evaluation": evaluation
+        })
+
+    except Exception as e:
+        print(f"\n❌ Evaluation Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    
+    finally:
+        try:
+            if 'pdf_path' in locals():
+                os.unlink(pdf_path)
+        except:
+            pass
+
 
 if __name__ == "__main__":
     print("=" * 60)

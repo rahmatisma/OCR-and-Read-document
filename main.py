@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from readers.pdf_reader import read_pdf
 from readers.ocr.text_reader import run_ocr
+from difflib import SequenceMatcher
 
 OUTPUT_DIR = "output"  # Default untuk testing lokal
 LARAVEL_STORAGE_PATH = None  # Akan diset dari Flask
@@ -231,6 +232,72 @@ def pengecekan_file(file_path: str, laravel_storage_path: str = None):
         print(f"{'='*60}\n")
 
     return result
+
+def load_ground_truth(doc_name):
+    """Load ground truth dari file JSON"""
+    gt_path = os.path.join("evaluation", "ground_truth", f"{doc_name}_ground_truth.json")
+    
+    if not os.path.exists(gt_path):
+        return None
+    
+    with open(gt_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def calculate_field_accuracy(ground_truth, parsed_result):
+    """
+    Hitung akurasi per field
+    
+    Returns:
+        {
+            "total_fields": 8,
+            "correct": 6,
+            "incorrect": 2,
+            "accuracy": 75.0,
+            "details": {...}
+        }
+    """
+    if not ground_truth:
+        return {"error": "Ground truth not found"}
+    
+    gt_fields = ground_truth.get('fields', {})
+    parsed_fields = parsed_result.get('parsed', {})
+    
+    total = len(gt_fields)
+    correct = 0
+    details = {}
+    
+    for field_name, gt_value in gt_fields.items():
+        parsed_value = parsed_fields.get(field_name, "")
+        
+        # Normalisasi string untuk perbandingan
+        gt_str = str(gt_value).strip().lower()
+        parsed_str = str(parsed_value).strip().lower()
+        
+        # Hitung similarity ratio
+        similarity = SequenceMatcher(None, gt_str, parsed_str).ratio()
+        
+        is_correct = similarity >= 0.9  # 90% similarity dianggap benar
+        
+        if is_correct:
+            correct += 1
+        
+        details[field_name] = {
+            "ground_truth": gt_value,
+            "parsed": parsed_value,
+            "correct": is_correct,
+            "similarity": round(similarity * 100, 2)
+        }
+    
+    accuracy = (correct / total * 100) if total > 0 else 0
+    
+    return {
+        "total_fields": total,
+        "correct": correct,
+        "incorrect": total - correct,
+        "accuracy": round(accuracy, 2),
+        "details": details
+    }
 
 
 if __name__ == "__main__":
