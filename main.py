@@ -16,6 +16,22 @@ DOCUMENT_TYPE_MAPPING = {
     'spk_aktivasi': 'spk/aktivasi',
     'checklist_wireline': 'checklist/wireline',
     'checklist_wireless': 'checklist/wireless',
+    
+    'form_pm_1phase_ups': 'form_pm/1phase_ups',
+    'form_pm_3phase_ups': 'form_pm/3phase_ups',
+    'form_pm_ac': 'form_pm/ac',
+    'form_pm_permohonan_tindak_lanjut': 'form_pm/permohonan_tindak_lanjut',
+    'form_pm_tindak_lanjut': 'form_pm/tindak_lanjut',
+    'form_pm_genset': 'form_pm/genset',
+    'form_pm_jadwal_sentral': 'form_pm/jadwal_sentral',
+    'form_pm_inverter': 'form_pm/inverter',
+    'form_pm_ruang_shelter': 'form_pm/ruang_shelter',
+    'form_pm_rectifier': 'form_pm/rectifier',
+    'form_pm_petir_grounding': 'form_pm/petir_grounding',
+    'form_pm_instalasi_kabel': 'form_pm/instalasi_kabel',
+    'form_pm_battery': 'form_pm/battery',
+    'form_pm_dokumentasi_perangkat': 'form_pm/dokumentasi_perangkat',
+    
     'unknown': 'unknown'
 }
 
@@ -314,6 +330,9 @@ if __name__ == "__main__":
             "1": "input/pdf/form checklist maintenance remote wireless.pdf",
             "2": "input/pdf/form chcklisr wireline.pdf",
             "3": "input/pdf/Flasma - WIRELINE.pdf",
+            "4": "input/pdf/FORM PM POP GRAND MALL BEKASI-5.pdf",
+            "5": "input/pdf/Formulir Preventive Maintenance 1 Phase UPS.pdf"
+            
         }
         
         file_path = file_map.get(dokument)

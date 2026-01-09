@@ -1,22 +1,6 @@
-# dispatcher.py
+# dispatcher.py - FIXED VERSION
 """
-✅ FILE INI SUDAH BAGUS - TIDAK PERLU DIUBAH!
-
-Yang penting untuk validasi:
-1. Function detect_spk_type() sudah return document_type yang tepat
-2. Function dispatch_parser() sudah include "document_type" di result
-
-Struktur return dari dispatch_parser():
-{
-    "document_type": "spk_survey" | "spk_instalasi" | "spk_dismantle" | 
-                     "spk_aktivasi" | "checklist_wireline" | 
-                     "checklist_wireless" | "unknown",
-    "jenis_spk": "survey",
-    "data": { ... parsed data ... },
-    "metadata": { ... }
-}
-
-Laravel akan membaca result['parsed']['document_type'] untuk validasi.
+✅ FIXED: Detection logic sekarang support OCR data untuk PDF scan
 """
 
 from parsers.spk_survey_parser import parse_spk_survey
@@ -33,6 +17,7 @@ def detect_spk_type(all_text: str) -> str:
     
     Args:
         all_text: Teks lengkap dari PDF
+        ocr_data: OCR data (untuk PDF scan)
         
     Returns:
         String jenis SPK: "spk_survey" | "spk_instalasi" | "spk_dismantle" | 
@@ -114,9 +99,8 @@ def dispatch_parser(all_text: str, page_texts: list, ocr_data: list = None) -> d
                 print(f"[WARNING] Parser {parser_func.__name__} belum support ocr_data")
                 parsed_data = parser_func(all_text, page_texts)
             
-            # ✅ STRUKTUR RETURN YANG BENAR
             result = {
-                "document_type": spk_type,  # ← Laravel baca ini!
+                "document_type": spk_type,
                 "jenis_spk": spk_type.replace("spk_", "").replace("checklist_", ""),
                 "data": parsed_data,
                 "metadata": {
@@ -143,7 +127,6 @@ def dispatch_parser(all_text: str, page_texts: list, ocr_data: list = None) -> d
                 }
             }
     else:
-        # Jenis SPK tidak dikenali
         return {
             "document_type": "unknown",
             "jenis_spk": "unknown",
