@@ -125,13 +125,13 @@ def validate_sql_security(sql: str) -> dict:
     is_valid = len(errors) == 0
     
     if is_valid:
-        print("✅ SQL validation PASSED")
+        print(" SQL validation PASSED")
         if warnings:
             print(f"⚠️  {len(warnings)} warning(s):")
             for w in warnings:
                 print(f"   - {w}")
     else:
-        print(f"❌ SQL validation FAILED with {len(errors)} error(s):")
+        print(f" SQL validation FAILED with {len(errors)} error(s):")
         for e in errors:
             print(f"   - {e}")
     
@@ -209,10 +209,10 @@ if __name__ == "__main__":
         actual_pass = result['valid']
         
         if actual_pass == test['should_pass']:
-            print("✅ TEST PASSED")
+            print(" TEST PASSED")
             passed += 1
         else:
-            print("❌ TEST FAILED")
+            print(" TEST FAILED")
             print(f"   Expected: {test['should_pass']}, Got: {actual_pass}")
             if result['errors']:
                 print(f"   Errors: {result['errors']}")

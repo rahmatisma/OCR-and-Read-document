@@ -151,8 +151,8 @@ def find_label_from_ocr(ocr_data, page_number, label, exclude_keywords=None):
     🆕 Cari label menggunakan OCR data (untuk PDF scan).
     
     Args:
-        ocr_data: List of OCR items dengan format:
-                    [{'text': str, 'bbox': [...], 'page_number': int, ...}, ...]
+        ocr_data: List of pages, each containing list of OCR items
+                  Format: [[{...}, {...}], [{...}, {...}]]  ← Nested list!
         page_number: Nomor halaman yang dicari (1-indexed)
         label: Label text yang dicari
         exclude_keywords: Keywords untuk exclude
@@ -166,8 +166,23 @@ def find_label_from_ocr(ocr_data, page_number, label, exclude_keywords=None):
     if exclude_keywords is None:
         exclude_keywords = []
     
-    # Filter OCR data untuk halaman ini
-    page_ocr = [item for item in ocr_data if item.get('page_number') == page_number]
+    # 🔧 FIX: Handle nested list structure
+    # ocr_data format: [[page1_items], [page2_items], ...]
+    # Each page is an array, so we need to get page by index
+    
+    page_index = page_number - 1  # Convert to 0-indexed
+    
+    if page_index < 0 or page_index >= len(ocr_data):
+        print(f"   [INFO] Page {page_number} out of range (total: {len(ocr_data)})")
+        return None
+    
+    # Get OCR items for this page
+    page_ocr = ocr_data[page_index]
+    
+    #  Handle case where page_ocr might not be a list
+    if not isinstance(page_ocr, list):
+        print(f"   [WARNING] OCR data untuk halaman {page_number} bukan list: {type(page_ocr)}")
+        return None
     
     if not page_ocr:
         print(f"   [INFO] Tidak ada OCR data untuk halaman {page_number}")
@@ -179,6 +194,11 @@ def find_label_from_ocr(ocr_data, page_number, label, exclude_keywords=None):
     if page_ocr:
         print(f"   [DEBUG] Sample OCR items (first 3):")
         for i, item in enumerate(page_ocr[:3]):
+            #  Check if item is dict
+            if not isinstance(item, dict):
+                print(f"     [{i}] INVALID ITEM TYPE: {type(item)}")
+                continue
+            
             text_preview = item.get('text', '')[:30]
             bbox_preview = str(item.get('bbox', 'N/A'))[:50]
             print(f"     [{i}] text='{text_preview}...', bbox={bbox_preview}...")
@@ -256,7 +276,7 @@ def find_exact_label(page, label, exclude_keywords=None, ocr_data=None, page_num
             if is_valid_header(page, ocr_rect, label, ocr_mode=True):
                 return ocr_rect
     
-    # 🔄 FALLBACK: Coba text layer (untuk PDF native)
+    #  FALLBACK: Coba text layer (untuk PDF native)
     print(f"   [INFO] Mode: Text layer search (PDF native)")
     text_instances = page.search_for(label, quads=False)
     

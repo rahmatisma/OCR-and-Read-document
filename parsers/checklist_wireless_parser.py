@@ -31,13 +31,246 @@ class ChecklistWirelessParser(BaseParser):
         super().__init__(all_text, page_texts)
         self.ttd_results = ttd_results or {}
         self.doc_results = doc_results or {}
-        self.ocr_data = ocr_data or []
         
         self.cleaned_text = self._clean_text(all_text)
+        
+        #  FIX: Normalisasi OCR data (support both old & new format)
+        self.ocr_data = self._normalize_ocr_data(ocr_data or [])
         
         self.spatial_map = {}
         if self.ocr_data:
             self._build_spatial_map()
+    
+    def _normalize_ocr_data(self, ocr_data: list) -> list:
+        """
+        Normalize OCR data - HANDLE BOTH OLD AND NEW FORMAT
+        
+        DICT FORMAT (NEW - per-page list of dicts):
+        [
+            [  # Page 0
+                {'text': 'x', 'bbox': [...], 'position': (y,x), 'score': 0.99},
+                ...
+            ],
+            ...
+        ]
+        
+        LIST FORMAT (OLD - nested lists):
+        [[['text', (x,y), confidence], ...], ...]
+        """
+        if not ocr_data:
+            print("[OCR NORMALIZE] No OCR data provided")
+            return []
+        
+        print(f"[OCR NORMALIZE] Received {len(ocr_data)} items")
+        
+        #  FIX: Check first PAGE, then first ITEM in that page
+        first_page = ocr_data[0] if ocr_data else None
+        
+        if not first_page or not isinstance(first_page, list):
+            print(f"[OCR NORMALIZE] Invalid: first page is not a list")
+            return []
+        
+        if len(first_page) == 0:
+            print(f"[OCR NORMALIZE] Warning: first page is empty")
+            return []
+        
+        # Check first ITEM in first page
+        first_item = first_page[0]
+        
+        print(f"[OCR NORMALIZE] First page has {len(first_page)} items")
+        print(f"[OCR NORMALIZE] First item type: {type(first_item)}")
+        
+        if isinstance(first_item, dict):
+            # NEW FORMAT (already dicts) - just flatten all pages
+            print("[OCR NORMALIZE] Format: Dict (new format) - flattening pages...")
+            return self._flatten_ocr_pages(ocr_data)
+        
+        elif isinstance(first_item, list):
+            # OLD FORMAT (nested lists) - convert to dicts
+            print("[OCR NORMALIZE] Format: List (old format) - converting...")
+            return self._convert_old_ocr_format(ocr_data)
+        
+        else:
+            print(f"[OCR NORMALIZE] Unknown item type: {type(first_item)}")
+            return []
+        
+    def _flatten_ocr_pages(self, ocr_data: list) -> list:
+        """
+        Flatten per-page OCR data into single list
+        
+        Input: [[{item1}, {item2}], [{item3}, {item4}], ...]
+        Output: [{item1}, {item2}, {item3}, {item4}, ...]
+        """
+        flattened = []
+        
+        for page_idx, page in enumerate(ocr_data):
+            if not isinstance(page, list):
+                print(f"[OCR FLATTEN] Page {page_idx}: Not a list, skipping")
+                continue
+            
+            page_items = 0
+            
+            for item in page:
+                if not isinstance(item, dict):
+                    continue
+                
+                # Validate required fields
+                if 'text' not in item or not item['text']:
+                    continue
+                
+                # Ensure bbox exists (even if empty)
+                if 'bbox' not in item:
+                    item['bbox'] = []
+                
+                # Ensure position exists (compute from bbox if missing)
+                if 'position' not in item:
+                    bbox = item.get('bbox', [])
+                    if bbox and len(bbox) > 0 and len(bbox[0]) >= 2:
+                        x, y = bbox[0][0], bbox[0][1]
+                        item['position'] = (y, x)
+                    else:
+                        item['position'] = (0, 0)
+                
+                # Ensure score exists
+                if 'score' not in item:
+                    item['score'] = 1.0
+                
+                flattened.append(item)
+                page_items += 1
+            
+            print(f"[OCR FLATTEN] Page {page_idx}: Added {page_items} items")
+        
+        print(f"[OCR FLATTEN] ✓ Total flattened: {len(flattened)} items from {len(ocr_data)} pages")
+        return self._validate_ocr_data(flattened)
+
+    def _convert_old_ocr_format(self, ocr_data: list) -> list:
+        """
+        Convert OLD OCR format to NEW format
+        
+        ACTUAL PaddleOCR format (SUSPECTED):
+        [
+            [  # Page 1
+                [bbox, (text, confidence)],
+                ...
+            ],
+            ...
+        ]
+        
+        NEW format:
+        [{'text': 'x', 'bbox': [[x,y,x2,y2]], 'position': (y,x), 'score': conf}, ...]
+        """
+        converted = []
+        
+        print(f"[OCR CONVERT] Processing {len(ocr_data)} pages...")
+        
+        #  CRITICAL DEBUGGING: Check actual structure
+        if len(ocr_data) > 0:
+            first_page = ocr_data[0]
+            print(f"[OCR DEBUG] Type of first page: {type(first_page)}")
+            print(f"[OCR DEBUG] Is first page a list? {isinstance(first_page, list)}")
+            
+            if isinstance(first_page, list) and len(first_page) > 0:
+                first_item = first_page[0]
+                print(f"[OCR DEBUG] Type of first item: {type(first_item)}")
+                print(f"[OCR DEBUG] Length of first item: {len(first_item) if isinstance(first_item, (list, tuple)) else 'N/A'}")
+                
+                # Print full structure of first item
+                if isinstance(first_item, (list, tuple)):
+                    for idx, part in enumerate(first_item):
+                        print(f"[OCR DEBUG]   first_item[{idx}] type: {type(part)}, value preview: {str(part)[:100]}")
+            else:
+                print(f"[OCR DEBUG] First page is NOT a list or is empty")
+        
+        for page_idx, page in enumerate(ocr_data):
+            if not isinstance(page, list):
+                print(f"[OCR CONVERT] Page {page_idx}: Not a list, skipping")
+                continue
+            
+            page_items = 0
+            
+            for item_idx, item in enumerate(page):
+                if not isinstance(item, list) or len(item) < 2:
+                    if item_idx < 3:  # Only log first 3 items to avoid spam
+                        print(f"[OCR CONVERT] Page {page_idx}, item {item_idx}: Invalid structure (type={type(item)}, len={len(item) if isinstance(item, (list,tuple)) else 'N/A'})")
+                    continue
+                
+                try:
+                    # PaddleOCR format: [bbox, (text, confidence)]
+                    bbox = item[0]  # Should be [[x1,y1],[x2,y2],[x3,y4],[x4,y4]]
+                    text_data = item[1]  # Should be (text, confidence)
+                    
+                    # Extract text and confidence
+                    if isinstance(text_data, (list, tuple)) and len(text_data) >= 2:
+                        text = str(text_data[0])
+                        confidence = float(text_data[1])
+                    elif isinstance(text_data, str):
+                        text = text_data
+                        confidence = 1.0
+                    else:
+                        if item_idx < 3:
+                            print(f"[OCR CONVERT] Page {page_idx}, item {item_idx}: text_data has unexpected type {type(text_data)}")
+                        continue
+                    
+                    # Skip empty text
+                    if not text or len(text.strip()) == 0:
+                        continue
+                    
+                    # Extract coordinates from bbox
+                    if isinstance(bbox, list) and len(bbox) >= 4:
+                        # Ensure each corner is a list/tuple with 2 elements
+                        if all(isinstance(corner, (list, tuple)) and len(corner) >= 2 for corner in bbox[:4]):
+                            # Get top-left and bottom-right
+                            x1, y1 = float(bbox[0][0]), float(bbox[0][1])  # Top-left
+                            x2, y2 = float(bbox[2][0]), float(bbox[2][1])  # Bottom-right
+                            
+                            # Convert to NEW format bbox
+                            new_bbox = [[x1, y1, x2, y2]]
+                            
+                            converted.append({
+                                'text': text,
+                                'bbox': new_bbox,
+                                'position': (y1, x1),  # (y, x) for sorting
+                                'score': confidence
+                            })
+                            page_items += 1
+                        else:
+                            if item_idx < 3:
+                                print(f"[OCR CONVERT] Page {page_idx}, item {item_idx}: bbox corners are not valid (bbox={bbox[:2]}...)")
+                    else:
+                        if item_idx < 3:
+                            print(f"[OCR CONVERT] Page {page_idx}, item {item_idx}: Invalid bbox (type={type(bbox)}, len={len(bbox) if isinstance(bbox, list) else 'N/A'})")
+                        
+                except Exception as e:
+                    if item_idx < 3:
+                        print(f"[OCR CONVERT] Page {page_idx}, item {item_idx}: Exception - {e}")
+                    continue
+            
+            print(f"[OCR CONVERT] Page {page_idx}: Converted {page_items}/{len(page)} items")
+        
+        print(f"[OCR CONVERT] ✓ Total converted: {len(converted)} items from {len(ocr_data)} pages")
+        return self._validate_ocr_data(converted)
+
+    def _validate_ocr_data(self, ocr_data: list) -> list:
+        """Validate OCR data (DICT FORMAT ONLY)"""
+        valid_items = []
+        
+        for idx, item in enumerate(ocr_data):
+            if not isinstance(item, dict):
+                continue
+            
+            if 'text' not in item or not item['text']:
+                continue
+            
+            has_bbox = 'bbox' in item and item['bbox']
+            has_position = 'position' in item and item['position']
+            
+            if not has_bbox and not has_position:
+                continue
+            
+            valid_items.append(item)
+        
+        print(f"[OCR VALIDATE] Valid items: {len(valid_items)}/{len(ocr_data)}")
+        return valid_items
     
     def _clean_text(self, text: str) -> str:
         """Clean text dari OCR artifacts"""
@@ -47,16 +280,24 @@ class ChecklistWirelessParser(BaseParser):
         return text
     
     def _build_spatial_map(self):
-        """Build spatial map dari OCR data"""
+        """Build spatial map dari OCR data - SIMPLIFIED"""
+        if not self.ocr_data:
+            return
+        
         for idx, item in enumerate(self.ocr_data):
-            text_key = self._normalize_text(item['text'])
-            self.spatial_map[text_key] = {
-                'text': item['text'],
-                'bbox': item.get('bbox', []),
-                'position': item.get('position', (0, 0)),
-                'index': idx,
-                'score': item.get('score', 1.0)
-            }
+            # Pada titik ini, semua item sudah pasti dict (sudah difilter di __init__)
+            try:
+                text_key = self._normalize_text(item['text'])
+                self.spatial_map[text_key] = {
+                    'text': item['text'],
+                    'bbox': item.get('bbox', []),
+                    'position': item.get('position', (0, 0)),
+                    'index': idx,
+                    'score': item.get('score', 1.0)
+                }
+            except Exception as e:
+                print(f"[SPATIAL MAP] Error at index {idx}: {e}")
+                continue
     
     def _normalize_text(self, text: str) -> str:
         """Normalize text untuk matching"""
@@ -2353,10 +2594,10 @@ class ChecklistWirelessParser(BaseParser):
         Smart detection: apakah word adalah continuation dari item sebelumnya?
         
         Rules (STRICT VERSION - v2):
-        1. ✅ Jika item sebelumnya berakhir dengan kata sambung eksplisit → continuation
-        2. ✅ Jika word adalah common adjective/preposition → continuation
-        3. ❌ Jika word adalah product/brand name pattern → BUKAN continuation
-        4. ❌ Jika item sebelumnya sudah lengkap → BUKAN continuation
+        1.  Jika item sebelumnya berakhir dengan kata sambung eksplisit → continuation
+        2.  Jika word adalah common adjective/preposition → continuation
+        3.  Jika word adalah product/brand name pattern → BUKAN continuation
+        4.  Jika item sebelumnya sudah lengkap → BUKAN continuation
         
         Args:
             word: Kata yang dicek (first word dari nama barang berikutnya)

@@ -72,7 +72,7 @@ def generate_sql_with_llm(
         sql = extract_sql_from_llm_output(llm_output)
         
         if not sql:
-            print("❌ Failed to extract SQL from LLM output")
+            print(" Failed to extract SQL from LLM output")
             return {
                 'success': False,
                 'error': 'Could not extract valid SQL from LLM response'
@@ -82,13 +82,13 @@ def generate_sql_with_llm(
         validation = validate_sql_query(sql)
         
         if not validation['valid']:
-            print(f"❌ SQL validation failed: {validation['reason']}")
+            print(f" SQL validation failed: {validation['reason']}")
             return {
                 'success': False,
                 'error': f"Generated SQL is invalid: {validation['reason']}"
             }
         
-        print(f"✅ LLM Generated SQL:\n{sql}\n")
+        print(f" LLM Generated SQL:\n{sql}\n")
         print("=" * 60)
         
         return {
@@ -100,7 +100,7 @@ def generate_sql_with_llm(
         }
         
     except Exception as e:
-        print(f"❌ LLM SQL generation error: {str(e)}")
+        print(f" LLM SQL generation error: {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -117,7 +117,7 @@ def build_text_to_sql_prompt(query: str, context: dict) -> str:
     nojar = context.get('last_nojar', '')
     spk = context.get('last_spk', '')
     
-    # ✅ MINIMAL SCHEMA - Bukan full schema!
+    #  MINIMAL SCHEMA - Bukan full schema!
     schema_text = """=== DATABASE SCHEMA (MINIMAL) ===
 
 📊 TABLE: spk (Surat Perintah Kerja)
@@ -150,7 +150,7 @@ def build_text_to_sql_prompt(query: str, context: dict) -> str:
    spk.no_jaringan → jaringan.no_jaringan (MANY-to-ONE)
    spk_execution_info.id_spk → spk.id_spk (ONE-to-ONE, use LEFT JOIN)
 
-📝 EXAMPLE QUERIES:
+ EXAMPLE QUERIES:
    COUNT: SELECT COUNT(*) as jumlah_spk FROM spk WHERE no_jaringan = 'X' AND is_deleted = 0
    LIST: SELECT s.no_spk, s.jenis_spk, s.tanggal_spk FROM spk s WHERE no_jaringan = 'X' AND is_deleted = 0
    JOIN: SELECT s.*, j.nama_pelanggan, sei.teknisi FROM spk s JOIN jaringan j ON s.no_jaringan = j.no_jaringan LEFT JOIN spk_execution_info sei ON s.id_spk = sei.id_spk WHERE s.no_spk = 'X'
@@ -163,7 +163,7 @@ def build_text_to_sql_prompt(query: str, context: dict) -> str:
     if spk:
         context_info += f"\n- SPK: {spk}"
     
-    # ✅ MINIMAL PROMPT - No examples, no verbose
+    #  MINIMAL PROMPT - No examples, no verbose
     prompt = f"""{schema_text}
 
 === CONTEXT ==={context_info if context_info else "(No context)"}

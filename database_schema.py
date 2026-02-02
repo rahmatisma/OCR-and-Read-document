@@ -241,15 +241,15 @@ LIMIT 10
 # ============================================
 
 SQL_RULES = [
-    "✅ SELALU tambahkan 'WHERE is_deleted = 0' atau 'WHERE is_deleted = false' untuk tabel spk dan jaringan",
-    "✅ Gunakan LEFT JOIN untuk spk_execution_info karena tidak semua SPK punya data eksekusi",
-    "✅ Gunakan alias tabel yang jelas: spk → s, jaringan → j, spk_execution_info → sei",
-    "✅ Untuk COUNT, gunakan COUNT(*) atau COUNT(DISTINCT column_name)",
-    "✅ Untuk search nama pelanggan, gunakan LIKE '%keyword%' (case-insensitive)",
-    "✅ Selalu ORDER BY tanggal_spk DESC untuk menampilkan data terbaru dulu",
-    "✅ Gunakan LIMIT jika query bisa return banyak data (default: LIMIT 100)",
-    "❌ JANGAN gunakan SELECT * di production (pilih column spesifik saja)",
-    "❌ JANGAN lupa JOIN jaringan jika butuh data pelanggan",
+    " SELALU tambahkan 'WHERE is_deleted = 0' atau 'WHERE is_deleted = false' untuk tabel spk dan jaringan",
+    " Gunakan LEFT JOIN untuk spk_execution_info karena tidak semua SPK punya data eksekusi",
+    " Gunakan alias tabel yang jelas: spk → s, jaringan → j, spk_execution_info → sei",
+    " Untuk COUNT, gunakan COUNT(*) atau COUNT(DISTINCT column_name)",
+    " Untuk search nama pelanggan, gunakan LIKE '%keyword%' (case-insensitive)",
+    " Selalu ORDER BY tanggal_spk DESC untuk menampilkan data terbaru dulu",
+    " Gunakan LIMIT jika query bisa return banyak data (default: LIMIT 100)",
+    " JANGAN gunakan SELECT * di production (pilih column spesifik saja)",
+    " JANGAN lupa JOIN jaringan jika butuh data pelanggan",
 ]
 
 # ============================================
@@ -299,7 +299,7 @@ def get_query_examples_text() -> str:
     examples_text = "=== EXAMPLE QUERIES ===\n\n"
     
     for name, example in QUERY_EXAMPLES.items():
-        examples_text += f"📝 {name}:\n"
+        examples_text += f" {name}:\n"
         examples_text += f"   {example['description']}\n"
         examples_text += f"{example['query'].strip()}\n\n"
     

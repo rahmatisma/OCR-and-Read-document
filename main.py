@@ -40,13 +40,13 @@ def set_laravel_storage_path(path: str):
     """Set path Laravel storage dari Flask"""
     global LARAVEL_STORAGE_PATH
     LARAVEL_STORAGE_PATH = path
-    print(f"📁 Laravel storage path set to: {path}")
+    print(f" Laravel storage path set to: {path}")
 
 
 def get_output_base_dir():
     """Get base directory untuk output"""
     if LARAVEL_STORAGE_PATH and os.path.exists(LARAVEL_STORAGE_PATH):
-        # ✅ FIX: Return ke folder 'output' di dalam storage/app/public
+        #  FIX: Return ke folder 'output' di dalam storage/app/public
         return os.path.join(LARAVEL_STORAGE_PATH, 'output')
     return OUTPUT_DIR
 
@@ -101,7 +101,7 @@ def save_output(data, filename, subfolder=None):
     
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-    print(f"✅ JSON disimpan di: {output_path}")
+    print(f" JSON disimpan di: {output_path}")
 
 
 def convert_paths_to_relative(data, base_path: str):
@@ -154,19 +154,19 @@ def pengecekan_file(file_path: str, laravel_storage_path: str = None):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File '{file_path}' tidak ditemukan.")
     
-    print(f"🔍 DEBUG: laravel_storage_path parameter = {laravel_storage_path}")
-    print(f"🔍 DEBUG: Parameter is None? {laravel_storage_path is None}")
+    print(f" DEBUG: laravel_storage_path parameter = {laravel_storage_path}")
+    print(f" DEBUG: Parameter is None? {laravel_storage_path is None}")
 
     # Set Laravel storage path jika diberikan
     if laravel_storage_path:
         set_laravel_storage_path(laravel_storage_path)
 
-    print(f"🔍 DEBUG: LARAVEL_STORAGE_PATH global = {LARAVEL_STORAGE_PATH}")
+    print(f" DEBUG: LARAVEL_STORAGE_PATH global = {LARAVEL_STORAGE_PATH}")
     
     base_name = os.path.splitext(os.path.basename(file_path))[0]
     base_dir = get_output_base_dir()  # Ini sekarang akan return .../storage/app/public/output
     
-    print(f"🔍 DEBUG: base_dir from get_output_base_dir() = {base_dir}")
+    print(f" DEBUG: base_dir from get_output_base_dir() = {base_dir}")
 
     if file_path.lower().endswith(".pdf"):
         print(f"\n{'='*60}")
@@ -177,7 +177,7 @@ def pengecekan_file(file_path: str, laravel_storage_path: str = None):
         temp_images_folder = os.path.join(base_dir, "temp", base_name, "images")
         os.makedirs(temp_images_folder, exist_ok=True)
         
-        print(f"📁 Folder temporary: {temp_images_folder}\n")
+        print(f" Folder temporary: {temp_images_folder}\n")
         
         # 2. Proses PDF dengan temp folder
         result = read_pdf(file_path, output_dir=temp_images_folder)
@@ -190,14 +190,14 @@ def pengecekan_file(file_path: str, laravel_storage_path: str = None):
         category_path = get_document_category_path(doc_type)
         folder_name = get_document_folder_name(doc_type)
         
-        # ✅ FIX: Struktur folder yang benar
+        #  FIX: Struktur folder yang benar
         # base_dir = D:/laragon/.../storage/app/public/output
         # final = D:/laragon/.../storage/app/public/output/extracted/spk/survey/survey_xxx
         final_doc_folder = os.path.join(base_dir, "extracted", category_path, folder_name)
         final_images_folder = os.path.join(final_doc_folder, "images")
         
-        print(f"📁 Folder final: {final_doc_folder}")
-        print(f"📁 Folder gambar final: {final_images_folder}\n")
+        print(f" Folder final: {final_doc_folder}")
+        print(f" Folder gambar final: {final_images_folder}\n")
         
         # 5. Pindahkan gambar dari temp ke folder final
         import shutil
@@ -213,7 +213,7 @@ def pengecekan_file(file_path: str, laravel_storage_path: str = None):
                     print(f"  ✓ Moved: {item}")
             
             shutil.rmtree(os.path.join(base_dir, "temp", base_name))
-            print(f"🗑️  Folder temporary dihapus\n")
+            print(f"  Folder temporary dihapus\n")
         
         # 6. Update path di result
         if 'dokumentasi' in result and isinstance(result['dokumentasi'], list):
@@ -223,28 +223,28 @@ def pengecekan_file(file_path: str, laravel_storage_path: str = None):
                     filename = os.path.basename(old_path)
                     new_path = os.path.join(final_images_folder, filename)
                     doc_item['patch_foto'] = new_path
-                    print(f"  📝 Updated path: {filename}")
+                    print(f"   Updated path: {filename}")
         
-        # 7. ✅ FIX: Convert path relatif dari storage/app/public (BUKAN dari output)
+        # 7.  FIX: Convert path relatif dari storage/app/public (BUKAN dari output)
         if laravel_storage_path:
-            print(f"\n🔄 Converting paths to relative from: {laravel_storage_path}")
+            print(f"\n Converting paths to relative from: {laravel_storage_path}")
             result = convert_paths_to_relative(result, laravel_storage_path)
             
             if result.get('dokumentasi') and len(result['dokumentasi']) > 0:
                 sample_path = result['dokumentasi'][0].get('patch_foto', 'N/A')
-                print(f"✅ Sample converted path: {sample_path}")
+                print(f" Sample converted path: {sample_path}")
                 # Path sekarang: output/extracted/spk/survey/survey_xxx/images/foto.jpg
             
-            print(f"✅ Paths converted\n")
+            print(f" Paths converted\n")
         
         # 8. Simpan JSON
         json_path = os.path.join(final_doc_folder, f"{folder_name}.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=4)
-        print(f"✅ JSON disimpan di: {json_path}")
+        print(f" JSON disimpan di: {json_path}")
         
         print(f"\n{'='*60}")
-        print(f"✅ Selesai! Hasil disimpan di: {final_doc_folder}")
+        print(f" Selesai! Hasil disimpan di: {final_doc_folder}")
         print(f"{'='*60}\n")
 
     return result
@@ -331,7 +331,16 @@ if __name__ == "__main__":
             "2": "input/pdf/form chcklisr wireline.pdf",
             "3": "input/pdf/Flasma - WIRELINE.pdf",
             "4": "input/pdf/FORM PM POP GRAND MALL BEKASI-5.pdf",
-            "5": "input/pdf/Formulir Preventive Maintenance 1 Phase UPS.pdf"
+            "5": "input/pdf/Formulir Preventive Maintenance 1 Phase UPS.pdf",
+            "6": "input/pdf/pdf data set/FM-LAP-D2-SOP-003-005 - Formulir Preventive Maintenance Inverter -48VDC-220VAC.pdf",
+            "7": "input/pdf/pdf data set/FM-LAP-D2-SOP-003-006 - Formulir Preventive Maintenance Ruang Shelter.pdf",
+            "8": "input/pdf/pdf data set/FM-LAP-D2-SOP-003-007 - Formulir Preventive Maintenance Rectifier.pdf",
+            "9": "input/pdf/pdf data set/FM-LAP-D2-SOP-003-008 - Formulir Preventive Maintenance Petir dan Grounding.pdf",
+            "10" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-009 - Formulir Preventive Maintenance Instalasi Kabel dan Panel Distribusi.pdf",
+            "11" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-010 - Formulir Preventive Maintenance Battery.pdf",
+            "12" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-011 - Formulir Preventive Maintenance Pole-Tower.pdf",
+            "13" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-012 - Formulir Dokumentasi dan Pendataan Perangkat.pdf",
+            "14" : "input/pdf/pdf data set/Formulir Preventive Maintenance AC.pdf"
             
         }
         
@@ -345,7 +354,7 @@ if __name__ == "__main__":
             # Testing tanpa Laravel storage path
             pengecekan_file(file_path)
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f" Error: {e}")
             import traceback
             traceback.print_exc()
         

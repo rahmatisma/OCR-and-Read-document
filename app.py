@@ -92,7 +92,7 @@ def find_similar_query(query_embedding: list, threshold: float = 0.85) -> dict:
     similarity_score, matched_item = best_match
     
     if similarity_score >= threshold:
-        print(f"🔍 Similar query found (similarity: {similarity_score:.2f})")
+        print(f" Similar query found (similarity: {similarity_score:.2f})")
         print(f"   Original: {matched_item['query'][:50]}...")
         return matched_item['classification']
     
@@ -135,7 +135,7 @@ def process_pdf():
         print(f"\n{'='*60}")
         print(f"📄 Processing PDF: {file.filename}")
         if laravel_storage_path:
-            print(f"📁 Laravel Storage Path: {laravel_storage_path}")
+            print(f" Laravel Storage Path: {laravel_storage_path}")
             
             # Validasi path exists
             if not os.path.exists(laravel_storage_path):
@@ -154,7 +154,7 @@ def process_pdf():
         json_filename = f"{uuid.uuid4()}.json"
 
         print(f"\n{'='*60}")
-        print(f"✅ Processing completed!")
+        print(f" Processing completed!")
         print(f"📊 Total dokumentasi: {len(result.get('dokumentasi', []))}")
         print(f"{'='*60}\n")
 
@@ -166,7 +166,7 @@ def process_pdf():
 
     except Exception as e:
         print(f"\n{'='*60}")
-        print(f"❌ Error processing PDF: {str(e)}")
+        print(f" Error processing PDF: {str(e)}")
         print(f"{'='*60}\n")
         import traceback
         traceback.print_exc()
@@ -177,28 +177,28 @@ def process_pdf():
         try:
             if 'pdf_path' in locals():
                 os.unlink(pdf_path)
-                print(f"🗑️  Temporary PDF deleted")
+                print(f"  Temporary PDF deleted")
         except:
             pass
 
 
 # ============================================
-# ENDPOINT: VALIDATE FIRST PAGE
+# ENDPOINT: VALIDATE FIRST PAGE (UPDATED)
 # ============================================
 @app.route('/validate-first-page', methods=['POST'])
 def validate_first_page_endpoint():
     """
-    🔍 Endpoint untuk validasi cepat halaman pertama PDF.
+     Endpoint untuk validasi cepat halaman pertama PDF.
     Digunakan sebelum full processing untuk deteksi jenis dokumen.
     
     Request:
         - file: PDF file (multipart/form-data)
-        - expected_category: 'spk' atau 'checklist' (optional)
+        - expected_category: 'spk', 'checklist', atau 'pmpop' (optional)
     
     Response:
         {
             "success": true/false,
-            "document_type": "spk_survey" / "checklist_wireless" / "unknown",
+            "document_type": "spk_survey" / "checklist_wireless" / "form_pm_pop" / "unknown",
             "confidence": "high" / "medium" / "low",
             "message": "...",
             "is_valid_for_category": true/false
@@ -216,7 +216,7 @@ def validate_first_page_endpoint():
             file.save(tmp.name)
             pdf_path = tmp.name
 
-        print(f"[INFO] 🔍 Validating first page: {file.filename}")
+        print(f"[INFO]  Validating first page: {file.filename}")
         if expected_category:
             print(f"[INFO] Expected category: {expected_category}")
 
@@ -229,23 +229,56 @@ def validate_first_page_endpoint():
             
             spk_types = ['spk_survey', 'spk_instalasi', 'spk_dismantle', 'spk_aktivasi']
             checklist_types = ['checklist_wireline', 'checklist_wireless']
+            pmpop_types = [
+                'form_pm_1phase_ups',
+                'form_pm_3phase_ups',
+                'form_pm_ac',
+                'form_pm_inverter',
+                'form_pm_ruang_shelter',
+                'form_pm_rectifier',
+                'form_pm_petir_grounding',
+                'form_pm_instalasi_kabel',
+                'form_pm_battery',
+                'form_pm_pole_tower',
+                'form_pm_dokumentasi_perangkat',
+                'form_pm_genset',
+                'form_pm_permohonan_tindak_lanjut',
+                'form_pm_tindak_lanjut',
+                'form_pm_jadwal_sentral',
+            ]
             
             if expected_category == 'spk':
                 is_valid = document_type in spk_types
             elif expected_category == 'checklist':
                 is_valid = document_type in checklist_types
+            elif expected_category == 'pmpop':
+                is_valid = document_type in pmpop_types
             else:
                 is_valid = False
             
             result['is_valid_for_category'] = is_valid
             
+            #  UPDATE ERROR MESSAGES
             if not is_valid and result['success']:
-                if expected_category == 'spk' and document_type in checklist_types:
-                    result['message'] = f"Dokumen ini adalah Form Checklist ({document_type}), bukan SPK!"
-                elif expected_category == 'checklist' and document_type in spk_types:
-                    result['message'] = f"Dokumen ini adalah SPK ({document_type}), bukan Form Checklist!"
+                if expected_category == 'spk':
+                    if document_type in checklist_types:
+                        result['message'] = f"Dokumen ini adalah Form Checklist ({document_type}), bukan SPK!"
+                    elif document_type in pmpop_types:
+                        result['message'] = f"Dokumen ini adalah Form PM POP, bukan SPK!"
+                
+                elif expected_category == 'checklist':
+                    if document_type in spk_types:
+                        result['message'] = f"Dokumen ini adalah SPK ({document_type}), bukan Form Checklist!"
+                    elif document_type in pmpop_types:
+                        result['message'] = f"Dokumen ini adalah Form PM POP, bukan Form Checklist!"
+                
+                elif expected_category == 'pmpop':  #  BARU
+                    if document_type in spk_types:
+                        result['message'] = f"Dokumen ini adalah SPK ({document_type}), bukan Form PM POP!"
+                    elif document_type in checklist_types:
+                        result['message'] = f"Dokumen ini adalah Form Checklist ({document_type}), bukan Form PM POP!"
 
-        print(f"[INFO] ✅ Validation result: {result}")
+        print(f"[INFO]  Validation result: {result}")
 
         return jsonify(result), 200 if result['success'] else 400
 
@@ -330,15 +363,15 @@ def chat():
         context = data.get('context', '')
         conversation_history = data.get('conversation_history', [])
         model = data.get('model', CHAT_MODEL)
-        mode = data.get('mode', 'strict')  # ✅ NEW: 'strict' or 'normal'
+        mode = data.get('mode', 'strict')  #  NEW: 'strict' or 'normal'
         
-        # ✅ Build prompt based on mode
+        #  Build prompt based on mode
         if mode == 'strict':
             prompt = build_strict_rag_prompt(query, context, conversation_history)
             print(f"🛡️  Using STRICT mode (anti-hallucination)")
         else:
             prompt = build_rag_prompt(query, context, conversation_history)
-            print(f"📝 Using NORMAL mode")
+            print(f" Using NORMAL mode")
         
         print("=" * 60)
         print("📨 CHAT REQUEST (NON-STREAMING)")
@@ -355,7 +388,7 @@ def chat():
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.1,  # ✅ Very low = less creative = less hallucination
+                    "temperature": 0.1,  #  Very low = less creative = less hallucination
                     "top_p": 0.9,
                     "top_k": 40,
                     "repeat_penalty": 1.2,
@@ -374,7 +407,7 @@ def chat():
         result = response.json()
         answer = result.get('response', '').strip()
         
-        print("✅ CHAT RESPONSE GENERATED")
+        print(" CHAT RESPONSE GENERATED")
         print(f"Answer Length: {len(answer)} chars")
         print("=" * 60)
         print()
@@ -386,7 +419,7 @@ def chat():
         })
     
     except Exception as e:
-        print(f"❌ Chat error: {str(e)}")
+        print(f" Chat error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -406,9 +439,9 @@ def chat_stream():
             context = data.get('context', '')
             conversation_history = data.get('conversation_history', [])
             model = data.get('model', CHAT_MODEL)
-            mode = data.get('mode', 'strict')  # ✅ NEW
+            mode = data.get('mode', 'strict')  #  NEW
             
-            # ✅ Build prompt based on mode
+            #  Build prompt based on mode
             if mode == 'strict':
                 prompt = build_strict_rag_prompt(query, context, conversation_history)
             else:
@@ -429,7 +462,7 @@ def chat_stream():
                     "prompt": prompt,
                     "stream": True,
                     "options": {
-                        "temperature": 0.1,  # ✅ Low temp
+                        "temperature": 0.1,  #  Low temp
                         "top_p": 0.9,
                         "top_k": 40,
                         "repeat_penalty": 1.2,
@@ -442,7 +475,7 @@ def chat_stream():
             
             if response.status_code != 200:
                 error_msg = f"Ollama API error: {response.status_code}"
-                print(f"❌ {error_msg}")
+                print(f" {error_msg}")
                 yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 return
             
@@ -458,7 +491,7 @@ def chat_stream():
                             yield f"data: {json.dumps({'token': token})}\n\n"
                         
                         if chunk.get('done', False):
-                            print(f"✅ STREAMING COMPLETED")
+                            print(f" STREAMING COMPLETED")
                             print(f"Total Length: {len(full_response)} chars")
                             print("=" * 60)
                             yield f"data: {json.dumps({'done': True})}\n\n"
@@ -468,7 +501,7 @@ def chat_stream():
                         continue
         
         except Exception as e:
-            print(f"❌ Streaming error: {str(e)}")
+            print(f" Streaming error: {str(e)}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
     
     return Response(
@@ -494,7 +527,7 @@ def classify_intent():
         context = data.get('context', {})
         history = data.get('conversation_history', [])
         
-        # ✅ Handle context type
+        #  Handle context type
         if isinstance(context, list):
             context = {}
         elif not isinstance(context, dict):
@@ -508,7 +541,7 @@ def classify_intent():
         
         query_lower = query.lower().strip()
         
-        # ✅ Extract entities FROM QUERY (these OVERRIDE context!)
+        #  Extract entities FROM QUERY (these OVERRIDE context!)
         import re
         
         extracted_nojar = None
@@ -518,7 +551,7 @@ def classify_intent():
         nojar_match = re.search(r'\b(\d{10})\b', query)
         if nojar_match:
             extracted_nojar = nojar_match.group(1)
-            print(f"📝 Extracted nojar from query: {extracted_nojar}")
+            print(f" Extracted nojar from query: {extracted_nojar}")
         
         # Extract SPK from query (various formats)
         spk_patterns = [
@@ -532,10 +565,10 @@ def classify_intent():
             spk_match = re.search(pattern, query, re.IGNORECASE)
             if spk_match:
                 extracted_spk = spk_match.group(1)
-                print(f"📝 Extracted SPK from query: {extracted_spk}")
+                print(f" Extracted SPK from query: {extracted_spk}")
                 break
         
-        # ✅ CRITICAL: Override context if new entity found in query
+        #  CRITICAL: Override context if new entity found in query
         if extracted_nojar:
             # New nojar in query → OVERRIDE old context
             if context.get('last_nojar') != extracted_nojar:
@@ -555,12 +588,12 @@ def classify_intent():
         has_nojar = bool(context.get('last_nojar'))
         has_spk = bool(context.get('last_spk'))
         
-        print(f"🔍 Final Context:")
+        print(f" Final Context:")
         print(f"  - nojar: {context.get('last_nojar')}")
         print(f"  - spk: {context.get('last_spk')}")
         print(f"  - has_nojar: {has_nojar}, has_spk: {has_spk}")
         
-        # ✅ Analyze conversation history
+        #  Analyze conversation history
         last_was_count = False
         last_was_about_spk = False
         
@@ -589,7 +622,7 @@ def classify_intent():
         is_continuation_word = any(query_lower.startswith(kw) for kw in ultra_short_continuation)
         
         if is_ultra_short and is_continuation_word and (has_nojar or has_spk):
-            print("✅ RULE MATCH: Ultra-short continuation → SQL")
+            print(" RULE MATCH: Ultra-short continuation → SQL")
             
             if query_lower in ['sebutkan', 'list', 'daftar', 'apa saja', 'apa saja?', 'tunjukkan', 'show']:
                 query_type = 'LIST_SPK'
@@ -616,7 +649,7 @@ def classify_intent():
         # ================================================
         if extracted_spk:
             # Query explicitly mentions SPK number
-            print("✅ RULE MATCH: Explicit SPK query → SQL")
+            print(" RULE MATCH: Explicit SPK query → SQL")
             
             # Determine query type
             if any(kw in query_lower for kw in ['vendor', 'teknisi']):
@@ -647,7 +680,7 @@ def classify_intent():
                                 'tunjukkan', 'detail', 'lihat', 'tampilkan']
             
             if any(kw in query_lower for kw in continuation_words):
-                print("✅ RULE MATCH: Continuation after count → SQL (LIST)")
+                print(" RULE MATCH: Continuation after count → SQL (LIST)")
                 return jsonify({
                     'type': 'LIST_SPK',
                     'strategy': 'SQL',
@@ -681,7 +714,7 @@ def classify_intent():
             else:
                 query_type = 'SPECIFIC_QUERY'
             
-            print(f"✅ RULE MATCH: SPK query with context → SQL ({query_type})")
+            print(f" RULE MATCH: SPK query with context → SQL ({query_type})")
             return jsonify({
                 'type': query_type,
                 'strategy': 'SQL',
@@ -701,7 +734,7 @@ def classify_intent():
         is_reference_query = any(kw in query_lower for kw in reference_keywords)
         
         if is_reference_query and (has_nojar or has_spk):
-            print("✅ RULE MATCH: Reference query → SQL")
+            print(" RULE MATCH: Reference query → SQL")
             return jsonify({
                 'type': 'SPECIFIC_QUERY',
                 'strategy': 'SQL',
@@ -724,7 +757,7 @@ def classify_intent():
         is_specific = any(kw in query_lower for kw in specific_keywords)
         
         if is_specific and (has_nojar or has_spk or extracted_nojar):
-            print("✅ RULE MATCH: Specific query → SQL")
+            print(" RULE MATCH: Specific query → SQL")
             return jsonify({
                 'type': 'SPECIFIC_QUERY',
                 'strategy': 'SQL',
@@ -746,7 +779,7 @@ def classify_intent():
         is_explanation = any(kw in query_lower for kw in explanation_keywords)
         
         if is_explanation:
-            print("✅ RULE MATCH: Explanation query → RAG")
+            print(" RULE MATCH: Explanation query → RAG")
             return jsonify({
                 'type': 'GENERAL_INFO',
                 'strategy': 'RAG',
@@ -776,7 +809,7 @@ def classify_intent():
         })
         
     except Exception as e:
-        print(f"❌ Classification error: {str(e)}")
+        print(f" Classification error: {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -877,14 +910,14 @@ def generate_sql():
         nojar_match = re.search(r'\b(\d{10})\b', query)
         if nojar_match:
             nojar = nojar_match.group(1)
-            print(f"📝 Extracted nojar: {nojar}")
+            print(f" Extracted nojar: {nojar}")
         
         spk_match = re.search(r'(\d{6}/[A-Z\-]+/\d{4})', query, re.IGNORECASE)
         if spk_match:
             spk = spk_match.group(1)
-            print(f"📝 Extracted SPK: {spk}")
+            print(f" Extracted SPK: {spk}")
         
-        print(f"🔍 Final context: nojar={nojar}, spk={spk}")
+        print(f" Final context: nojar={nojar}, spk={spk}")
         
         # ==========================================
         # 🤖 DECISION LOGIC: Pattern or LLM?
@@ -897,7 +930,7 @@ def generate_sql():
         reference_words = ['tersebut', 'itu', 'tadi', 'yang tadi']
         has_reference = any(word in query_lower for word in reference_words)
 
-        # ✅ Exception: "berapa spk" queries tetap pakai pattern meski ada "tersebut"
+        #  Exception: "berapa spk" queries tetap pakai pattern meski ada "tersebut"
         simple_count_with_ref = (
             'berapa' in query_lower and 
             'spk' in query_lower and
@@ -959,7 +992,7 @@ def generate_sql():
             
             # Pattern 1: Count SPK (SIMPLE)
             if 'berapa' in query_lower and 'spk' in query_lower and nojar:
-                print("✅ PATTERN: Count SPK")
+                print(" PATTERN: Count SPK")
                 sql_query = f"""
                     SELECT COUNT(DISTINCT s.id_spk) as jumlah_spk
                     FROM spk s
@@ -985,7 +1018,7 @@ def generate_sql():
                         jenis_filter = jenis
                         break
                 
-                print(f"✅ PATTERN: List SPK (jenis={jenis_filter or 'all'})")
+                print(f" PATTERN: List SPK (jenis={jenis_filter or 'all'})")
                 
                 if jenis_filter:
                     sql_query = f"""
@@ -1008,7 +1041,7 @@ def generate_sql():
             
             # Pattern 3: Pelanggan info (SIMPLE)
             elif 'pelanggan' in query_lower and nojar and 'apa' in query_lower:
-                print("✅ PATTERN: Pelanggan info")
+                print(" PATTERN: Pelanggan info")
                 sql_query = f"""
                     SELECT 
                         j.nama_pelanggan, 
@@ -1030,7 +1063,7 @@ def generate_sql():
                 elif 'instalasi' in query_lower:
                     jenis = 'instalasi'
                 
-                print(f"✅ PATTERN: Kapan {jenis}")
+                print(f" PATTERN: Kapan {jenis}")
                 
                 if nojar:
                     sql_query = f"""
@@ -1077,13 +1110,13 @@ def generate_sql():
             if llm_result['success']:
                 sql_query = llm_result['sql']
                 generation_method = "llm"
-                print(f"✅ LLM generated SQL successfully")
+                print(f" LLM generated SQL successfully")
             else:
-                print(f"❌ LLM generation failed: {llm_result.get('error')}")
+                print(f" LLM generation failed: {llm_result.get('error')}")
                 
                 # Emergency fallback
                 if nojar:
-                    print("🔄 Emergency fallback: default jaringan query")
+                    print(" Emergency fallback: default jaringan query")
                     sql_query = f"""
                         SELECT j.*
                         FROM jaringan j
@@ -1099,7 +1132,7 @@ def generate_sql():
                     }), 400
         
         # ==========================================
-        # ✅ RETURN RESULT
+        #  RETURN RESULT
         # ==========================================
         
         print(f"\n✅ SQL Generated ({generation_method}):")
@@ -1116,7 +1149,7 @@ def generate_sql():
         }), 200
     
     except Exception as e:
-        print(f"❌ SQL generation error: {str(e)}")
+        print(f" SQL generation error: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
@@ -1155,7 +1188,7 @@ def health():
 def build_rag_prompt(query: str, context: str, conversation_history: list = None) -> str:
     """Build prompt untuk RAG chatbot dengan FULL context awareness"""
     
-    # ✅ Build conversation history (ambil 5 terakhir)
+    #  Build conversation history (ambil 5 terakhir)
     history_text = ""
     last_discussed_entities = {
         'nojar': None,
@@ -1176,7 +1209,7 @@ def build_rag_prompt(query: str, context: str, conversation_history: list = None
             else:
                 history_text += f"\nAssistant: {content}"
                 
-                # ✅ Extract entities dari jawaban sebelumnya
+                #  Extract entities dari jawaban sebelumnya
                 import re
                 
                 # Extract nojar (10 digit)
@@ -1196,7 +1229,7 @@ def build_rag_prompt(query: str, context: str, conversation_history: list = None
         
         history_text += "\n" + "=" * 60 + "\n"
     
-    # ✅ Build entity context summary
+    #  Build entity context summary
     entity_context = ""
     if any(last_discussed_entities.values()):
         entity_context = "\n=== TOPIK YANG SEDANG DIBAHAS ===\n"
@@ -1208,7 +1241,7 @@ def build_rag_prompt(query: str, context: str, conversation_history: list = None
             entity_context += f"SPK yang sedang dibahas: {last_discussed_entities['spk']}\n"
         entity_context += "=" * 60 + "\n"
     
-    # ✅ PROMPT dengan FULL CONTEXT AWARENESS
+    #  PROMPT dengan FULL CONTEXT AWARENESS
     prompt = f"""Anda adalah asisten database SPK Management System PT. Lintasarta.
 
 ATURAN MUTLAK:
@@ -1315,11 +1348,11 @@ PERTANYAAN USER: "{query}"
 ⚠️ CRITICAL: TIDAK ADA DATA RELEVAN YANG DITEMUKAN DI DATABASE.
 
 🛡️ ATURAN WAJIB (ZERO TOLERANCE):
-1. ❌ JANGAN membuat data sendiri (no_jaringan, no_spk, nama, tanggal, angka)
-2. ❌ JANGAN menebak atau mengira-ngira
-3. ❌ JANGAN memberikan informasi umum yang tidak relevan
-4. ✅ WAJIB jawab: "Tidak ditemukan data yang sesuai dengan pertanyaan Anda"
-5. ✅ Sarankan user untuk:
+1.  JANGAN membuat data sendiri (no_jaringan, no_spk, nama, tanggal, angka)
+2.  JANGAN menebak atau mengira-ngira
+3.  JANGAN memberikan informasi umum yang tidak relevan
+4.  WAJIB jawab: "Tidak ditemukan data yang sesuai dengan pertanyaan Anda"
+5.  Sarankan user untuk:
    - Cek kembali nomor jaringan/SPK yang ditanyakan
    - Gunakan keyword yang lebih spesifik
    - Pastikan data sudah ada di sistem
@@ -1330,7 +1363,7 @@ CONTOH JAWABAN YANG BENAR:
 RESPONS ANDA (sesuai aturan di atas):"""
     
     else:
-        # ✅ HAS DATA PROMPT - Force LLM to ONLY use context
+        #  HAS DATA PROMPT - Force LLM to ONLY use context
         prompt = f"""Anda adalah asisten database SPK Management System PT. Lintasarta.
 
 {history_text}{entity_context}
@@ -1344,19 +1377,19 @@ PERTANYAAN USER: "{query}"
 🛡️ ATURAN KETAT (ZERO TOLERANCE FOR HALLUCINATION):
 
 WAJIB DILAKUKAN:
-1. ✅ HANYA jawab berdasarkan DATA DI ATAS
-2. ✅ Sebutkan angka/nomor/tanggal EXACT dari data (jangan bulatkan!)
-3. ✅ Jika data tidak lengkap, katakan "Data tidak tersedia untuk [X]"
-4. ✅ Gunakan format yang jelas (bold dengan **X** untuk penting)
-5. ✅ Sebutkan sumber: "Berdasarkan data..." atau "Data menunjukkan..."
-6. ✅ Jika pertanyaan singkat, gunakan konteks dari percakapan sebelumnya
+1.  HANYA jawab berdasarkan DATA DI ATAS
+2.  Sebutkan angka/nomor/tanggal EXACT dari data (jangan bulatkan!)
+3.  Jika data tidak lengkap, katakan "Data tidak tersedia untuk [X]"
+4.  Gunakan format yang jelas (bold dengan **X** untuk penting)
+5.  Sebutkan sumber: "Berdasarkan data..." atau "Data menunjukkan..."
+6.  Jika pertanyaan singkat, gunakan konteks dari percakapan sebelumnya
 
 DILARANG KERAS:
-1. ❌ JANGAN tambahkan informasi dari pengetahuan umum Anda
-2. ❌ JANGAN menebak atau membuat nomor/tanggal/nama sendiri
-3. ❌ JANGAN asumsikan data yang tidak ada di context
-4. ❌ JANGAN pakai kata "kemungkinan", "biasanya", "sekitar" (harus EXACT!)
-5. ❌ JANGAN buat kesimpulan yang tidak didukung data
+1.  JANGAN tambahkan informasi dari pengetahuan umum Anda
+2.  JANGAN menebak atau membuat nomor/tanggal/nama sendiri
+3.  JANGAN asumsikan data yang tidak ada di context
+4.  JANGAN pakai kata "kemungkinan", "biasanya", "sekitar" (harus EXACT!)
+5.  JANGAN buat kesimpulan yang tidak didukung data
 
 FORMAT JAWABAN:
 - Untuk "berapa": Sebutkan angka EXACT dari data
@@ -1367,21 +1400,21 @@ FORMAT JAWABAN:
 
 CONTOH JAWABAN YANG BENAR:
 Query: "Berapa SPK untuk nojar 2023390898?"
-❌ SALAH: "Terdapat beberapa SPK" (tidak exact!)
-✅ BENAR: "Ditemukan **1 SPK** untuk nomor jaringan **2023390898**"
+ SALAH: "Terdapat beberapa SPK" (tidak exact!)
+ BENAR: "Ditemukan **1 SPK** untuk nomor jaringan **2023390898**"
 
 Query: "Siapa teknisi yang handle?"
-❌ SALAH: "Teknisi yang biasanya..." (menebak!)
-✅ BENAR: "Teknisi yang menangani adalah **Firman Gustomi** dari vendor **DS3**"
+ SALAH: "Teknisi yang biasanya..." (menebak!)
+ BENAR: "Teknisi yang menangani adalah **Firman Gustomi** dari vendor **DS3**"
 
 Query: "Pop nya apa?"
-❌ SALAH: "POP untuk jaringan ini adalah..." (tidak jelas rujukan!)
-✅ BENAR: "POP untuk nomor jaringan **2023390898** adalah **JKTRMCSR01**"
+ SALAH: "POP untuk jaringan ini adalah..." (tidak jelas rujukan!)
+ BENAR: "POP untuk nomor jaringan **2023390898** adalah **JKTRMCSR01**"
 
 JIKA DATA TIDAK ADA:
 Query: "Berapa biaya instalasi?"
-❌ SALAH: "Biaya biasanya sekitar..." (menebak!)
-✅ BENAR: "Informasi biaya instalasi tidak tersedia dalam data"
+ SALAH: "Biaya biasanya sekitar..." (menebak!)
+ BENAR: "Informasi biaya instalasi tidak tersedia dalam data"
 
 RESPONS ANDA (HANYA dari DATA di atas, format natural Bahasa Indonesia):"""
 
@@ -1448,7 +1481,7 @@ def evaluate_pdf():
         print(f"\n{'='*60}")
         print(f"📊 EVALUATION RESULTS")
         print(f"{'='*60}")
-        print(f"✅ Correct: {evaluation['correct']}/{evaluation['total_fields']}")
+        print(f" Correct: {evaluation['correct']}/{evaluation['total_fields']}")
         print(f"📈 Accuracy: {evaluation['accuracy']}%")
         print(f"{'='*60}\n")
 
@@ -1488,9 +1521,9 @@ if __name__ == "__main__":
     print("  GET  /health              - Health check")
     print("=" * 60)
     print("\n✨ NEW FEATURES:")
-    print("  📁 Support Laravel storage path")
+    print("   Support Laravel storage path")
     print("  🗂️  Organized folder structure by document type")
-    print("  🔄 Automatic path conversion to relative")
+    print("   Automatic path conversion to relative")
     print("=" * 60)
     print()
     

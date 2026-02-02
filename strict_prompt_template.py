@@ -29,11 +29,11 @@ PERTANYAAN USER: "{query}"
 ⚠️ CRITICAL: TIDAK ADA DATA RELEVAN YANG DITEMUKAN DI DATABASE.
 
 ATURAN WAJIB:
-1. ❌ JANGAN membuat data sendiri
-2. ❌ JANGAN menebak atau mengira-ngira
-3. ❌ JANGAN memberikan informasi umum yang tidak terkait
-4. ✅ WAJIB jawab: "Tidak ditemukan data yang sesuai dengan pertanyaan Anda."
-5. ✅ Sarankan user untuk:
+1.  JANGAN membuat data sendiri
+2.  JANGAN menebak atau mengira-ngira
+3.  JANGAN memberikan informasi umum yang tidak terkait
+4.  WAJIB jawab: "Tidak ditemukan data yang sesuai dengan pertanyaan Anda."
+5.  Sarankan user untuk:
    - Cek kembali nomor jaringan/SPK
    - Gunakan keyword yang lebih spesifik
    - Pastikan data sudah ter-upload
@@ -51,14 +51,14 @@ PERTANYAAN USER: "{query}"
 {context}
 
 🛡️ ATURAN KETAT (ZERO TOLERANCE):
-1. ✅ HANYA jawab berdasarkan DATA DI ATAS
-2. ❌ JANGAN tambahkan informasi dari pengetahuan umum Anda
-3. ❌ JANGAN menebak atau membuat nomor/tanggal/nama sendiri
-4. ❌ JANGAN asumsikan data yang tidak tertulis di context
-5. ✅ Jika data tidak lengkap, katakan "Data tidak tersedia untuk [X]"
-6. ✅ Sebutkan sumber data (misal: "Berdasarkan data SPK...")
-7. ✅ Gunakan format yang jelas dan mudah dibaca
-8. ✅ Jika user tanya detail yang tidak ada di context, jawab "Informasi tersebut tidak tersedia dalam data yang saya akses"
+1.  HANYA jawab berdasarkan DATA DI ATAS
+2.  JANGAN tambahkan informasi dari pengetahuan umum Anda
+3.  JANGAN menebak atau membuat nomor/tanggal/nama sendiri
+4.  JANGAN asumsikan data yang tidak tertulis di context
+5.  Jika data tidak lengkap, katakan "Data tidak tersedia untuk [X]"
+6.  Sebutkan sumber data (misal: "Berdasarkan data SPK...")
+7.  Gunakan format yang jelas dan mudah dibaca
+8.  Jika user tanya detail yang tidak ada di context, jawab "Informasi tersebut tidak tersedia dalam data yang saya akses"
 
 FORMAT JAWABAN:
 - Untuk pertanyaan "berapa": Sebutkan angka exact dari data
@@ -68,14 +68,14 @@ FORMAT JAWABAN:
 - Untuk detail: Gunakan bullet points atau paragraf terstruktur
 
 CONTOH JAWABAN YANG BENAR:
-❌ SALAH: "SPK ini kemungkinan untuk instalasi jaringan baru" (menebak!)
-✅ BENAR: "Berdasarkan data, jenis SPK adalah 'aktivasi'"
+ SALAH: "SPK ini kemungkinan untuk instalasi jaringan baru" (menebak!)
+ BENAR: "Berdasarkan data, jenis SPK adalah 'aktivasi'"
 
-❌ SALAH: "Teknisi biasanya datang pagi hari" (asumsi!)
-✅ BENAR: "Data menunjukkan teknisi datang pada 11/Nov/2023 pukul 17:13"
+ SALAH: "Teknisi biasanya datang pagi hari" (asumsi!)
+ BENAR: "Data menunjukkan teknisi datang pada 11/Nov/2023 pukul 17:13"
 
-❌ SALAH: "Terdapat sekitar 5-10 SPK" (tidak exact!)
-✅ BENAR: "Ditemukan 7 SPK dalam database"
+ SALAH: "Terdapat sekitar 5-10 SPK" (tidak exact!)
+ BENAR: "Ditemukan 7 SPK dalam database"
 
 RESPONS ANDA (berdasarkan DATA di atas saja):"""
 
@@ -95,9 +95,9 @@ HASIL SQL: KOSONG (0 data)
 TUGAS: Jawab bahwa tidak ada data yang ditemukan.
 
 ATURAN:
-1. ❌ JANGAN buat data sendiri
-2. ✅ Katakan dengan jelas "Tidak ditemukan data"
-3. ✅ Sarankan untuk cek kriteria pencarian
+1.  JANGAN buat data sendiri
+2.  Katakan dengan jelas "Tidak ditemukan data"
+3.  Sarankan untuk cek kriteria pencarian
 
 RESPONS:"""
     
@@ -122,11 +122,11 @@ RESPONS:"""
 TUGAS: Format data di atas menjadi jawaban natural dalam Bahasa Indonesia.
 
 🛡️ ATURAN KETAT:
-1. ✅ HANYA gunakan data dari HASIL QUERY di atas
-2. ❌ JANGAN tambahkan informasi lain
-3. ❌ JANGAN buat nomor/tanggal/nama yang tidak ada di data
-4. ✅ Sebutkan jumlah exact jika ada
-5. ✅ Format agar mudah dibaca (gunakan bold **X** untuk highlight penting)
+1.  HANYA gunakan data dari HASIL QUERY di atas
+2.  JANGAN tambahkan informasi lain
+3.  JANGAN buat nomor/tanggal/nama yang tidak ada di data
+4.  Sebutkan jumlah exact jika ada
+5.  Format agar mudah dibaca (gunakan bold **X** untuk highlight penting)
 
 FORMAT:
 - Jika 1 data: Tampilkan detail lengkap
