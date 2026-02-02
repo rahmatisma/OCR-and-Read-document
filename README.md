@@ -54,14 +54,9 @@ Repository ini adalah backend yang harus dijalankan secara terpisah dari fronten
 1. **Python** 3.10.6 (exact version recommended)
    - Download: https://www.python.org/downloads/release/python-3106/
 
-2. **Tesseract OCR** (for text recognition)
-   - **Windows**: Download installer from https://github.com/UB-Mannheim/tesseract/wiki
-   - **Linux**: `sudo apt-get install tesseract-ocr`
-   - **macOS**: `brew install tesseract`
+2. **Git**
 
-3. **Git**
-
-4. **Visual C++ Redistributable** (Windows only)
+3. **Visual C++ Redistributable** (Windows only - untuk PaddlePaddle)
    - Download: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 ### Optional (Recommended)
@@ -134,29 +129,7 @@ imgaug==0.4.0
 matplotlib==3.10.8
 ```
 
-### Step 5: Install Tesseract OCR
-
-**Windows:**
-1. Download installer: https://github.com/UB-Mannheim/tesseract/wiki
-2. Install ke `C:\Program Files\Tesseract-OCR`
-3. Add ke PATH environment variable:
-   ```
-   C:\Program Files\Tesseract-OCR
-   ```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install tesseract-ocr
-sudo apt-get install libtesseract-dev
-```
-
-**macOS:**
-```bash
-brew install tesseract
-```
-
-### Step 6: Verify Installation
+### Step 5: Verify Installation
 
 ```bash
 # Check Python version
@@ -166,9 +139,18 @@ python --version
 # Check pip packages
 pip list
 
-# Check Tesseract
-tesseract --version
+# Check if PaddleOCR installed correctly
+python -c "from paddleocr import PaddleOCR; print('PaddleOCR OK')"
 ```
+
+### Step 6: Download PaddleOCR Models (First Run)
+
+PaddleOCR akan otomatis download model saat pertama kali dijalankan. Ini akan memakan waktu beberapa menit tergantung koneksi internet.
+
+Model yang akan didownload:
+- Detection model (~3MB)
+- Recognition model (~10MB)  
+- Angle classification model (~1MB)
 
 ### Step 7: Test OCR
 
@@ -179,8 +161,11 @@ Buat file test sederhana:
 from paddleocr import PaddleOCR
 
 print("Initializing PaddleOCR...")
+print("First run will download models (this may take a few minutes)...")
+
 ocr = PaddleOCR(use_angle_cls=True, lang='en')
-print("PaddleOCR initialized successfully!")
+print("\nPaddleOCR initialized successfully!")
+print("Models downloaded and loaded!")
 print("System ready!")
 ```
 
@@ -188,6 +173,8 @@ Jalankan:
 ```bash
 python test_ocr.py
 ```
+
+**Note**: Pertama kali run akan download model files (~15MB total). Ini hanya sekali saja.
 
 ---
 
@@ -221,18 +208,36 @@ OUTPUT_FOLDER=./output
 LOG_LEVEL=INFO
 ```
 
-### Update Tesseract Path (Windows)
+### PaddleOCR Configuration
 
-Jika Tesseract tidak terdeteksi otomatis, tambahkan di `app.py` atau file konfigurasi:
+Update konfigurasi OCR di `app.py` atau file konfigurasi sesuai kebutuhan:
 
 ```python
-import pytesseract
+from paddleocr import PaddleOCR
 
-# Windows
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# Konfigurasi PaddleOCR
+ocr = PaddleOCR(
+    use_angle_cls=True,      # Gunakan angle classification
+    lang='en',               # Language (en, ch, etc)
+    use_gpu=False,           # Set True jika ada GPU
+    show_log=False,          # Hide verbose logs
+    det_db_thresh=0.3,       # Detection threshold
+    det_db_box_thresh=0.5,   # Box threshold
+    rec_batch_num=6          # Batch size untuk recognition
+)
+```
 
-# Linux/Mac (biasanya tidak perlu)
-# pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+### GPU Acceleration (Optional)
+
+Jika punya NVIDIA GPU dan sudah install CUDA:
+
+```python
+ocr = PaddleOCR(
+    use_angle_cls=True,
+    lang='en',
+    use_gpu=True,           # Enable GPU
+    gpu_mem=500             # GPU memory (MB)
+)
 ```
 
 ---
@@ -358,7 +363,7 @@ Check status server dan dependencies.
   "python_version": "3.10.6",
   "flask_version": "3.1.2",
   "paddleocr_available": true,
-  "tesseract_available": true
+  "paddlepaddle_version": "2.6.2"
 }
 ```
 
@@ -494,15 +499,16 @@ print(result)
 pip install paddleocr==2.7.0.3
 ```
 
-**2. Tesseract not found**
+**2. PaddlePaddle installation failed**
 
-**Windows:**
-- Install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki
-- Add to PATH: `C:\Program Files\Tesseract-OCR`
-
-**Linux:**
+Untuk CPU only:
 ```bash
-sudo apt-get install tesseract-ocr
+pip install paddlepaddle==2.6.2 -i https://mirror.baidu.com/pypi/simple
+```
+
+Untuk GPU (dengan CUDA):
+```bash
+pip install paddlepaddle-gpu==2.6.2
 ```
 
 **3. DLL load failed (Windows)**
@@ -517,16 +523,16 @@ pip uninstall numpy
 pip install numpy==1.26.4
 ```
 
-**5. PaddlePaddle installation failed**
+**5. PaddleOCR model download failed**
 
-Untuk CPU only:
-```bash
-pip install paddlepaddle==2.6.2 -i https://mirror.baidu.com/pypi/simple
-```
-
-Untuk GPU (dengan CUDA):
-```bash
-pip install paddlepaddle-gpu==2.6.2
+Model akan auto-download saat pertama kali run. Jika gagal:
+- Check koneksi internet
+- Coba manual download dari: https://paddleocr.bj.bcebos.com/
+- Atau gunakan mirror China: 
+```python
+ocr = PaddleOCR(use_angle_cls=True, lang='en', 
+                det_model_dir='./models/det',
+                rec_model_dir='./models/rec')
 ```
 
 **6. Out of memory saat processing PDF besar**
@@ -534,8 +540,12 @@ pip install paddlepaddle-gpu==2.6.2
 Reduce batch size atau process per halaman:
 ```python
 # Di config
-BATCH_SIZE = 1
-MAX_IMAGE_SIZE = 1920
+ocr = PaddleOCR(
+    use_angle_cls=True,
+    lang='en',
+    rec_batch_num=1,  # Reduce batch size
+    max_text_length=512
+)
 ```
 
 **7. Flask port already in use**
@@ -663,20 +673,21 @@ FROM python:3.10.6-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies untuk OpenCV dan PaddlePaddle
 RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
     libgl1-mesa-glx \
-    libglib2.0-0
+    libglib2.0-0 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app", "--timeout", "300"]
 ```
 
 Build and run:
@@ -747,10 +758,11 @@ For issues or questions:
 
 ## Acknowledgments
 
-- [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) - OCR engine
+- [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) - Powerful OCR engine by Baidu
+- [PaddlePaddle](https://github.com/PaddlePaddle/Paddle) - Deep learning framework
 - [Flask](https://flask.palletsprojects.com/) - Web framework
-- [PyMuPDF](https://pymupdf.readthedocs.io/) - PDF processing
-- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) - Text recognition
+- [PyMuPDF](https://pymupdf.readthedocs.io/) - PDF processing library
+- [OpenCV](https://opencv.org/) - Computer vision library
 
 ---
 
