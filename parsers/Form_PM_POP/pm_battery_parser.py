@@ -151,7 +151,27 @@ class PMBatteryParser(BasePMParser):
     
     def _parse_shared_table_v5(self, table_text: str, bank_number: str) -> Tuple[List[Dict], List[Dict]]:
         """
-        Parse SHARED table - V5 FIXED (Reject row numbers as voltage)
+        Parse SHARED table - V5 FIXED
+        
+        ✅ FIX: Gunakan keradaan ',' atau '.' pada string voltage
+        untuk bedakan voltage vs row number.
+        
+        Bug sebelumnya:
+            voltage_float = 13.0  (dari "13,0")
+            is_voltage_whole_number = (13.0 == int(13.0)) → TRUE
+            is_in_row_range = (1 <= 13.0 <= 20)           → TRUE
+            → SKIP! ← SALAH, 13.0V itu voltage valid
+        
+        Root cause:
+            Logika "kalau whole number dan 1-20 → row number" itu
+            tidak bisa bedain "13" (row number) vs "13,0" (voltage).
+            Padahal bedanya ada di STRING-nya, bukan di float-nya.
+        
+        Fix:
+            Cek langsung di string-nya:
+              "13"  → pure integer, tidak ada decimal → row number
+              "13,0" → ada comma → PASTI voltage
+            Kalau string-nya ada ',' atau '.' → skip cek row number entirely.
         """
         print(f"[PM BATTERY V5]     Parsing shared table for Bank {bank_number}...")
         
@@ -183,63 +203,54 @@ class PMBatteryParser(BasePMParser):
         i = 0
         
         while i + 2 < len(all_numbers):
-            no = all_numbers[i]
-            voltage = all_numbers[i + 1]
-            soh = all_numbers[i + 2]
+            no_str      = all_numbers[i]
+            voltage_str = all_numbers[i + 1]
+            soh_str     = all_numbers[i + 2]
             
-            # Validate this is a valid triplet
             try:
-                no_int = int(no)
-                voltage_float = float(voltage.replace(',', '.'))
-                soh_int = int(soh)
+                no_int        = int(no_str)                              # no harus pure integer
+                voltage_float = float(voltage_str.replace(',', '.'))
+                soh_int       = int(soh_str)                             # soh harus pure integer
                 
-                # CRITICAL FIX: Reject if voltage looks like a row number
-                # Valid battery voltage: 10.0-15.0 VDC
-                # Row numbers: 1-20 (whole numbers)
-                # If voltage is a whole number 1-20, it's likely a row number!
+                # ── FIXED: Bedain voltage vs row number dari STRING-nya ──
+                # Voltage dari PDF SELALU ada decimal separator: "12,4", "13,0", "12,5"
+                # Row number SELALU pure integer: "1", "11", "13", "20"
+                # Jadi cukup cek: ada ',' atau '.' di string-nya atau tidak
+                has_decimal = (',' in voltage_str or '.' in voltage_str)
                 
+                if not has_decimal:
+                    # Pure integer — kalau 1-20, ini row number bukan voltage, skip
+                    if 1 <= voltage_float <= 20:
+                        print(f"[PM BATTERY V5]       ⚠️ Skip: V='{voltage_str}' pure integer 1-20, row number")
+                        i += 1
+                        continue
+                
+                # Validate ranges
                 is_valid_voltage = 10.0 <= voltage_float <= 15.0
-                is_valid_soh = 0 <= soh_int <= 100
+                is_valid_soh     = 0 <= soh_int <= 100
                 is_reasonable_no = 1 <= no_int <= 20
                 
-                # NEW: Check if voltage is a whole number in row range
-                is_voltage_whole_number = voltage_float == int(voltage_float)
-                is_in_row_range = 1 <= voltage_float <= 20
-                
-                # Reject if voltage looks like row number
-                if is_voltage_whole_number and is_in_row_range:
-                    print(f"[PM BATTERY V5]       ⚠️ Skip: V={voltage} is likely row number, not voltage")
-                    i += 1
-                    continue
-                
-                # Also reject if SOH is very low (<10) which is unrealistic
-                if soh_int < 10:
-                    print(f"[PM BATTERY V5]       ⚠️ Skip: SOH={soh} too low (<10%)")
-                    i += 1
-                    continue
-                
                 if is_valid_voltage and is_valid_soh and is_reasonable_no:
-                    triplets.append((no, voltage, soh))
-                    print(f"[PM BATTERY V5]       Triplet {len(triplets)}: ({no}, {voltage}, {soh}) ✓")
-                    i += 3  # Move to next triplet
-                    continue
+                    triplets.append((no_str, voltage_str, soh_str))
+                    print(f"[PM BATTERY V5]       Triplet {len(triplets)}: ({no_str}, {voltage_str}, {soh_str}) ✓")
+                    i += 3
                 else:
-                    # Invalid triplet
                     if not is_valid_voltage:
-                        print(f"[PM BATTERY V5]       ⚠️ Skip: V={voltage} out of range (10-15 VDC)")
+                        print(f"[PM BATTERY V5]       ⚠️ Skip: V={voltage_str} out of range (10-15 VDC)")
                     elif not is_valid_soh:
-                        print(f"[PM BATTERY V5]       ⚠️ Skip: SOH={soh} out of range (0-100%)")
+                        print(f"[PM BATTERY V5]       ⚠️ Skip: SOH={soh_str} out of range (0-100%)")
                     else:
-                        print(f"[PM BATTERY V5]       ⚠️ Skip: No={no} unreasonable")
+                        print(f"[PM BATTERY V5]       ⚠️ Skip: No={no_str} unreasonable")
                     i += 1
+                    
             except (ValueError, AttributeError) as e:
                 print(f"[PM BATTERY V5]       ⚠️ Parse error at index {i}: {e}, trying shift...")
                 i += 1
         
         print(f"[PM BATTERY V5]     Total triplets formed: {len(triplets)}")
         
-        # Mapping logic tetap sama...
-        ups_numbers_seen = set()
+        # Mapping UPS vs Recti — tetap sama
+        ups_numbers_seen   = set()
         recti_numbers_seen = set()
         
         for triplet_idx, (no, voltage, soh) in enumerate(triplets):

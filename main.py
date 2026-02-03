@@ -340,7 +340,9 @@ if __name__ == "__main__":
             "11" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-010 - Formulir Preventive Maintenance Battery.pdf",
             "12" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-011 - Formulir Preventive Maintenance Pole-Tower.pdf",
             "13" : "input/pdf/pdf data set/FM-LAP-D2-SOP-003-012 - Formulir Dokumentasi dan Pendataan Perangkat.pdf",
-            "14" : "input/pdf/pdf data set/Formulir Preventive Maintenance AC.pdf"
+            "14" : "input/pdf/pdf data set/Formulir Preventive Maintenance AC.pdf",
+            "15" : "input/pdf/pdf data set/GMB 2.pdf",
+            "16" : "input/pdf/pdf data set/GMB 3.pdf"
             
         }
         
